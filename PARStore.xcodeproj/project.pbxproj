@@ -1,0 +1,798 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		569D021A16E24FA1002675BA /* Log.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 569D021816E24FA1002675BA /* Log.xcdatamodeld */; };
+		569D021E16E24FDA002675BA /* PARDispatchQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = 569D021D16E24FDA002675BA /* PARDispatchQueue.m */; };
+		569D022116E2509F002675BA /* PARAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 569D022016E2509F002675BA /* PARAppDelegate.m */; };
+		569D022316E250A7002675BA /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 569D022216E250A7002675BA /* MainMenu.xib */; };
+		56C7EDC516E260EA00FFBBF2 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56C7EDC416E260EA00FFBBF2 /* UIKit.framework */; };
+		56C7EDC716E260EA00FFBBF2 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56C7EDC616E260EA00FFBBF2 /* Foundation.framework */; };
+		56C7EDC916E260EA00FFBBF2 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56C7EDC816E260EA00FFBBF2 /* CoreGraphics.framework */; };
+		56C7EDCF16E260EB00FFBBF2 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 56C7EDCD16E260EB00FFBBF2 /* InfoPlist.strings */; };
+		56C7EDD116E260EB00FFBBF2 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 56C7EDD016E260EB00FFBBF2 /* main.m */; };
+		56C7EDD516E260EB00FFBBF2 /* PARAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 56C7EDD416E260EB00FFBBF2 /* PARAppDelegate.m */; };
+		56C7EDD716E260EB00FFBBF2 /* Default.png in Resources */ = {isa = PBXBuildFile; fileRef = 56C7EDD616E260EB00FFBBF2 /* Default.png */; };
+		56C7EDD916E260EB00FFBBF2 /* Default@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 56C7EDD816E260EB00FFBBF2 /* Default@2x.png */; };
+		56C7EDDB16E260EB00FFBBF2 /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 56C7EDDA16E260EB00FFBBF2 /* Default-568h@2x.png */; };
+		56C7EDE216E260EB00FFBBF2 /* SenTestingKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56EAE18816E24C7500A7F31F /* SenTestingKit.framework */; };
+		56C7EDE316E260EB00FFBBF2 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56C7EDC416E260EA00FFBBF2 /* UIKit.framework */; };
+		56C7EDE416E260EB00FFBBF2 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56C7EDC616E260EA00FFBBF2 /* Foundation.framework */; };
+		56C7EDF716E2687F00FFBBF2 /* PARStoreTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 56EAE19416E24C7500A7F31F /* PARStoreTests.m */; };
+		56C7EDF816E2688700FFBBF2 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 56EAE19016E24C7500A7F31F /* InfoPlist.strings */; };
+		56C7EDFC16E26D0700FFBBF2 /* PARTestCase.m in Sources */ = {isa = PBXBuildFile; fileRef = 56C7EDFB16E26D0700FFBBF2 /* PARTestCase.m */; };
+		56C7EDFD16E26D0700FFBBF2 /* PARTestCase.m in Sources */ = {isa = PBXBuildFile; fileRef = 56C7EDFB16E26D0700FFBBF2 /* PARTestCase.m */; };
+		56C7EE0A16E2811E00FFBBF2 /* PARNotificationSemaphore.m in Sources */ = {isa = PBXBuildFile; fileRef = 56C7EE0916E2811E00FFBBF2 /* PARNotificationSemaphore.m */; };
+		56C7EE0B16E2811E00FFBBF2 /* PARNotificationSemaphore.m in Sources */ = {isa = PBXBuildFile; fileRef = 56C7EE0916E2811E00FFBBF2 /* PARNotificationSemaphore.m */; };
+		56C7EE0C16E2842A00FFBBF2 /* PARStoreExample.m in Sources */ = {isa = PBXBuildFile; fileRef = 56C7EDFF16E270C600FFBBF2 /* PARStoreExample.m */; };
+		56C7EE0D16E2842B00FFBBF2 /* PARStoreExample.m in Sources */ = {isa = PBXBuildFile; fileRef = 56C7EDFF16E270C600FFBBF2 /* PARStoreExample.m */; };
+		56C7EE0E16E2843700FFBBF2 /* PARStore.m in Sources */ = {isa = PBXBuildFile; fileRef = 56EAE1BD16E24EAA00A7F31F /* PARStore.m */; };
+		56C7EE0F16E2848C00FFBBF2 /* CoreData.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56EAE16E16E24C7500A7F31F /* CoreData.framework */; };
+		56C7EE1116E2849300FFBBF2 /* CoreData.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56C7EE1016E2849300FFBBF2 /* CoreData.framework */; };
+		56C7EE1216E284A600FFBBF2 /* PARDispatchQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = 569D021D16E24FDA002675BA /* PARDispatchQueue.m */; };
+		56C7EE1316E284DB00FFBBF2 /* Log.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 569D021816E24FA1002675BA /* Log.xcdatamodeld */; };
+		56EAE16B16E24C7500A7F31F /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56EAE16A16E24C7500A7F31F /* Cocoa.framework */; };
+		56EAE18916E24C7500A7F31F /* SenTestingKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56EAE18816E24C7500A7F31F /* SenTestingKit.framework */; };
+		56EAE18A16E24C7500A7F31F /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56EAE16A16E24C7500A7F31F /* Cocoa.framework */; };
+		56EAE19216E24C7500A7F31F /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 56EAE19016E24C7500A7F31F /* InfoPlist.strings */; };
+		56EAE19516E24C7500A7F31F /* PARStoreTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 56EAE19416E24C7500A7F31F /* PARStoreTests.m */; };
+		56EAE1B916E24E7300A7F31F /* Credits.rtf in Resources */ = {isa = PBXBuildFile; fileRef = 56EAE1B616E24E7300A7F31F /* Credits.rtf */; };
+		56EAE1BA16E24E7300A7F31F /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 56EAE1B716E24E7300A7F31F /* InfoPlist.strings */; };
+		56EAE1BB16E24E7300A7F31F /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 56EAE1B816E24E7300A7F31F /* main.m */; };
+		56EAE1BE16E24EAA00A7F31F /* PARStore.m in Sources */ = {isa = PBXBuildFile; fileRef = 56EAE1BD16E24EAA00A7F31F /* PARStore.m */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		56C7EDE516E260EB00FFBBF2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 56EAE15D16E24C7500A7F31F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 56C7EDC116E260EA00FFBBF2;
+			remoteInfo = "iOS-PARStore";
+		};
+		56EAE18B16E24C7500A7F31F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 56EAE15D16E24C7500A7F31F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 56EAE16516E24C7500A7F31F;
+			remoteInfo = PARStore;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		569D021916E24FA1002675BA /* Log.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = Log.xcdatamodel; sourceTree = "<group>"; };
+		569D021C16E24FDA002675BA /* PARDispatchQueue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PARDispatchQueue.h; sourceTree = "<group>"; };
+		569D021D16E24FDA002675BA /* PARDispatchQueue.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PARDispatchQueue.m; sourceTree = "<group>"; };
+		569D021F16E2509F002675BA /* PARAppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PARAppDelegate.h; sourceTree = "<group>"; };
+		569D022016E2509F002675BA /* PARAppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PARAppDelegate.m; sourceTree = "<group>"; };
+		569D022216E250A7002675BA /* MainMenu.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MainMenu.xib; sourceTree = "<group>"; };
+		569D022916E25340002675BA /* LICENSE-BSD.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "LICENSE-BSD.txt"; sourceTree = "<group>"; };
+		569D022A16E25340002675BA /* README.markdown */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.markdown; sourceTree = "<group>"; };
+		56C7EDC216E260EA00FFBBF2 /* iOS-PARStore.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "iOS-PARStore.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		56C7EDC416E260EA00FFBBF2 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = Library/Frameworks/UIKit.framework; sourceTree = DEVELOPER_DIR; };
+		56C7EDC616E260EA00FFBBF2 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		56C7EDC816E260EA00FFBBF2 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = Library/Frameworks/CoreGraphics.framework; sourceTree = DEVELOPER_DIR; };
+		56C7EDCC16E260EB00FFBBF2 /* iOS-PARStore-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "iOS-PARStore-Info.plist"; sourceTree = "<group>"; };
+		56C7EDCE16E260EB00FFBBF2 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		56C7EDD016E260EB00FFBBF2 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		56C7EDD216E260EB00FFBBF2 /* iOS-PARStore-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "iOS-PARStore-Prefix.pch"; sourceTree = "<group>"; };
+		56C7EDD316E260EB00FFBBF2 /* PARAppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PARAppDelegate.h; sourceTree = "<group>"; };
+		56C7EDD416E260EB00FFBBF2 /* PARAppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PARAppDelegate.m; sourceTree = "<group>"; };
+		56C7EDD616E260EB00FFBBF2 /* Default.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Default.png; sourceTree = "<group>"; };
+		56C7EDD816E260EB00FFBBF2 /* Default@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default@2x.png"; sourceTree = "<group>"; };
+		56C7EDDA16E260EB00FFBBF2 /* Default-568h@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-568h@2x.png"; sourceTree = "<group>"; };
+		56C7EDE116E260EB00FFBBF2 /* iOS-PARStoreTests.octest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "iOS-PARStoreTests.octest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		56C7EDFA16E26D0700FFBBF2 /* PARTestCase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PARTestCase.h; sourceTree = "<group>"; };
+		56C7EDFB16E26D0700FFBBF2 /* PARTestCase.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PARTestCase.m; sourceTree = "<group>"; };
+		56C7EDFE16E270C600FFBBF2 /* PARStoreExample.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PARStoreExample.h; sourceTree = "<group>"; };
+		56C7EDFF16E270C600FFBBF2 /* PARStoreExample.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PARStoreExample.m; sourceTree = "<group>"; };
+		56C7EE0816E2811E00FFBBF2 /* PARNotificationSemaphore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PARNotificationSemaphore.h; sourceTree = "<group>"; };
+		56C7EE0916E2811E00FFBBF2 /* PARNotificationSemaphore.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PARNotificationSemaphore.m; sourceTree = "<group>"; };
+		56C7EE1016E2849300FFBBF2 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS6.0.sdk/System/Library/Frameworks/CoreData.framework; sourceTree = DEVELOPER_DIR; };
+		56EAE16616E24C7500A7F31F /* Mac-PARStore.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Mac-PARStore.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		56EAE16A16E24C7500A7F31F /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
+		56EAE16D16E24C7500A7F31F /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		56EAE16E16E24C7500A7F31F /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
+		56EAE16F16E24C7500A7F31F /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		56EAE18716E24C7500A7F31F /* Mac-PARStoreTests.octest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Mac-PARStoreTests.octest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		56EAE18816E24C7500A7F31F /* SenTestingKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SenTestingKit.framework; path = Library/Frameworks/SenTestingKit.framework; sourceTree = DEVELOPER_DIR; };
+		56EAE18F16E24C7500A7F31F /* PARStoreTests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "PARStoreTests-Info.plist"; sourceTree = "<group>"; };
+		56EAE19116E24C7500A7F31F /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		56EAE19316E24C7500A7F31F /* PARStoreTests.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PARStoreTests.h; sourceTree = "<group>"; };
+		56EAE19416E24C7500A7F31F /* PARStoreTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PARStoreTests.m; sourceTree = "<group>"; };
+		56EAE1B316E24E5500A7F31F /* PARStore-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "PARStore-Info.plist"; path = "Mac/PARStore-Info.plist"; sourceTree = SOURCE_ROOT; };
+		56EAE1B416E24E5500A7F31F /* PARStore-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "PARStore-Prefix.pch"; path = "Mac/PARStore-Prefix.pch"; sourceTree = SOURCE_ROOT; };
+		56EAE1B616E24E7300A7F31F /* Credits.rtf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.rtf; name = Credits.rtf; path = Mac/Credits.rtf; sourceTree = SOURCE_ROOT; };
+		56EAE1B716E24E7300A7F31F /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = InfoPlist.strings; path = Mac/InfoPlist.strings; sourceTree = SOURCE_ROOT; };
+		56EAE1B816E24E7300A7F31F /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = Mac/main.m; sourceTree = SOURCE_ROOT; };
+		56EAE1BC16E24EAA00A7F31F /* PARStore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PARStore.h; path = Core/PARStore.h; sourceTree = SOURCE_ROOT; };
+		56EAE1BD16E24EAA00A7F31F /* PARStore.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PARStore.m; path = Core/PARStore.m; sourceTree = SOURCE_ROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		56C7EDBF16E260EA00FFBBF2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				56C7EE1116E2849300FFBBF2 /* CoreData.framework in Frameworks */,
+				56C7EDC516E260EA00FFBBF2 /* UIKit.framework in Frameworks */,
+				56C7EDC716E260EA00FFBBF2 /* Foundation.framework in Frameworks */,
+				56C7EDC916E260EA00FFBBF2 /* CoreGraphics.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		56C7EDDD16E260EB00FFBBF2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				56C7EDE216E260EB00FFBBF2 /* SenTestingKit.framework in Frameworks */,
+				56C7EDE316E260EB00FFBBF2 /* UIKit.framework in Frameworks */,
+				56C7EDE416E260EB00FFBBF2 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		56EAE16316E24C7500A7F31F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				56C7EE0F16E2848C00FFBBF2 /* CoreData.framework in Frameworks */,
+				56EAE16B16E24C7500A7F31F /* Cocoa.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		56EAE18316E24C7500A7F31F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				56EAE18916E24C7500A7F31F /* SenTestingKit.framework in Frameworks */,
+				56EAE18A16E24C7500A7F31F /* Cocoa.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		56C7EDCA16E260EB00FFBBF2 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				56C7EDD316E260EB00FFBBF2 /* PARAppDelegate.h */,
+				56C7EDD416E260EB00FFBBF2 /* PARAppDelegate.m */,
+				56C7EDCB16E260EB00FFBBF2 /* Supporting Files */,
+			);
+			path = iOS;
+			sourceTree = "<group>";
+		};
+		56C7EDCB16E260EB00FFBBF2 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				56C7EDCC16E260EB00FFBBF2 /* iOS-PARStore-Info.plist */,
+				56C7EDCD16E260EB00FFBBF2 /* InfoPlist.strings */,
+				56C7EDD016E260EB00FFBBF2 /* main.m */,
+				56C7EDD216E260EB00FFBBF2 /* iOS-PARStore-Prefix.pch */,
+				56C7EDD616E260EB00FFBBF2 /* Default.png */,
+				56C7EDD816E260EB00FFBBF2 /* Default@2x.png */,
+				56C7EDDA16E260EB00FFBBF2 /* Default-568h@2x.png */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		56EAE15B16E24C7500A7F31F = {
+			isa = PBXGroup;
+			children = (
+				56C7EE1016E2849300FFBBF2 /* CoreData.framework */,
+				569D022A16E25340002675BA /* README.markdown */,
+				569D022916E25340002675BA /* LICENSE-BSD.txt */,
+				56EAE17016E24C7500A7F31F /* Core */,
+				56EAE18D16E24C7500A7F31F /* Tests */,
+				56EAE1A416E24C9400A7F31F /* Mac */,
+				56C7EDCA16E260EB00FFBBF2 /* iOS */,
+				56EAE16916E24C7500A7F31F /* Frameworks */,
+				56EAE16716E24C7500A7F31F /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		56EAE16716E24C7500A7F31F /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				56EAE16616E24C7500A7F31F /* Mac-PARStore.app */,
+				56EAE18716E24C7500A7F31F /* Mac-PARStoreTests.octest */,
+				56C7EDC216E260EA00FFBBF2 /* iOS-PARStore.app */,
+				56C7EDE116E260EB00FFBBF2 /* iOS-PARStoreTests.octest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		56EAE16916E24C7500A7F31F /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				56EAE16A16E24C7500A7F31F /* Cocoa.framework */,
+				56EAE18816E24C7500A7F31F /* SenTestingKit.framework */,
+				56C7EDC416E260EA00FFBBF2 /* UIKit.framework */,
+				56C7EDC616E260EA00FFBBF2 /* Foundation.framework */,
+				56C7EDC816E260EA00FFBBF2 /* CoreGraphics.framework */,
+				56EAE16C16E24C7500A7F31F /* Other Frameworks */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		56EAE16C16E24C7500A7F31F /* Other Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				56EAE16D16E24C7500A7F31F /* AppKit.framework */,
+				56EAE16E16E24C7500A7F31F /* CoreData.framework */,
+				56EAE16F16E24C7500A7F31F /* Foundation.framework */,
+			);
+			name = "Other Frameworks";
+			sourceTree = "<group>";
+		};
+		56EAE17016E24C7500A7F31F /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				569D021816E24FA1002675BA /* Log.xcdatamodeld */,
+				569D021C16E24FDA002675BA /* PARDispatchQueue.h */,
+				569D021D16E24FDA002675BA /* PARDispatchQueue.m */,
+				56EAE1BC16E24EAA00A7F31F /* PARStore.h */,
+				56EAE1BD16E24EAA00A7F31F /* PARStore.m */,
+				56C7EE0816E2811E00FFBBF2 /* PARNotificationSemaphore.h */,
+				56C7EE0916E2811E00FFBBF2 /* PARNotificationSemaphore.m */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		56EAE17116E24C7500A7F31F /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				56EAE1B316E24E5500A7F31F /* PARStore-Info.plist */,
+				56EAE1B416E24E5500A7F31F /* PARStore-Prefix.pch */,
+				56EAE1B616E24E7300A7F31F /* Credits.rtf */,
+				56EAE1B716E24E7300A7F31F /* InfoPlist.strings */,
+			);
+			name = "Supporting Files";
+			path = PARStore;
+			sourceTree = "<group>";
+		};
+		56EAE18D16E24C7500A7F31F /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				56C7EDFE16E270C600FFBBF2 /* PARStoreExample.h */,
+				56C7EDFF16E270C600FFBBF2 /* PARStoreExample.m */,
+				56C7EDFA16E26D0700FFBBF2 /* PARTestCase.h */,
+				56C7EDFB16E26D0700FFBBF2 /* PARTestCase.m */,
+				56EAE19316E24C7500A7F31F /* PARStoreTests.h */,
+				56EAE19416E24C7500A7F31F /* PARStoreTests.m */,
+				56EAE18E16E24C7500A7F31F /* Supporting Files */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		56EAE18E16E24C7500A7F31F /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				56EAE18F16E24C7500A7F31F /* PARStoreTests-Info.plist */,
+				56EAE19016E24C7500A7F31F /* InfoPlist.strings */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		56EAE1A416E24C9400A7F31F /* Mac */ = {
+			isa = PBXGroup;
+			children = (
+				56EAE1B816E24E7300A7F31F /* main.m */,
+				569D021F16E2509F002675BA /* PARAppDelegate.h */,
+				569D022016E2509F002675BA /* PARAppDelegate.m */,
+				569D022216E250A7002675BA /* MainMenu.xib */,
+				56EAE17116E24C7500A7F31F /* Supporting Files */,
+			);
+			path = Mac;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		56C7EDC116E260EA00FFBBF2 /* iOS-PARStore */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 56C7EDF416E260EB00FFBBF2 /* Build configuration list for PBXNativeTarget "iOS-PARStore" */;
+			buildPhases = (
+				56C7EDBE16E260EA00FFBBF2 /* Sources */,
+				56C7EDBF16E260EA00FFBBF2 /* Frameworks */,
+				56C7EDC016E260EA00FFBBF2 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "iOS-PARStore";
+			productName = "iOS-PARStore";
+			productReference = 56C7EDC216E260EA00FFBBF2 /* iOS-PARStore.app */;
+			productType = "com.apple.product-type.application";
+		};
+		56C7EDE016E260EB00FFBBF2 /* iOS-PARStoreTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 56C7EDF516E260EB00FFBBF2 /* Build configuration list for PBXNativeTarget "iOS-PARStoreTests" */;
+			buildPhases = (
+				56C7EDDC16E260EB00FFBBF2 /* Sources */,
+				56C7EDDD16E260EB00FFBBF2 /* Frameworks */,
+				56C7EDDE16E260EB00FFBBF2 /* Resources */,
+				56C7EDDF16E260EB00FFBBF2 /* ShellScript */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				56C7EDE616E260EB00FFBBF2 /* PBXTargetDependency */,
+			);
+			name = "iOS-PARStoreTests";
+			productName = "iOS-PARStoreTests";
+			productReference = 56C7EDE116E260EB00FFBBF2 /* iOS-PARStoreTests.octest */;
+			productType = "com.apple.product-type.bundle";
+		};
+		56EAE16516E24C7500A7F31F /* Mac-PARStore */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 56EAE19816E24C7500A7F31F /* Build configuration list for PBXNativeTarget "Mac-PARStore" */;
+			buildPhases = (
+				56EAE16216E24C7500A7F31F /* Sources */,
+				56EAE16316E24C7500A7F31F /* Frameworks */,
+				56EAE16416E24C7500A7F31F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "Mac-PARStore";
+			productName = PARStore;
+			productReference = 56EAE16616E24C7500A7F31F /* Mac-PARStore.app */;
+			productType = "com.apple.product-type.application";
+		};
+		56EAE18616E24C7500A7F31F /* Mac-PARStoreTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 56EAE19B16E24C7500A7F31F /* Build configuration list for PBXNativeTarget "Mac-PARStoreTests" */;
+			buildPhases = (
+				56EAE18216E24C7500A7F31F /* Sources */,
+				56EAE18316E24C7500A7F31F /* Frameworks */,
+				56EAE18416E24C7500A7F31F /* Resources */,
+				56EAE18516E24C7500A7F31F /* ShellScript */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				56EAE18C16E24C7500A7F31F /* PBXTargetDependency */,
+			);
+			name = "Mac-PARStoreTests";
+			productName = PARStoreTests;
+			productReference = 56EAE18716E24C7500A7F31F /* Mac-PARStoreTests.octest */;
+			productType = "com.apple.product-type.bundle";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		56EAE15D16E24C7500A7F31F /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				CLASSPREFIX = PAR;
+				LastUpgradeCheck = 0450;
+				ORGANIZATIONNAME = "Charles Parnot";
+			};
+			buildConfigurationList = 56EAE16016E24C7500A7F31F /* Build configuration list for PBXProject "PARStore" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 56EAE15B16E24C7500A7F31F;
+			productRefGroup = 56EAE16716E24C7500A7F31F /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				56EAE16516E24C7500A7F31F /* Mac-PARStore */,
+				56EAE18616E24C7500A7F31F /* Mac-PARStoreTests */,
+				56C7EDC116E260EA00FFBBF2 /* iOS-PARStore */,
+				56C7EDE016E260EB00FFBBF2 /* iOS-PARStoreTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		56C7EDC016E260EA00FFBBF2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				56C7EDCF16E260EB00FFBBF2 /* InfoPlist.strings in Resources */,
+				56C7EDD716E260EB00FFBBF2 /* Default.png in Resources */,
+				56C7EDD916E260EB00FFBBF2 /* Default@2x.png in Resources */,
+				56C7EDDB16E260EB00FFBBF2 /* Default-568h@2x.png in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		56C7EDDE16E260EB00FFBBF2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				56C7EDF816E2688700FFBBF2 /* InfoPlist.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		56EAE16416E24C7500A7F31F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				56EAE1B916E24E7300A7F31F /* Credits.rtf in Resources */,
+				56EAE1BA16E24E7300A7F31F /* InfoPlist.strings in Resources */,
+				569D022316E250A7002675BA /* MainMenu.xib in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		56EAE18416E24C7500A7F31F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				56EAE19216E24C7500A7F31F /* InfoPlist.strings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		56C7EDDF16E260EB00FFBBF2 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Run the unit tests in this test bundle.\n\"${SYSTEM_DEVELOPER_DIR}/Tools/RunUnitTests\"\n";
+		};
+		56EAE18516E24C7500A7F31F /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Run the unit tests in this test bundle.\n\"${SYSTEM_DEVELOPER_DIR}/Tools/RunUnitTests\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		56C7EDBE16E260EA00FFBBF2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				56C7EDD116E260EB00FFBBF2 /* main.m in Sources */,
+				56C7EDD516E260EB00FFBBF2 /* PARAppDelegate.m in Sources */,
+				56C7EE0B16E2811E00FFBBF2 /* PARNotificationSemaphore.m in Sources */,
+				56C7EE0C16E2842A00FFBBF2 /* PARStoreExample.m in Sources */,
+				56C7EE0E16E2843700FFBBF2 /* PARStore.m in Sources */,
+				56C7EE1216E284A600FFBBF2 /* PARDispatchQueue.m in Sources */,
+				56C7EE1316E284DB00FFBBF2 /* Log.xcdatamodeld in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		56C7EDDC16E260EB00FFBBF2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				56C7EDF716E2687F00FFBBF2 /* PARStoreTests.m in Sources */,
+				56C7EDFD16E26D0700FFBBF2 /* PARTestCase.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		56EAE16216E24C7500A7F31F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				56EAE1BB16E24E7300A7F31F /* main.m in Sources */,
+				56EAE1BE16E24EAA00A7F31F /* PARStore.m in Sources */,
+				569D021A16E24FA1002675BA /* Log.xcdatamodeld in Sources */,
+				569D021E16E24FDA002675BA /* PARDispatchQueue.m in Sources */,
+				569D022116E2509F002675BA /* PARAppDelegate.m in Sources */,
+				56C7EE0A16E2811E00FFBBF2 /* PARNotificationSemaphore.m in Sources */,
+				56C7EE0D16E2842B00FFBBF2 /* PARStoreExample.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		56EAE18216E24C7500A7F31F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				56EAE19516E24C7500A7F31F /* PARStoreTests.m in Sources */,
+				56C7EDFC16E26D0700FFBBF2 /* PARTestCase.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		56C7EDE616E260EB00FFBBF2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 56C7EDC116E260EA00FFBBF2 /* iOS-PARStore */;
+			targetProxy = 56C7EDE516E260EB00FFBBF2 /* PBXContainerItemProxy */;
+		};
+		56EAE18C16E24C7500A7F31F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 56EAE16516E24C7500A7F31F /* Mac-PARStore */;
+			targetProxy = 56EAE18B16E24C7500A7F31F /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		56C7EDCD16E260EB00FFBBF2 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				56C7EDCE16E260EB00FFBBF2 /* en */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+		56EAE19016E24C7500A7F31F /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				56EAE19116E24C7500A7F31F /* en */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		56C7EDF016E260EB00FFBBF2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SYSTEM_APPS_DIR)/Xcode.app/Contents/Developer/Library/Frameworks\"",
+				);
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "iOS/iOS-PARStore-Prefix.pch";
+				INFOPLIST_FILE = "iOS/iOS-PARStore-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				WRAPPER_EXTENSION = app;
+			};
+			name = Debug;
+		};
+		56C7EDF116E260EB00FFBBF2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SYSTEM_APPS_DIR)/Xcode.app/Contents/Developer/Library/Frameworks\"",
+				);
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "iOS/iOS-PARStore-Prefix.pch";
+				INFOPLIST_FILE = "iOS/iOS-PARStore-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
+				OTHER_CFLAGS = "-DNS_BLOCK_ASSERTIONS=1";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+				WRAPPER_EXTENSION = app;
+			};
+			name = Release;
+		};
+		56C7EDF216E260EB00FFBBF2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/iOS-PARStore.app/iOS-PARStore";
+				FRAMEWORK_SEARCH_PATHS = (
+					"\"$(SDKROOT)/Developer/Library/Frameworks\"",
+					"\"$(DEVELOPER_LIBRARY_DIR)/Frameworks\"",
+				);
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "iOS/iOS-PARStore-Prefix.pch";
+				INFOPLIST_FILE = "iOS/iOS-PARStore-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				TEST_HOST = "$(BUNDLE_LOADER)";
+				WRAPPER_EXTENSION = octest;
+			};
+			name = Debug;
+		};
+		56C7EDF316E260EB00FFBBF2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/iOS-PARStore.app/iOS-PARStore";
+				FRAMEWORK_SEARCH_PATHS = (
+					"\"$(SDKROOT)/Developer/Library/Frameworks\"",
+					"\"$(DEVELOPER_LIBRARY_DIR)/Frameworks\"",
+				);
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "iOS/iOS-PARStore-Prefix.pch";
+				INFOPLIST_FILE = "iOS/iOS-PARStore-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				TEST_HOST = "$(BUNDLE_LOADER)";
+				VALIDATE_PRODUCT = YES;
+				WRAPPER_EXTENSION = octest;
+			};
+			name = Release;
+		};
+		56EAE19616E24C7500A7F31F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.8;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		56EAE19716E24C7500A7F31F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.8;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		56EAE19916E24C7500A7F31F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "Mac/PARStore-Prefix.pch";
+				INFOPLIST_FILE = "Mac/PARStore-Info.plist";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				WRAPPER_EXTENSION = app;
+			};
+			name = Debug;
+		};
+		56EAE19A16E24C7500A7F31F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "Mac/PARStore-Prefix.pch";
+				INFOPLIST_FILE = "Mac/PARStore-Info.plist";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				WRAPPER_EXTENSION = app;
+			};
+			name = Release;
+		};
+		56EAE19C16E24C7500A7F31F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/Mac-PARStore.app/Contents/MacOS/Mac-PARStore";
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = "\"$(DEVELOPER_LIBRARY_DIR)/Frameworks\"";
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "Tests/PARStore-Prefix.pch";
+				INFOPLIST_FILE = "Tests/PARStoreTests-Info.plist";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TEST_HOST = "$(BUNDLE_LOADER)";
+				WRAPPER_EXTENSION = octest;
+			};
+			name = Debug;
+		};
+		56EAE19D16E24C7500A7F31F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/Mac-PARStore.app/Contents/MacOS/Mac-PARStore";
+				COMBINE_HIDPI_IMAGES = YES;
+				FRAMEWORK_SEARCH_PATHS = "\"$(DEVELOPER_LIBRARY_DIR)/Frameworks\"";
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "Tests/PARStore-Prefix.pch";
+				INFOPLIST_FILE = "Tests/PARStoreTests-Info.plist";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				TEST_HOST = "$(BUNDLE_LOADER)";
+				WRAPPER_EXTENSION = octest;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		56C7EDF416E260EB00FFBBF2 /* Build configuration list for PBXNativeTarget "iOS-PARStore" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				56C7EDF016E260EB00FFBBF2 /* Debug */,
+				56C7EDF116E260EB00FFBBF2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+		56C7EDF516E260EB00FFBBF2 /* Build configuration list for PBXNativeTarget "iOS-PARStoreTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				56C7EDF216E260EB00FFBBF2 /* Debug */,
+				56C7EDF316E260EB00FFBBF2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+		56EAE16016E24C7500A7F31F /* Build configuration list for PBXProject "PARStore" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				56EAE19616E24C7500A7F31F /* Debug */,
+				56EAE19716E24C7500A7F31F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		56EAE19816E24C7500A7F31F /* Build configuration list for PBXNativeTarget "Mac-PARStore" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				56EAE19916E24C7500A7F31F /* Debug */,
+				56EAE19A16E24C7500A7F31F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		56EAE19B16E24C7500A7F31F /* Build configuration list for PBXNativeTarget "Mac-PARStoreTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				56EAE19C16E24C7500A7F31F /* Debug */,
+				56EAE19D16E24C7500A7F31F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCVersionGroup section */
+		569D021816E24FA1002675BA /* Log.xcdatamodeld */ = {
+			isa = XCVersionGroup;
+			children = (
+				569D021916E24FA1002675BA /* Log.xcdatamodel */,
+			);
+			currentVersion = 569D021916E24FA1002675BA /* Log.xcdatamodel */;
+			path = Log.xcdatamodeld;
+			sourceTree = "<group>";
+			versionGroupType = wrapper.xcdatamodel;
+		};
+/* End XCVersionGroup section */
+	};
+	rootObject = 56EAE15D16E24C7500A7F31F /* Project object */;
+}
