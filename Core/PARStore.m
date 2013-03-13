@@ -3,6 +3,7 @@
 //  Licensed under the terms of the BSD License, as specified in the file 'LICENSE-BSD.txt' included with this distribution
 
 #import "PARStore.h"
+#import "NSError+Factory.h"
 #import <CoreData/CoreData.h>
 
 
@@ -11,11 +12,6 @@ NSString *PARStoreDidCloseNotification  = @"PARStoreDidCloseNotification";
 NSString *PARStoreDidDeleteNotification = @"PARStoreDidDeleteNotification";
 NSString *PARStoreDidChangeNotification = @"PARStoreDidChangeNotification";
 NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
-
-
-@interface NSError (NSErrorFactory)
-+ (NSError *)errorWithObject:(id)object code:(NSInteger)code localizedDescription:(NSString *)description underlyingError:(NSError *)underlyingError;
-@end
 
 
 @interface PARStore ()
@@ -172,7 +168,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 	// URL should be a file
 	if (![self.storeURL isFileURL])
 	{
-        localError = [NSError errorWithObject:self code:1 localizedDescription:[NSString stringWithFormat:@"PARStore only supports files and cannot create file package with URL: %@", self.storeURL] underlyingError:nil];
+        localError = [NSError errorWithObject:self code:1 localizedDescription:[NSString stringWithFormat:@"%@ only supports files and cannot create file package with URL: %@", NSStringFromClass([self class]), self.storeURL] underlyingError:nil];
 		success = NO;
 	}
 		
@@ -227,7 +223,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 			NSError *fmError = nil;
 			success = [[NSFileManager defaultManager] createDirectoryAtPath:identifierPath withIntermediateDirectories:NO attributes:nil error:&fmError];
 			if (!success)
-                localError = [NSError errorWithObject:self code:5 localizedDescription:[NSString stringWithFormat:@"Could not create a subdirectory for the device identifier '%@' in the file package for the store at path: %@", self.deviceIdentifier, documentPath] underlyingError:fmError];
+                localError = [NSError errorWithObject:self code:6 localizedDescription:[NSString stringWithFormat:@"Could not create a subdirectory for the device identifier '%@' in the file package for the store at path: %@", self.deviceIdentifier, documentPath] underlyingError:fmError];
 		}];
 	}
 
@@ -1021,20 +1017,6 @@ NSString *PARDevicesDirectoryName = @"devices";
 	}
     
     [[NSNotificationCenter defaultCenter] postNotificationName:PARStoreDidDeleteNotification object:self];
-}
-
-@end
-
-@implementation NSError (NSErrorFactory)
-
-+ (NSError *)errorWithObject:(id)object code:(NSInteger)code localizedDescription:(NSString *)description underlyingError:(NSError *)underlyingError
-{
-	NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
-	if (description)
-        userInfo[NSLocalizedDescriptionKey] = description;
-    if (underlyingError)
-        userInfo[NSUnderlyingErrorKey] = underlyingError;
-    return [NSError errorWithDomain:NSStringFromClass([object class]) code:code userInfo:userInfo];
 }
 
 @end

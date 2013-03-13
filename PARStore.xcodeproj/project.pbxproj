@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		560C93E116F1272C00C0E890 /* NSError+Factory.m in Sources */ = {isa = PBXBuildFile; fileRef = 560C93E016F1272C00C0E890 /* NSError+Factory.m */; };
+		560C93E216F1272C00C0E890 /* NSError+Factory.m in Sources */ = {isa = PBXBuildFile; fileRef = 560C93E016F1272C00C0E890 /* NSError+Factory.m */; };
 		569D021A16E24FA1002675BA /* Log.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 569D021816E24FA1002675BA /* Log.xcdatamodeld */; };
 		569D021E16E24FDA002675BA /* PARDispatchQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = 569D021D16E24FDA002675BA /* PARDispatchQueue.m */; };
 		569D022116E2509F002675BA /* PARAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 569D022016E2509F002675BA /* PARAppDelegate.m */; };
@@ -65,6 +67,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		560C93DF16F1272C00C0E890 /* NSError+Factory.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSError+Factory.h"; sourceTree = "<group>"; };
+		560C93E016F1272C00C0E890 /* NSError+Factory.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSError+Factory.m"; sourceTree = "<group>"; };
 		569D021916E24FA1002675BA /* Log.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = Log.xcdatamodel; sourceTree = "<group>"; };
 		569D021C16E24FDA002675BA /* PARDispatchQueue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PARDispatchQueue.h; sourceTree = "<group>"; };
 		569D021D16E24FDA002675BA /* PARDispatchQueue.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PARDispatchQueue.m; sourceTree = "<group>"; };
@@ -240,6 +244,8 @@
 				56EAE1BD16E24EAA00A7F31F /* PARStore.m */,
 				56C7EE0816E2811E00FFBBF2 /* PARNotificationSemaphore.h */,
 				56C7EE0916E2811E00FFBBF2 /* PARNotificationSemaphore.m */,
+				560C93DF16F1272C00C0E890 /* NSError+Factory.h */,
+				560C93E016F1272C00C0E890 /* NSError+Factory.m */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -477,6 +483,7 @@
 				56C7EE0E16E2843700FFBBF2 /* PARStore.m in Sources */,
 				56C7EE1216E284A600FFBBF2 /* PARDispatchQueue.m in Sources */,
 				56C7EE1316E284DB00FFBBF2 /* Log.xcdatamodeld in Sources */,
+				560C93E216F1272C00C0E890 /* NSError+Factory.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -500,6 +507,7 @@
 				569D022116E2509F002675BA /* PARAppDelegate.m in Sources */,
 				56C7EE0A16E2811E00FFBBF2 /* PARNotificationSemaphore.m in Sources */,
 				56C7EE0D16E2842B00FFBBF2 /* PARStoreExample.m in Sources */,
+				560C93E116F1272C00C0E890 /* NSError+Factory.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -743,6 +751,7 @@
 				56C7EDF116E260EB00FFBBF2 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		56C7EDF516E260EB00FFBBF2 /* Build configuration list for PBXNativeTarget "iOS-PARStoreTests" */ = {
 			isa = XCConfigurationList;
@@ -751,6 +760,7 @@
 				56C7EDF316E260EB00FFBBF2 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		56EAE16016E24C7500A7F31F /* Build configuration list for PBXProject "PARStore" */ = {
 			isa = XCConfigurationList;
