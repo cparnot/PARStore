@@ -5,3 +5,12 @@
 #ifdef __OBJC__
     #import <Cocoa/Cocoa.h>
 #endif
+
+#define ErrorLog(fmt, ...) NSLog(fmt, ##__VA_ARGS__)
+
+#ifdef DEBUG
+#define DLog(fmt, ...) NSLog(fmt, ##__VA_ARGS__)
+#else
+#define DLog(fmt, ...) do {  } while(0)
+#endif
+

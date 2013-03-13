@@ -82,7 +82,7 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
     [self _sync];
     if ([self loaded])
     {
-        // DLog(@"%@ added as file presenter", self.deviceIdentifier);
+        DLog(@"%@ added as file presenter", self.deviceIdentifier);
         [NSFileCoordinator addFilePresenter:self];
     }
 }
@@ -134,7 +134,7 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
 {
     // do not access '_loaded' via the queue or via the safe [self loaded] accessor, to avoid further waiting for a queue: if closed properly, this will be safe, and otherwise, we are already in trouble
     if (self._loaded && !self._inMemory)
-        NSLog(@"Store should be properly closed before deallocating store with path: %@", [self.storeURL path]);
+        ErrorLog(@"Store should be properly closed before deallocating store with path: %@", [self.storeURL path]);
 }
 
 
@@ -229,7 +229,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 
     if (!success)
     {
-        NSLog(@"Could not prepare file package for store at URL '%@' because of error: %@", self.storeURL, localError);
+        ErrorLog(@"Could not prepare file package for store at URL '%@' because of error: %@", self.storeURL, localError);
         if (error != NULL)
             *error = localError;
     }
@@ -312,7 +312,7 @@ NSString *PARDevicesDirectoryName = @"devices";
           NSString *modelPath  = [thisBundle pathForResource:filename ofType:extension];
           mom = [[NSManagedObjectModel alloc] initWithContentsOfURL:[NSURL fileURLWithPath:modelPath]];
           if (!mom)
-              NSLog(@"Could not load managed object model with file name %@.%@", filename, extension);
+              ErrorLog(@"Could not load managed object model with file name %@.%@", filename, extension);
       });
     return mom;
 }
@@ -325,7 +325,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     if (readOnly && (![[NSFileManager defaultManager] fileExistsAtPath:storePath isDirectory:&isDir] || isDir))
     {
         if (isDir)
-            NSLog(@"Cannot create persistent store for database at path '%@', because there is already a directory at this path", storePath);
+            ErrorLog(@"Cannot create persistent store for database at path '%@', because there is already a directory at this path", storePath);
         return nil;
     }
 	
@@ -339,7 +339,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     NSPersistentStore *store = [psc addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:[NSURL fileURLWithPath:storePath] options:storeOptions error:&localError];
     if (!store)
     {
-        NSLog(@"Error creating persistent store for database at path '%@':\n%@", storePath, localError);
+        ErrorLog(@"Error creating persistent store for database at path '%@':\n%@", storePath, localError);
         if (error != NULL)
             *error = localError;
         return nil;
@@ -366,7 +366,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     // prepare file package on disk
     if (![self prepareFilePackageWithError:NULL])
     {
-        NSLog(@"Could not create managed object context for store at URL '%@'", self.storeURL);
+        ErrorLog(@"Could not create managed object context for store at URL '%@'", self.storeURL);
         return nil;
     }
     
@@ -414,7 +414,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 			NSError *removeError = nil;
 			
 			if (![psc removePersistentStore:existingStore error:&removeError]) {
-				NSLog(@"Error removing store: %@", removeError);
+				ErrorLog(@"Error removing store: %@", removeError);
 			}
 		}
 		
@@ -461,7 +461,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     if (localError)
     {
         NSString *documentPath = [self.storeURL path];
-        NSLog(@"Could not save document:\npath: %@\nerror: %@\n", documentPath, [localError localizedDescription]);
+        ErrorLog(@"Could not save document:\npath: %@\nerror: %@\n", documentPath, [localError localizedDescription]);
         if (error != NULL)
         {
             NSString *errorDomain = NSStringFromClass([PARStore class]);
@@ -495,7 +495,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     NSData *blob = [NSPropertyListSerialization dataWithPropertyList:plist format:NSPropertyListBinaryFormat_v1_0 options:0 error:&localError];
     if (!blob)
     {
-        NSLog(@"Property list could not be serialized:\nproperty list: %@\nerror: %@", plist, localError);
+        ErrorLog(@"Property list could not be serialized:\nproperty list: %@\nerror: %@", plist, localError);
         if (error)
             *error = localError;
     }
@@ -511,7 +511,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     id result = [NSPropertyListSerialization propertyListWithData:blob options:NSPropertyListImmutable format:NULL error:&localError];
     if (!result)
     {
-        NSLog(@"Invalid blob '%@' cannot be deserialized because of error: %@", blob, localError);
+        ErrorLog(@"Invalid blob '%@' cannot be deserialized because of error: %@", blob, localError);
         if (error)
             *error = localError;
     }
@@ -550,7 +550,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     if (value && ![value isKindOfClass:class])
     {
         NSString *description = [NSString stringWithFormat:@"Value for key '%@' should be of class '%@', but is instead of class '%@', in document at path '%@': %@", key, NSStringFromClass(class), [value class], self.storeURL.path, value];
-        NSLog(@"%@", description);
+        ErrorLog(@"%@", description);
         if (error != NULL)
         {
             NSString *errorDomain = NSStringFromClass([PARStore class]);
@@ -575,7 +575,7 @@ NSString *PARDevicesDirectoryName = @"devices";
          NSError *error = nil;
          NSData *blob = [self dataFromPropertyList:plist error:&error];
          if (!blob)
-             NSLog(@"Error creating data from plist:\nkey: %@:\nplist: %@\nerror: %@", key, plist, [error localizedDescription]);
+             ErrorLog(@"Error creating data from plist:\nkey: %@:\nplist: %@\nerror: %@", key, plist, [error localizedDescription]);
          else
          {
              // set the timestamp **before** dispatching the block, so we have the current date, not the date at which the block will be run
@@ -650,7 +650,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     // without a moc, the rest of the code will throw an exception
     if (![self managedObjectContext])
     {
-        NSLog(@"Could not load managed object context and sync store at path '%@'", [self.storeURL path]);
+        ErrorLog(@"Could not load managed object context and sync store at path '%@'", [self.storeURL path]);
         return;
     }
     
@@ -699,7 +699,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     NSArray *allLogs = [[self managedObjectContext] executeFetchRequest:logsRequest error:&errorLogs];
     if (!allLogs)
     {
-        NSLog(@"Error fetching logs for store at path '%@' because of error: %@", [self.storeURL path], errorLogs);
+        ErrorLog(@"Error fetching logs for store at path '%@' because of error: %@", [self.storeURL path], errorLogs);
         return;
     }
     
@@ -717,7 +717,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         NSString *key = [log valueForKey:@"key"];
         if (!key)
         {
-            NSLog(@"Unexpected nil value for 'key' column:\nrow: %@\ndatabase: %@", log.objectID, log.objectID.persistentStore.URL.path);
+            ErrorLog(@"Unexpected nil value for 'key' column:\nrow: %@\ndatabase: %@", log.objectID, log.objectID.persistentStore.URL.path);
             continue;
         }
         
@@ -738,13 +738,13 @@ NSString *PARDevicesDirectoryName = @"devices";
         NSData *blob = [log valueForKey:@"blob"];
         if (!blob)
         {
-            NSLog(@"Unexpected nil value for 'blob' column:\nrow: %@\ndatabase: %@", log.objectID, log.objectID.persistentStore.URL.path);
+            ErrorLog(@"Unexpected nil value for 'blob' column:\nrow: %@\ndatabase: %@", log.objectID, log.objectID.persistentStore.URL.path);
             continue;
         }
         id plistValue = [self propertyListFromData:blob error:&blobError];
         if (!plistValue)
         {
-            NSLog(@"Error deserializing blob data:\nrow: %@\ndatabase: %@\nerror: %@", log.objectID, log.objectID.persistentStore.URL.path, blobError);
+            ErrorLog(@"Error deserializing blob data:\nrow: %@\ndatabase: %@\nerror: %@", log.objectID, log.objectID.persistentStore.URL.path, blobError);
             continue;
         }
         
@@ -853,7 +853,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         NSArray *results = [[self managedObjectContext] executeFetchRequest:request error:&fetchError];
         if (!results)
         {
-            NSLog(@"Error fetching logs for store:\npath: %@\nerror: %@", [self.storeURL path], fetchError);
+            ErrorLog(@"Error fetching logs for store:\npath: %@\nerror: %@", [self.storeURL path], fetchError);
             return;
         }
 
@@ -863,7 +863,7 @@ NSString *PARDevicesDirectoryName = @"devices";
             NSError *plistError = nil;
             plist = [self propertyListFromData:[latestLog valueForKey:@"blob"] error:&plistError];
             if (!plist)
-                NSLog(@"Error deserializing 'layout' data in Logs database:\nrow: %@\nfile: %@\nerror: %@", latestLog.objectID, latestLog.objectID.persistentStore.URL.path, plistError);
+                ErrorLog(@"Error deserializing 'layout' data in Logs database:\nrow: %@\nfile: %@\nerror: %@", latestLog.objectID, latestLog.objectID.persistentStore.URL.path, plistError);
         }
     }];
     
@@ -895,7 +895,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (void)presentedItemDidMoveToURL:(NSURL *)newURL
 {
-    // DLog(@"%@ %@", NSStringFromSelector(_cmd), [newURL path]);
+    DLog(@"%@ %@", NSStringFromSelector(_cmd), [newURL path]);
 
     // TODO: close the context, open new context at new location, (and read to update document contents?)
 	self.storeURL = newURL;
@@ -903,7 +903,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (void)syncDocumentForURLTrigger:(NSURL *)url selector:(SEL)selector
 {
-    // DLog(@"%@ notified: %@ %@", self.deviceIdentifier, NSStringFromSelector(selector), [self subpathInPackageForPath:[url path]]);
+    DLog(@"%@ notified: %@ %@", self.deviceIdentifier, NSStringFromSelector(selector), [self subpathInPackageForPath:[url path]]);
 
     // detect deletion of the file package
     if (![self deleted] && ![[NSFileManager defaultManager] fileExistsAtPath:[self.storeURL path]])
@@ -939,18 +939,18 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (void)presentedItemDidGainVersion:(NSFileVersion *)version
 {
-	// DLog(@"%s", __func__);
+	DLog(@"%s", __func__);
 }
 
 - (void)presentedItemDidLoseVersion:(NSFileVersion *)version
 {
-	// DLog(@"%s", __func__);
+	DLog(@"%s", __func__);
 }
 
 // block access to the document while another presenter tries to read or write stuff: other processes or threads will do their work inside the `reader` or `writer` block, and then call the block we pass as argument when they are done
 - (void)blockdatabaseQueueWhileRunningBlock:(void (^)(void (^callbackWhenDone)(void)))blockAccessingTheFile
 {
-    // DLog(@"%@", NSStringFromSelector(_cmd));
+    DLog(@"%@", NSStringFromSelector(_cmd));
 
     // when a file coordinator wants to read or write to our document, we can block access to our context using the databaseQueue and a semaphore
     [self.databaseQueue dispatchAsynchronously:^
@@ -969,21 +969,21 @@ NSString *PARDevicesDirectoryName = @"devices";
          // giving up is not a big risk, because it's still safe to change the db while other presenters are trying to read the file, and if those presenters take more than xx secs, we have bigger problems
          NSTimeInterval timeout = 5.0;
          if (0 != dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, timeout * NSEC_PER_SEC)))
-             NSLog(@"TIMEOUT: timeout on device '%@' while waiting for file coordinator to access document with URL: %@", self.deviceIdentifier, self.storeURL);
+             ErrorLog(@"TIMEOUT: timeout on device '%@' while waiting for file coordinator to access document with URL: %@", self.deviceIdentifier, self.storeURL);
          semaphore = NULL;
      }];
 }
 
 - (void)relinquishPresentedItemToReader:(void (^)(void (^reacquirer)(void)))reader
 {
-    // DLog(@"%@", NSStringFromSelector(_cmd));
+    DLog(@"%@", NSStringFromSelector(_cmd));
     //[self blockdatabaseQueueWhileRunningBlock:reader];
 	reader(nil);
 }
 
 - (void)relinquishPresentedItemToWriter:(void (^)(void (^reacquirer)(void)))writer
 {
-    // DLog(@"%@", NSStringFromSelector(_cmd));
+    DLog(@"%@", NSStringFromSelector(_cmd));
     //[self blockdatabaseQueueWhileRunningBlock:writer];
 	writer(nil);
 }
@@ -1000,7 +1000,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (void)accommodatePresentedItemDeletionWithCompletionHandler:(void (^)(NSError *errorOrNil))completionHandler
 {
-    // DLog(@"%@", NSStringFromSelector(_cmd));
+    DLog(@"%@", NSStringFromSelector(_cmd));
     
     if ([self deleted])
         return;
