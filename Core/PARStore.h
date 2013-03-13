@@ -13,6 +13,7 @@
 extern NSString *PARStoreDidLoadNotification;
 extern NSString *PARStoreDidCloseNotification;
 extern NSString *PARStoreDidDeleteNotification;
+extern NSString *PARStoreDidChangeNotification;
 extern NSString *PARStoreDidSyncNotification;
 
 

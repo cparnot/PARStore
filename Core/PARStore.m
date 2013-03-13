@@ -9,6 +9,7 @@
 NSString *PARStoreDidLoadNotification   = @"PARStoreDidLoadNotification";
 NSString *PARStoreDidCloseNotification  = @"PARStoreDidCloseNotification";
 NSString *PARStoreDidDeleteNotification = @"PARStoreDidDeleteNotification";
+NSString *PARStoreDidChangeNotification = @"PARStoreDidChangeNotification";
 NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
 
 
@@ -533,7 +534,11 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (void)setEntriesFromDictionary:(NSDictionary *)dictionary
 {
-    [self.memoryQueue dispatchSynchronously:^{ [self._memory addEntriesFromDictionary:dictionary]; }];
+    [self.memoryQueue dispatchSynchronously:^
+     {
+         [self._memory addEntriesFromDictionary:dictionary];
+         [[PARDispatchQueue globalDispatchQueue] dispatchAsynchronously:^{[[NSNotificationCenter defaultCenter] postNotificationName:PARStoreDidChangeNotification object:self];}];
+     }];
 }
 
 - (id)propertyListValueForKey:(NSString *)key
@@ -566,6 +571,8 @@ NSString *PARDevicesDirectoryName = @"devices";
     [self.memoryQueue dispatchSynchronously:^
      {
          self._memory[key] = plist;
+         [[PARDispatchQueue globalDispatchQueue] dispatchAsynchronously:^{[[NSNotificationCenter defaultCenter] postNotificationName:PARStoreDidChangeNotification object:self];}];
+         
          if (self._inMemory)
              return;
          
@@ -686,17 +693,17 @@ NSString *PARDevicesDirectoryName = @"devices";
     }
     
     // fetch Log rows in timestamp order, starting at `timestampLimit`
-    NSError *NSLogs = nil;
+    NSError *errorLogs = nil;
     NSFetchRequest *logsRequest = [NSFetchRequest fetchRequestWithEntityName:@"Log"];
     if (timestampLimit)
         [logsRequest setPredicate:[NSPredicate predicateWithFormat:@"timestamp > %@", timestampLimit]];
     [logsRequest setSortDescriptors:@[[NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:NO]]];
     [logsRequest setFetchBatchSize:LOGS_BATCH_SIZE];
     [logsRequest setReturnsObjectsAsFaults:NO];
-    NSArray *allLogs = [[self managedObjectContext] executeFetchRequest:logsRequest error:&NSLogs];
+    NSArray *allLogs = [[self managedObjectContext] executeFetchRequest:logsRequest error:&errorLogs];
     if (!allLogs)
     {
-        NSLog(@"Error fetching logs for store at path '%@' because of error: %@", [self.storeURL path], NSLogs);
+        NSLog(@"Error fetching logs for store at path '%@' because of error: %@", [self.storeURL path], errorLogs);
         return;
     }
     
