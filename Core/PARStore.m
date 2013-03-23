@@ -6,6 +6,13 @@
 #import "NSError+Factory.h"
 #import <CoreData/CoreData.h>
 
+#define ErrorLog(fmt, ...) NSLog(fmt, ##__VA_ARGS__)
+
+#ifdef DEBUG
+#define DebugLog(fmt, ...) NSLog(fmt, ##__VA_ARGS__)
+#else
+#define DebugLog(fmt, ...) do {  } while(0)
+#endif
 
 NSString *PARStoreDidLoadNotification   = @"PARStoreDidLoadNotification";
 NSString *PARStoreDidCloseNotification  = @"PARStoreDidCloseNotification";
@@ -83,7 +90,7 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
     [self _sync];
     if ([self loaded])
     {
-        DLog(@"%@ added as file presenter", self.deviceIdentifier);
+        DebugLog(@"%@ added as file presenter", self.deviceIdentifier);
         [NSFileCoordinator addFilePresenter:self];
     }
 }
@@ -936,18 +943,18 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (void)presentedItemDidGainVersion:(NSFileVersion *)version
 {
-	DLog(@"%s", __func__);
+	DebugLog(@"%s", __func__);
 }
 
 - (void)presentedItemDidLoseVersion:(NSFileVersion *)version
 {
-	DLog(@"%s", __func__);
+	DebugLog(@"%s", __func__);
 }
 
 // block access to the document while another presenter tries to read or write stuff: other processes or threads will do their work inside the `reader` or `writer` block, and then call the block we pass as argument when they are done
 - (void)blockdatabaseQueueWhileRunningBlock:(void (^)(void (^callbackWhenDone)(void)))blockAccessingTheFile
 {
-    DLog(@"%@", NSStringFromSelector(_cmd));
+    DebugLog(@"%@", NSStringFromSelector(_cmd));
 
     // when a file coordinator wants to read or write to our document, we can block access to our context using the databaseQueue and a semaphore
     [self.databaseQueue dispatchAsynchronously:^
@@ -973,14 +980,14 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (void)relinquishPresentedItemToReader:(void (^)(void (^reacquirer)(void)))reader
 {
-    DLog(@"%@", NSStringFromSelector(_cmd));
+    DebugLog(@"%@", NSStringFromSelector(_cmd));
     //[self blockdatabaseQueueWhileRunningBlock:reader];
 	reader(nil);
 }
 
 - (void)relinquishPresentedItemToWriter:(void (^)(void (^reacquirer)(void)))writer
 {
-    DLog(@"%@", NSStringFromSelector(_cmd));
+    DebugLog(@"%@", NSStringFromSelector(_cmd));
     //[self blockdatabaseQueueWhileRunningBlock:writer];
 	writer(nil);
 }
@@ -997,7 +1004,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (void)accommodatePresentedItemDeletionWithCompletionHandler:(void (^)(NSError *errorOrNil))completionHandler
 {
-    DLog(@"%@", NSStringFromSelector(_cmd));
+    DebugLog(@"%@", NSStringFromSelector(_cmd));
     
     if ([self deleted])
         return;
