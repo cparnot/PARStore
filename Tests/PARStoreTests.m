@@ -148,8 +148,8 @@
     BOOL completedWithoutTimeout = [semaphore waitUntilNotificationWithTimeout:10.0];
 	
     STAssertTrue(completedWithoutTimeout, @"Timeout while waiting for document change");
-	STAssertEqualObjects(store1.title, title, @"Title is '%@' but should be '%@'", store1.title, title);
-	STAssertEqualObjects(store2.title, title, @"Title is '%@' but should be '%@'", store2.title, title);
+	STAssertEqualObjects(store1.title, title, @" - title is '%@' but should be '%@'", store1.title, title);
+	STAssertEqualObjects(store2.title, title, @" - title is '%@' but should be '%@'", store2.title, title);
     
     [store1 closeNow];
     [store2 closeNow];
