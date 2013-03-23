@@ -810,10 +810,10 @@ NSString *PARDevicesDirectoryName = @"devices";
         [self.memoryQueue dispatchAsynchronously:^
          {
              NSDictionary *oldValues = [NSDictionary dictionaryWithDictionary:self._memory];
-             NSMutableDictionary *changedValues = [NSMutableDictionary dictionaryWithDictionary:newValues];
              [newValues enumerateKeysAndObjectsUsingBlock:^(id key, id newValue, BOOL *stop)
+             NSMutableDictionary *changedValues = [NSMutableDictionary dictionaryWithCapacity:[updatedValues count]];
               {
-                  BOOL valueDidChange = ![oldValues[key] isEqual:newValue];
+                  BOOL valueDidChange = (oldValues[key] != newValue) || (![oldValues[key] isEqual:newValue]);
                   if (valueDidChange)
                   {
                       // here, hopefully, we avoid a race condition: the values could have changed while we were running the above; some of the keys could have been modified and have more recent timestamps, but would get overriden by values that were loaded from the databases
@@ -821,7 +821,7 @@ NSString *PARDevicesDirectoryName = @"devices";
                       // - we also know that there cannot be another `_sync` going on while we run this, or at least it will stop at the very beginning, when we initialize `recentKeyTimestamps`
                       NSDate *memoryLatestTimestamp = self.recentKeyTimestamps[key];
                       NSDate *databaseLatestTimestamp = newKeyTimestamps[key];
-                      if ([memoryLatestTimestamp compare:databaseLatestTimestamp] == NSOrderedAscending)
+                      if (memoryLatestTimestamp == nil || ([memoryLatestTimestamp compare:databaseLatestTimestamp] == NSOrderedAscending))
                           changedValues[key] = newValue;
                   }
               }];
