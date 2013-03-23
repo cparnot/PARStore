@@ -32,12 +32,13 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
 @property (readwrite, nonatomic) BOOL _loaded;
 @property (readwrite, nonatomic) BOOL _deleted;
 @property (readwrite, nonatomic) BOOL _inMemory;
-@property (retain) NSMutableDictionary *recentKeyTimestamps;
+@property (retain) NSMutableDictionary *_memoryKeyTimestamps;
 
 // queue needed for NSFilePresenter protocol
 @property (retain) NSOperationQueue *presenterQueue;
 
 @end
+
 
 @implementation PARStore
 
@@ -579,15 +580,15 @@ NSString *PARDevicesDirectoryName = @"devices";
          else
          {
              // set the timestamp **before** dispatching the block, so we have the current date, not the date at which the block will be run
-             NSDate *timestamp = [NSDate date];
-             self.recentKeyTimestamps[key] = timestamp;
+             NSDate *newTimestamp = [NSDate date];
+             self._memoryKeyTimestamps[key] = newTimestamp;
              [self.databaseQueue dispatchAsynchronously:
               ^{
                   NSManagedObjectContext *moc = [self managedObjectContext];
                   if (!moc)
                       return;
                   NSManagedObject *newLog = [NSEntityDescription insertNewObjectForEntityForName:@"Log" inManagedObjectContext:moc];
-                  [newLog setValue:timestamp forKey:@"timestamp"];
+                  [newLog setValue:newTimestamp forKey:@"timestamp"];
                   [newLog setValue:key forKey:@"key"];
                   [newLog setValue:blob forKey:@"blob"];
                   
@@ -661,8 +662,8 @@ NSString *PARDevicesDirectoryName = @"devices";
     // because of the way we use the `databaseQueue` and `memoryQueue`, the returned value is guaranteed to take into account any previous execution of `_sync`
     BOOL loaded = [self loaded];
     
-    // it is possible new entries in memory are added while this sync is running --> these will be stored in `recentKeyTimestamps`
-    [self.memoryQueue dispatchSynchronously:^{ self.recentKeyTimestamps = [NSMutableDictionary dictionary]; }];
+    // it is possible new entries in memory are added while this sync is running --> these will be stored in `_memoryKeyTimestamps`
+    [self.memoryQueue dispatchSynchronously:^{ self._memoryKeyTimestamps = [NSMutableDictionary dictionary]; }];
     
     // this will be set to YES if at least one of latest values come from one of the foreign stores
     BOOL hasForeignChanges = NO;
@@ -710,7 +711,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     // just go through each row (back in time) until all needed keys are found
     NSArray *relevantKeys = [self relevantKeysForSync];
     NSMutableSet *keysToFetch = [NSMutableSet setWithArray:relevantKeys];
-    NSMutableDictionary *newValues = [NSMutableDictionary dictionary];
+    NSMutableDictionary *updatedValues = [NSMutableDictionary dictionary];
     for (NSManagedObject *log in allLogs)
     {
         // key
@@ -722,12 +723,12 @@ NSString *PARDevicesDirectoryName = @"devices";
         }
         
         // timestamp
-        NSDate *timestamp = [log valueForKey:@"timestamp"];
+        NSDate *logTimestamp = [log valueForKey:@"timestamp"];
         
         // keep track of the last timestamp for each persistent store
         NSPersistentStore *store = [[log objectID] persistentStore];
         if (![updatedDatabaseTimestamps objectForKey:store])
-            [updatedDatabaseTimestamps setObject:timestamp forKey:store];
+            [updatedDatabaseTimestamps setObject:logTimestamp forKey:store];
         
         // skip unused logs
         if (![keysToFetch containsObject:key])
@@ -749,11 +750,11 @@ NSString *PARDevicesDirectoryName = @"devices";
         }
         
         // store object and keep track of used keys
-        [newValues setObject:plistValue forKey:key];
+        [updatedValues setObject:plistValue forKey:key];
         [keysToFetch removeObject:key];
         
         // keep track of the oldest of the values actually used
-        [updatedKeyTimestamps setValue:timestamp forKey:key];
+        [updatedKeyTimestamps setValue:logTimestamp forKey:key];
         
         if ([[log objectID] persistentStore] != self.readwriteDatabase)
             hasForeignChanges = YES;
@@ -765,17 +766,17 @@ NSString *PARDevicesDirectoryName = @"devices";
     
     // update the timestamps for the keys
     //  - unused keys should be gone from keyTimestamps
-    //  - keys without a timestamp get a `distantPast` value, because it means we need to go all the way back if a new store is later added
-    NSMutableDictionary *newKeyTimestamps = [NSMutableDictionary dictionaryWithCapacity:[keysToFetch count]];
+    //  - keys without a timestamp get a `distant past` value, because it means we need to go all the way back if a new store is later added
+    NSMutableDictionary *newKeyTimestamps = [NSMutableDictionary dictionaryWithCapacity:[relevantKeys count]];
     NSMutableSet *allKeys = [NSMutableSet setWithArray:relevantKeys];
     for (NSString *key in allKeys)
     {
-        NSDate *timestamp = [updatedKeyTimestamps objectForKey:key];
+        NSDate *timestamp = updatedKeyTimestamps[key];
         if (!timestamp)
-            timestamp = [self.keyTimestamps objectForKey:key];
+            timestamp = self.keyTimestamps[key];
         if (!timestamp)
             timestamp = [NSDate distantPast];
-        [newKeyTimestamps setObject:timestamp forKey:key];
+        newKeyTimestamps[key] = timestamp;
     }
     self.keyTimestamps = [NSDictionary dictionaryWithDictionary:newKeyTimestamps];
     
@@ -797,37 +798,37 @@ NSString *PARDevicesDirectoryName = @"devices";
     {
         [self.memoryQueue dispatchAsynchronously:^
          {
-             self._memory = [NSMutableDictionary dictionaryWithDictionary:newValues];
+             self._memory = [NSMutableDictionary dictionaryWithDictionary:updatedValues];
              self._loaded = YES;
              // post notification outside of the queue, to avoid deadlocks when using a block for the notification callback and tries to access the data
              [[PARDispatchQueue globalDispatchQueue] dispatchAsynchronously:^{[[NSNotificationCenter defaultCenter] postNotificationName:PARStoreDidLoadNotification object:self];}];
          }];
     }
     
-    // when document was already loaded, we need to create an dictionary change and merge with current values
+    // when document was already loaded, we need to create a dictionary change and merge with current values
     else if (hasForeignChanges)
     {
         [self.memoryQueue dispatchAsynchronously:^
          {
              NSDictionary *oldValues = [NSDictionary dictionaryWithDictionary:self._memory];
-             [newValues enumerateKeysAndObjectsUsingBlock:^(id key, id newValue, BOOL *stop)
              NSMutableDictionary *changedValues = [NSMutableDictionary dictionaryWithCapacity:[updatedValues count]];
+             [updatedValues enumerateKeysAndObjectsUsingBlock:^(id key, id newValue, BOOL *stop)
               {
                   BOOL valueDidChange = (oldValues[key] != newValue) || (![oldValues[key] isEqual:newValue]);
                   if (valueDidChange)
                   {
                       // here, hopefully, we avoid a race condition: the values could have changed while we were running the above; some of the keys could have been modified and have more recent timestamps, but would get overriden by values that were loaded from the databases
-                      // - the values in `recentKeyTimestamps` are serialized in the memoryQueue, and thus guaranteed to be the latest
-                      // - we also know that there cannot be another `_sync` going on while we run this, or at least it will stop at the very beginning, when we initialize `recentKeyTimestamps`
-                      NSDate *memoryLatestTimestamp = self.recentKeyTimestamps[key];
+                      // - the values in `_memoryKeyTimestamps` are serialized in the memoryQueue, and thus guaranteed to be the latest
+                      // - we also know that there cannot be another `_sync` going on while we run this, or at least it will stop at the very beginning, when we initialize `_memoryKeyTimestamps`
+                      NSDate *memoryLatestTimestamp = self._memoryKeyTimestamps[key];
                       NSDate *databaseLatestTimestamp = newKeyTimestamps[key];
                       if (memoryLatestTimestamp == nil || ([memoryLatestTimestamp compare:databaseLatestTimestamp] == NSOrderedAscending))
                           changedValues[key] = newValue;
                   }
               }];
              
-             // we don't need `recentKeyTimestamps` anymore, it will be set again at the next `_sync`
-             self.recentKeyTimestamps = nil;
+             // we don't need `_memoryKeyTimestamps` anymore, it will be set again at the next `_sync`
+             self._memoryKeyTimestamps = nil;
              
              [self applySyncChange:changedValues];
              // post notification outside of the queue, to avoid deadlocks when using a block for the notification callback and tries to access the data
@@ -895,16 +896,12 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (void)presentedItemDidMoveToURL:(NSURL *)newURL
 {
-    DLog(@"%@ %@", NSStringFromSelector(_cmd), [newURL path]);
-
     // TODO: close the context, open new context at new location, (and read to update document contents?)
 	self.storeURL = newURL;
 }
 
 - (void)syncDocumentForURLTrigger:(NSURL *)url selector:(SEL)selector
 {
-    DLog(@"%@ notified: %@ %@", self.deviceIdentifier, NSStringFromSelector(selector), [self subpathInPackageForPath:[url path]]);
-
     // detect deletion of the file package
     if (![self deleted] && ![[NSFileManager defaultManager] fileExistsAtPath:[self.storeURL path]])
     {
