@@ -39,6 +39,7 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
 @property (readwrite, nonatomic) BOOL _loaded;
 @property (readwrite, nonatomic) BOOL _deleted;
 @property (readwrite, nonatomic) BOOL _inMemory;
+@property (retain, nonatomic) NSMutableDictionary *_memoryFileData;
 @property (retain) NSMutableDictionary *_memoryKeyTimestamps;
 
 // queue needed for NSFilePresenter protocol
@@ -67,6 +68,7 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
     store.presenterQueue = [[NSOperationQueue alloc] init];
     [store.presenterQueue setMaxConcurrentOperationCount:1];
     store._memory = [NSMutableDictionary dictionary];
+    store._memoryFileData = [NSMutableDictionary dictionary];
     store._loaded = NO;
     store._deleted = NO;
 	
@@ -624,6 +626,72 @@ NSString *PARDevicesDirectoryName = @"devices";
     __block BOOL deleted = NO;
     [self.memoryQueue dispatchSynchronously:^{ deleted = self._deleted; }];
     return deleted;
+}
+
+
+#pragma mark - Managing Blobs
+
+- (NSURL *)blobDirectoryURL
+{
+    return [self.storeURL URLByAppendingPathComponent:@"blobs"];
+}
+
+- (void)writeBlobData:(NSData *)data toPath:(NSString *)path
+{
+    if (self._inMemory)
+    {
+        [self.memoryQueue dispatchAsynchronously:^
+        {
+            [self._memoryFileData setObject:data forKey:path];
+        }];
+        return;
+    }
+    
+    NSURL *fileURL = [[self blobDirectoryURL] URLByAppendingPathComponent:path];
+    
+    NSFileCoordinator *coordinator = [[NSFileCoordinator alloc] initWithFilePresenter:self];
+    
+    NSError *error = nil;
+    [coordinator coordinateWritingItemAtURL:fileURL options:NSFileCoordinatorWritingForReplacing error:&error byAccessor:^(NSURL *newURL)
+    {
+        NSString *parentPath = [[fileURL URLByDeletingLastPathComponent] path];
+        BOOL isDir = NO;
+        if (![[NSFileManager defaultManager] fileExistsAtPath:parentPath isDirectory:&isDir])
+            [[NSFileManager defaultManager] createDirectoryAtPath:parentPath withIntermediateDirectories:YES attributes:nil error:nil];
+
+        // TODO: what if exists and is not a dir
+        
+        NSError *writeError = nil;
+        BOOL success = [data writeToURL:newURL options:0 error:&writeError];
+        if (!success)
+            ErrorLog(@"Data write error: %@", writeError);
+    }];
+}
+
+- (NSData *)blobDataAtPath:(NSString *)path
+{
+    if (self._inMemory) {
+        __block NSData *foundData = nil;
+        [self.memoryQueue dispatchSynchronously:^
+        {
+            foundData = [self._memoryFileData objectForKey:path];
+        }];
+        return foundData;
+    }
+    
+    NSURL *fileURL = [[self blobDirectoryURL] URLByAppendingPathComponent:path];
+    
+    NSFileCoordinator *coordinator = [[NSFileCoordinator alloc] initWithFilePresenter:self];
+    
+    __block NSData *data = nil;
+    NSError *error = nil;
+    [coordinator coordinateReadingItemAtURL:fileURL options:NSFileCoordinatorReadingWithoutChanges error:&error byAccessor:^(NSURL *newURL)
+    {
+        DebugLog(@"%s", __func__);
+        data = [NSData dataWithContentsOfURL:newURL];
+    }];
+    
+    return data;
 }
 
 

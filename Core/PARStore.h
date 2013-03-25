@@ -38,6 +38,10 @@ extern NSString *PARStoreDidSyncNotification;
 - (void)setEntriesFromDictionary:(NSDictionary *)dictionary;
 - (void)runTransaction:(PARDispatchBlock)block;
 
+/// @name Managing Data Blobs
+- (void) writeBlobData:(NSData *)data toPath:(NSString *)path;
+- (NSData *) blobDataAtPath:(NSString *)path;
+
 /// @name Syncing
 - (void)sync;
 - (id)syncedPropertyListValueForKey:(NSString *)key;
@@ -63,4 +67,3 @@ extern NSString *PARStoreDidSyncNotification;
 
     Note: the state of the store is guaranteed to be consistent during this call, by serializing access to the store. This also means the implementation may block the main thread if user input happens while the method is running. It is thus recommended to keep this implementation as fast as possible.
 */
-
