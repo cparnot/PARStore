@@ -3,9 +3,10 @@
     <entity name="Log" syncable="YES">
         <attribute name="blob" attributeType="Binary" syncable="YES"/>
         <attribute name="key" attributeType="String" indexed="YES" syncable="YES"/>
-        <attribute name="timestamp" attributeType="Date" indexed="YES" syncable="YES"/>
+        <attribute name="parentTimestamp" optional="YES" attributeType="Integer 64" defaultValueString="0" syncable="YES"/>
+        <attribute name="timestamp" attributeType="Integer 64" defaultValueString="0" indexed="YES" syncable="YES"/>
     </entity>
     <elements>
-        <element name="Log" positionX="160" positionY="192" width="128" height="90"/>
+        <element name="Log" positionX="160" positionY="192" width="128" height="105"/>
     </elements>
 </model>

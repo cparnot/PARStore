@@ -47,22 +47,26 @@ extern NSString *PARStoreDidSyncNotification;
 - (id)syncedPropertyListValueForKey:(NSString *)key;
 // for subclassing
 - (NSArray *)relevantKeysForSync;
-- (void)applySyncChange:(NSDictionary *)change;
+- (void)applySyncChangeWithValues:(NSDictionary *)values timestamps:(NSDictionary *)timestamps;
 
 /// @name Synchronous Method Calls
 - (void)loadNow;
 - (void)closeNow;
 - (void)syncNow;
 
+// TODO: history
+
+// TODO: error handling
+
 @end
 
 
 /** Subclassing notes:
 
-- `-applySyncChange:` --> Default implementation updates the internal representation of the store to include the change. Subclasses can override as follows:
+- `-applySyncChangeWithValues:timestamps` --> Default implementation updates the internal representation of the store to include the change. Subclasses can override as follows:
  
         1. inspect the change to detect conflicts
-        2. call `[super applySyncChange:change]`
+        2. call `[super applySyncChangeWithValues:values timestamps:timestamps]`
         3. further change the store if necessary to resolve conflicts
 
     Note: the state of the store is guaranteed to be consistent during this call, by serializing access to the store. This also means the implementation may block the main thread if user input happens while the method is running. It is thus recommended to keep this implementation as fast as possible.

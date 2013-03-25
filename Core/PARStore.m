@@ -14,6 +14,7 @@
 #define DebugLog(fmt, ...) do {  } while(0)
 #endif
 
+
 NSString *PARStoreDidLoadNotification   = @"PARStoreDidLoadNotification";
 NSString *PARStoreDidCloseNotification  = @"PARStoreDidCloseNotification";
 NSString *PARStoreDidDeleteNotification = @"PARStoreDidDeleteNotification";
@@ -69,6 +70,7 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
     [store.presenterQueue setMaxConcurrentOperationCount:1];
     store._memory = [NSMutableDictionary dictionary];
     store._memoryFileData = [NSMutableDictionary dictionary];
+    store._memoryKeyTimestamps = [NSMutableDictionary dictionary];
     store._loaded = NO;
     store._deleted = NO;
 	
@@ -572,6 +574,8 @@ NSString *PARDevicesDirectoryName = @"devices";
     return value;
 }
 
+#define MICROSECONDS_PER_SECOND (1000 * 1000)
+
 - (void)setPropertyListValue:(id)plist forKey:(NSString *)key
 {
     [self.memoryQueue dispatchSynchronously:^
@@ -589,7 +593,10 @@ NSString *PARDevicesDirectoryName = @"devices";
          else
          {
              // set the timestamp **before** dispatching the block, so we have the current date, not the date at which the block will be run
-             NSDate *newTimestamp = [NSDate date];
+             // timestamp is cast to a signed 64-bit integer (we can't use NSInteger on iOS for that)
+             NSNumber *oldTimestamp = self._memoryKeyTimestamps[key];
+             NSTimeInterval timestampInSeconds = [[NSDate date] timeIntervalSinceReferenceDate];
+             NSNumber *newTimestamp = @((uint64_t)(timestampInSeconds * MICROSECONDS_PER_SECOND));
              self._memoryKeyTimestamps[key] = newTimestamp;
              [self.databaseQueue dispatchAsynchronously:
               ^{
@@ -598,6 +605,7 @@ NSString *PARDevicesDirectoryName = @"devices";
                       return;
                   NSManagedObject *newLog = [NSEntityDescription insertNewObjectForEntityForName:@"Log" inManagedObjectContext:moc];
                   [newLog setValue:newTimestamp forKey:@"timestamp"];
+                  [newLog setValue:oldTimestamp forKey:@"parentTimestamp"];
                   [newLog setValue:key forKey:@"key"];
                   [newLog setValue:blob forKey:@"blob"];
                   
@@ -702,10 +710,11 @@ NSString *PARDevicesDirectoryName = @"devices";
     return [NSArray array];
 }
 
-- (void)applySyncChange:(NSDictionary *)change
+- (void)applySyncChangeWithValues:(NSDictionary *)values timestamps:(NSDictionary *)timestamps
 {
     NSAssert([self.memoryQueue isCurrentQueue], @"%@:%@ should only be called from within the memory queue", [self class],NSStringFromSelector(_cmd));
-    [change enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) { self._memory[key] = obj; }];
+    [values enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *s)     { self._memory[key] = obj;              }];
+    [timestamps enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *s) { self._memoryKeyTimestamps[key] = obj; }];
 }
 
 
@@ -737,14 +746,11 @@ NSString *PARDevicesDirectoryName = @"devices";
     // because of the way we use the `databaseQueue` and `memoryQueue`, the returned value is guaranteed to take into account any previous execution of `_sync`
     BOOL loaded = [self loaded];
     
-    // it is possible new entries in memory are added while this sync is running --> these will be stored in `_memoryKeyTimestamps`
-    [self.memoryQueue dispatchSynchronously:^{ self._memoryKeyTimestamps = [NSMutableDictionary dictionary]; }];
-    
     // this will be set to YES if at least one of latest values come from one of the foreign stores
     BOOL hasForeignChanges = NO;
     
     // timestampLimit = load only logs after that timestamp, so we only load the newest logs (will be nil if nothing was loaded yet)
-    NSDate *timestampLimit = nil;
+    NSNumber *timestampLimit = nil;
     if (loaded)
     {
         // there are 2 ways to determine `timestampLimit`, which depends on wether a new database was added since the last sync
@@ -757,7 +763,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         // Case 1: new store was added --> use the oldest of the latest timestamps from each valid key
         // Case 2: no new store added  --> use the oldest of the latest timestamps from each store
         id <NSFastEnumeration> tableToQuery = newStoreAdded ? [self.keyTimestamps objectEnumerator] : [self.databaseTimestamps objectEnumerator];
-        for (NSDate *timestamp in tableToQuery)
+        for (NSNumber *timestamp in tableToQuery)
         {
             if (timestampLimit == nil || [timestamp compare:timestampLimit] == NSOrderedAscending)
                 timestampLimit = timestamp;
@@ -798,7 +804,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         }
         
         // timestamp
-        NSDate *logTimestamp = [log valueForKey:@"timestamp"];
+        NSNumber *logTimestamp = [log valueForKey:@"timestamp"];
         
         // keep track of the last timestamp for each persistent store
         NSPersistentStore *store = [[log objectID] persistentStore];
@@ -846,11 +852,11 @@ NSString *PARDevicesDirectoryName = @"devices";
     NSMutableSet *allKeys = [NSMutableSet setWithArray:relevantKeys];
     for (NSString *key in allKeys)
     {
-        NSDate *timestamp = updatedKeyTimestamps[key];
+        NSNumber *timestamp = updatedKeyTimestamps[key];
         if (!timestamp)
             timestamp = self.keyTimestamps[key];
         if (!timestamp)
-            timestamp = [NSDate distantPast];
+            timestamp = [NSNumber numberWithInteger:NSIntegerMin]; // distant past
         newKeyTimestamps[key] = timestamp;
     }
     self.keyTimestamps = [NSDictionary dictionaryWithDictionary:newKeyTimestamps];
@@ -859,11 +865,11 @@ NSString *PARDevicesDirectoryName = @"devices";
     NSMapTable *newDatabaseTimestamps = [NSMapTable weakToStrongObjectsMapTable];
     for (NSPersistentStore *store in self.readonlyDatabases)
     {
-        NSDate *timestamp = [updatedDatabaseTimestamps objectForKey:store];
+        NSNumber *timestamp = [updatedDatabaseTimestamps objectForKey:store];
         if (!timestamp)
             timestamp = [self.databaseTimestamps objectForKey:store];
         if (!timestamp)
-            timestamp = [NSDate distantPast];
+            timestamp = [NSNumber numberWithInteger:NSIntegerMin]; // distant past
         [newDatabaseTimestamps setObject:timestamp forKey:store];
     }
     self.databaseTimestamps = newDatabaseTimestamps;
@@ -874,6 +880,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         [self.memoryQueue dispatchAsynchronously:^
          {
              self._memory = [NSMutableDictionary dictionaryWithDictionary:updatedValues];
+             self._memoryKeyTimestamps = [NSMutableDictionary dictionaryWithDictionary:updatedKeyTimestamps];
              self._loaded = YES;
              // post notification outside of the queue, to avoid deadlocks when using a block for the notification callback and tries to access the data
              [[PARDispatchQueue globalDispatchQueue] dispatchAsynchronously:^{[[NSNotificationCenter defaultCenter] postNotificationName:PARStoreDidLoadNotification object:self];}];
@@ -885,27 +892,21 @@ NSString *PARDevicesDirectoryName = @"devices";
     {
         [self.memoryQueue dispatchAsynchronously:^
          {
-             NSDictionary *oldValues = [NSDictionary dictionaryWithDictionary:self._memory];
              NSMutableDictionary *changedValues = [NSMutableDictionary dictionaryWithCapacity:[updatedValues count]];
+             NSMutableDictionary *changedTimestamps = [NSMutableDictionary dictionaryWithCapacity:[updatedKeyTimestamps count]];
              [updatedValues enumerateKeysAndObjectsUsingBlock:^(id key, id newValue, BOOL *stop)
               {
-                  BOOL valueDidChange = (oldValues[key] != newValue) || (![oldValues[key] isEqual:newValue]);
-                  if (valueDidChange)
+                  // the values could have changed while we were running the sync above; some of the keys could have been modified and have more recent timestamps, in which case we should not apply the new value obtained from the database
+                  NSNumber *memoryLatestTimestamp = self._memoryKeyTimestamps[key];
+                  NSNumber *databaseLatestTimestamp = newKeyTimestamps[key];
+                  if (memoryLatestTimestamp ==nil || (databaseLatestTimestamp !=nil && [memoryLatestTimestamp compare:databaseLatestTimestamp] == NSOrderedAscending))
                   {
-                      // here, hopefully, we avoid a race condition: the values could have changed while we were running the above; some of the keys could have been modified and have more recent timestamps, but would get overriden by values that were loaded from the databases
-                      // - the values in `_memoryKeyTimestamps` are serialized in the memoryQueue, and thus guaranteed to be the latest
-                      // - we also know that there cannot be another `_sync` going on while we run this, or at least it will stop at the very beginning, when we initialize `_memoryKeyTimestamps`
-                      NSDate *memoryLatestTimestamp = self._memoryKeyTimestamps[key];
-                      NSDate *databaseLatestTimestamp = newKeyTimestamps[key];
-                      if (memoryLatestTimestamp == nil || ([memoryLatestTimestamp compare:databaseLatestTimestamp] == NSOrderedAscending))
-                          changedValues[key] = newValue;
+                      changedValues[key] = newValue;
+                      changedTimestamps[key] = databaseLatestTimestamp;
                   }
               }];
              
-             // we don't need `_memoryKeyTimestamps` anymore, it will be set again at the next `_sync`
-             self._memoryKeyTimestamps = nil;
-             
-             [self applySyncChange:changedValues];
+             [self applySyncChangeWithValues:changedValues timestamps:changedTimestamps];
              // post notification outside of the queue, to avoid deadlocks when using a block for the notification callback and tries to access the data
              [[PARDispatchQueue globalDispatchQueue] dispatchAsynchronously:^{[[NSNotificationCenter defaultCenter] postNotificationName:PARStoreDidSyncNotification object:self];}];
          }];
@@ -1057,7 +1058,9 @@ NSString *PARDevicesDirectoryName = @"devices";
 {
     DebugLog(@"%@", NSStringFromSelector(_cmd));
     //[self blockdatabaseQueueWhileRunningBlock:writer];
-	writer(nil);
+	writer(^{
+        [self sync];
+    });
 }
 
 - (void)savePresentedItemChangesWithCompletionHandler:(void (^)(NSError *errorOrNil))completionHandler
