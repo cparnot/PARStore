@@ -1,6 +1,6 @@
 //  PARStore
-//  Created by Charles Parnot on 10/8/12.
-//  Licensed under the terms of the BSD License, as specified in the file 'LICENSE-BSD.txt' included with this distribution
+//  Authors: Charles Parnot and Joris Kluivers
+//  Licensed under the terms of the BSD License, see license terms in 'LICENSE-BSD.txt'
 
 #import "PARDispatchQueue.h"
 
