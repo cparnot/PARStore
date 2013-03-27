@@ -464,10 +464,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     }
     else
     {
-        NSString *errorDomain = NSStringFromClass([PARStore class]);
-        NSString *description = @"No managed object context";
-        NSDictionary * userInfo = @{ NSLocalizedDescriptionKey : description };
-        localError = [NSError errorWithDomain:errorDomain code:7 userInfo:userInfo];
+        localError = [NSError errorWithObject:self code:7 localizedDescription:@"No managed object context" underlyingError:nil];
     }
     
     if (localError)
@@ -475,13 +472,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         NSString *documentPath = [self.storeURL path];
         ErrorLog(@"Could not save document:\npath: %@\nerror: %@\n", documentPath, [localError localizedDescription]);
         if (error != NULL)
-        {
-            NSString *errorDomain = NSStringFromClass([PARStore class]);
-            NSString *description = [NSString stringWithFormat:@"Could not save document for device identifier '%@' at path: %@", self.deviceIdentifier, [self.storeURL path]];
-            NSString *failure = [localError localizedDescription];
-            NSDictionary * userInfo = @{ NSLocalizedDescriptionKey : description, NSLocalizedFailureReasonErrorKey : failure, NSUnderlyingErrorKey: localError, NSFilePathErrorKey: documentPath, NSURLErrorKey: self.storeURL };
-            *error = [NSError errorWithDomain:errorDomain code:8 userInfo:userInfo];
-        }
+            *error = [NSError errorWithObject:self code:8 localizedDescription:[NSString stringWithFormat:@"Could not save document for device identifier '%@' at path: %@", self.deviceIdentifier, [self.storeURL path]] underlyingError:localError];
         return NO;
     }
 
@@ -561,18 +552,15 @@ NSString *PARDevicesDirectoryName = @"devices";
     id value = [self propertyListValueForKey:key];
     if (value && ![value isKindOfClass:class])
     {
-        NSString *description = [NSString stringWithFormat:@"Value for key '%@' should be of class '%@', but is instead of class '%@', in document at path '%@': %@", key, NSStringFromClass(class), [value class], self.storeURL.path, value];
+        NSString *description = [NSString stringWithFormat:@"Value for key '%@' should be of class '%@', but is instead of class '%@', in store at path '%@': %@", key, NSStringFromClass(class), [value class], self.storeURL.path, value];
         ErrorLog(@"%@", description);
         if (error != NULL)
-        {
-            NSString *errorDomain = NSStringFromClass([PARStore class]);
-            NSDictionary * userInfo = @{ NSLocalizedDescriptionKey : description, NSFilePathErrorKey: self.storeURL.path, NSURLErrorKey: self.storeURL };
-            *error = [NSError errorWithDomain:errorDomain code:9 userInfo:userInfo];
-        }
+            *error = [NSError errorWithObject:self code:9 localizedDescription:description underlyingError:nil];
         return nil;
     }
     return value;
 }
+
 
 #define MICROSECONDS_PER_SECOND (1000 * 1000)
 
@@ -644,41 +632,85 @@ NSString *PARDevicesDirectoryName = @"devices";
     return [self.storeURL URLByAppendingPathComponent:@"blobs"];
 }
 
-- (void)writeBlobData:(NSData *)data toPath:(NSString *)path
+- (BOOL)writeBlobData:(NSData *)data toPath:(NSString *)path error:(NSError **)error
 {
+    // nil path = error
+    if (path == nil)
+    {
+        NSString *description = [NSString stringWithFormat:@"Blob cannot be saved because method '%@' was called with 'path' parameter nil, in store at path '%@'", NSStringFromSelector(_cmd), self.storeURL.path];
+        ErrorLog(@"%@", description);
+        if (error != NULL)
+            *error = [NSError errorWithObject:self code:10 localizedDescription:description underlyingError:nil];
+        return NO;
+    }
+    
+    // nil data = empty data + warning
+    if (data == nil)
+    {
+        NSString *description = [NSString stringWithFormat:@"Empty data will be used in method '%@' called with data parameter nil, in store at path '%@'", NSStringFromSelector(_cmd), self.storeURL.path];
+        ErrorLog(@"%@", description);
+        data = [NSData data];
+    }
+
+    // blobs for in-memory store are stored... in memory
     if (self._inMemory)
     {
         [self.memoryQueue dispatchAsynchronously:^
-        {
-            [self._memoryFileData setObject:data forKey:path];
-        }];
-        return;
+         {
+             [self._memoryFileData setObject:data forKey:path];
+         }];
+        return YES;
     }
     
+    // otherwise blobs are stored in a special blob directory
+    __block NSError *localError = nil;
     NSURL *fileURL = [[self blobDirectoryURL] URLByAppendingPathComponent:path];
-    
-    NSFileCoordinator *coordinator = [[NSFileCoordinator alloc] initWithFilePresenter:self];
-    
-    NSError *error = nil;
-    [coordinator coordinateWritingItemAtURL:fileURL options:NSFileCoordinatorWritingForReplacing error:&error byAccessor:^(NSURL *newURL)
+    NSError *coordinatorError = nil;
+    [[[NSFileCoordinator alloc] initWithFilePresenter:self] coordinateWritingItemAtURL:fileURL options:NSFileCoordinatorWritingForReplacing error:&coordinatorError byAccessor:^(NSURL *newURL)
     {
-        NSString *parentPath = [[fileURL URLByDeletingLastPathComponent] path];
-        BOOL isDir = NO;
-        if (![[NSFileManager defaultManager] fileExistsAtPath:parentPath isDirectory:&isDir])
-            [[NSFileManager defaultManager] createDirectoryAtPath:parentPath withIntermediateDirectories:YES attributes:nil error:nil];
-
-        // TODO: what if exists and is not a dir
+        // create parent dirs (it will fail if one of the dir already exists but is a file)
+        NSError *errorCreatingDir = nil;
+        BOOL successCreatingDir = [[NSFileManager defaultManager] createDirectoryAtURL:[newURL URLByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:&errorCreatingDir];
+        if (!successCreatingDir)
+        {
+            localError = [NSError errorWithObject:self code:11 localizedDescription:[NSString stringWithFormat:@"Could not create parent directories before writing blob at path '%@'", newURL.path] underlyingError:errorCreatingDir];
+            return;
+        }
         
-        NSError *writeError = nil;
-        BOOL success = [data writeToURL:newURL options:0 error:&writeError];
-        if (!success)
-            ErrorLog(@"Data write error: %@", writeError);
+        // write to disk (overwrite any file that was at that same path before)
+        NSError *errorWritingData = nil;
+        BOOL successWritingData = [data writeToURL:newURL options:0 error:&errorWritingData];
+        if (!successWritingData)
+            localError = [NSError errorWithObject:self code:12 localizedDescription:[NSString stringWithFormat:@"Could not save data blob at path '%@'", newURL.path] underlyingError:errorWritingData];
     }];
+
+    // error handling
+    if (coordinatorError && !localError)
+        localError = coordinatorError;
+    if (localError)
+    {
+        ErrorLog(@"Error writing data blob: %@", localError);
+        if (error != NULL)
+            *error = localError;
+    }
+    return YES;
 }
 
-- (NSData *)blobDataAtPath:(NSString *)path
+- (NSData *)blobDataAtPath:(NSString *)path error:(NSError **)error;
 {
-    if (self._inMemory) {
+    // nil path = error
+    if (path == nil)
+    {
+        NSString *description = [NSString stringWithFormat:@"Blob data cannot be retrieved because method '%@' was called with 'path' parameter nil, in store at path '%@'", NSStringFromSelector(_cmd), self.storeURL.path];
+        ErrorLog(@"%@", description);
+        if (error != NULL)
+            *error = [NSError errorWithObject:self code:13 localizedDescription:description underlyingError:nil];
+        return NO;
+    }
+
+    // blobs for in-memory store are stored... in memory
+    if (self._inMemory)
+    {
         __block NSData *foundData = nil;
         [self.memoryQueue dispatchSynchronously:^
         {
@@ -687,18 +719,30 @@ NSString *PARDevicesDirectoryName = @"devices";
         return foundData;
     }
     
+    // otherwise blobs are stored in a special blob directory
+    __block NSError *localError = nil;
     NSURL *fileURL = [[self blobDirectoryURL] URLByAppendingPathComponent:path];
-    
-    NSFileCoordinator *coordinator = [[NSFileCoordinator alloc] initWithFilePresenter:self];
-    
+    NSError *coordinatorError = nil;
     __block NSData *data = nil;
-    NSError *error = nil;
-    [coordinator coordinateReadingItemAtURL:fileURL options:NSFileCoordinatorReadingWithoutChanges error:&error byAccessor:^(NSURL *newURL)
+    [[[NSFileCoordinator alloc] initWithFilePresenter:self] coordinateReadingItemAtURL:fileURL options:NSFileCoordinatorReadingWithoutChanges error:&coordinatorError byAccessor:^(NSURL *newURL)
     {
-        DebugLog(@"%s", __func__);
-        data = [NSData dataWithContentsOfURL:newURL];
+        NSError *errorReadingData = nil;
+        data = [NSData dataWithContentsOfURL:newURL options:NSDataReadingMappedIfSafe error:&errorReadingData];
+        if (!data)
+            localError = [NSError errorWithObject:self code:14 localizedDescription:[NSString stringWithFormat:@"Could not read data blob at path '%@'", newURL.path] underlyingError:errorReadingData];
     }];
     
+    // error handling
+    if (coordinatorError && !localError)
+        localError = coordinatorError;
+    if (localError)
+    {
+        ErrorLog(@"Error reading data blob: %@", localError);
+        if (error != NULL)
+            *error = localError;
+        return nil;
+    }
+
     return data;
 }
 

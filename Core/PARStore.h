@@ -39,8 +39,8 @@ extern NSString *PARStoreDidSyncNotification;
 - (void)runTransaction:(PARDispatchBlock)block;
 
 /// @name Managing Data Blobs
-- (void) writeBlobData:(NSData *)data toPath:(NSString *)path;
-- (NSData *) blobDataAtPath:(NSString *)path;
+- (BOOL)writeBlobData:(NSData *)data toPath:(NSString *)path error:(NSError **)error;;
+- (NSData *)blobDataAtPath:(NSString *)path error:(NSError **)error;;
 
 /// @name Syncing
 - (void)sync;
