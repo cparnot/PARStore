@@ -34,7 +34,7 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
 @property (copy) NSMapTable *databaseTimestamps;
 @property (copy) NSDictionary *keyTimestamps;
 
-// memoryQueue serializes access to in-memory document storage
+// memoryQueue serializes access to in-memory storage
 @property (retain) PARDispatchQueue *memoryQueue;
 @property (retain, nonatomic) NSMutableDictionary *_memory;
 @property (readwrite, nonatomic) BOOL _loaded;
@@ -185,12 +185,12 @@ NSString *PARDevicesDirectoryName = @"devices";
 	}
 		
 	// file should be a directory
-	NSString *documentPath = [self.storeURL path];
+	NSString *storePath = [self.storeURL path];
 	BOOL isDir = NO;
-	BOOL fileExists = [[NSFileManager defaultManager] fileExistsAtPath:documentPath isDirectory:&isDir];
+	BOOL fileExists = [[NSFileManager defaultManager] fileExistsAtPath:storePath isDirectory:&isDir];
 	if (success && fileExists && !isDir)
 	{
-        localError = [NSError errorWithObject:self code:2 localizedDescription:[NSString stringWithFormat:@"The path for a store should be a directory at path: %@", documentPath] underlyingError:nil];
+        localError = [NSError errorWithObject:self code:2 localizedDescription:[NSString stringWithFormat:@"The path for a store should be a directory at path: %@", storePath] underlyingError:nil];
 		success = NO;
 	}
 		
@@ -200,7 +200,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 	BOOL devicesDirExists = [[NSFileManager defaultManager] fileExistsAtPath:devicesPath isDirectory:&devicesPathIsDir];
 	if (success && devicesDirExists && !devicesPathIsDir)
 	{
-        localError = [NSError errorWithObject:self code:3 localizedDescription:[NSString stringWithFormat:@"The file package for a store should have a 'devices' subdirectory at path: %@", documentPath] underlyingError:nil];
+        localError = [NSError errorWithObject:self code:3 localizedDescription:[NSString stringWithFormat:@"The file package for a store should have a 'devices' subdirectory at path: %@", storePath] underlyingError:nil];
 		success = NO;
 	}
 
@@ -210,7 +210,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 	BOOL identifierDirExists = [[NSFileManager defaultManager] fileExistsAtPath:identifierPath isDirectory:&identifierPathIsDir];
 	if (success && identifierDirExists && !identifierPathIsDir)
     {
-        localError = [NSError errorWithObject:self code:4 localizedDescription:[NSString stringWithFormat:@"The device identifier subpath '%@' should be a directory in the file package for the store at path: %@", self.deviceIdentifier, documentPath] underlyingError:nil];
+        localError = [NSError errorWithObject:self code:4 localizedDescription:[NSString stringWithFormat:@"The device identifier subpath '%@' should be a directory in the file package for the store at path: %@", self.deviceIdentifier, storePath] underlyingError:nil];
 		success = NO;
 	}
 
@@ -222,7 +222,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 			NSError *fmError = nil;
 			success = [[NSFileManager defaultManager] createDirectoryAtURL:self.storeURL withIntermediateDirectories:NO attributes:nil error:&fmError] && [[NSFileManager defaultManager] createDirectoryAtPath:devicesPath withIntermediateDirectories:NO attributes:nil error:&fmError];
 			if (!success)
-                localError = [NSError errorWithObject:self code:5 localizedDescription:[NSString stringWithFormat:@"Could not create the root directory for the file package for the store at path: %@", documentPath] underlyingError:fmError];
+                localError = [NSError errorWithObject:self code:5 localizedDescription:[NSString stringWithFormat:@"Could not create the root directory for the file package for the store at path: %@", storePath] underlyingError:fmError];
 		}];
 	}
 		
@@ -235,7 +235,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 			NSError *fmError = nil;
 			success = [[NSFileManager defaultManager] createDirectoryAtPath:identifierPath withIntermediateDirectories:NO attributes:nil error:&fmError];
 			if (!success)
-                localError = [NSError errorWithObject:self code:6 localizedDescription:[NSString stringWithFormat:@"Could not create a subdirectory for the device identifier '%@' in the file package for the store at path: %@", self.deviceIdentifier, documentPath] underlyingError:fmError];
+                localError = [NSError errorWithObject:self code:6 localizedDescription:[NSString stringWithFormat:@"Could not create a subdirectory for the device identifier '%@' in the file package for the store at path: %@", self.deviceIdentifier, storePath] underlyingError:fmError];
 		}];
 	}
 
@@ -255,9 +255,9 @@ NSString *PARDevicesDirectoryName = @"devices";
         return @[];
     
     // file should be a directory
-    NSString *documentPath = [self.storeURL path];
+    NSString *storePath = [self.storeURL path];
     BOOL isDir = NO;
-    BOOL fileExists = [[NSFileManager defaultManager] fileExistsAtPath:documentPath isDirectory:&isDir];
+    BOOL fileExists = [[NSFileManager defaultManager] fileExistsAtPath:storePath isDirectory:&isDir];
     if (!fileExists || !isDir)
         return @[];
     
@@ -469,10 +469,10 @@ NSString *PARDevicesDirectoryName = @"devices";
     
     if (localError)
     {
-        NSString *documentPath = [self.storeURL path];
-        ErrorLog(@"Could not save document:\npath: %@\nerror: %@\n", documentPath, [localError localizedDescription]);
+        NSString *storePath = [self.storeURL path];
+        ErrorLog(@"Could not save store:\npath: %@\nerror: %@\n", storePath, [localError localizedDescription]);
         if (error != NULL)
-            *error = [NSError errorWithObject:self code:8 localizedDescription:[NSString stringWithFormat:@"Could not save document for device identifier '%@' at path: %@", self.deviceIdentifier, [self.storeURL path]] underlyingError:localError];
+            *error = [NSError errorWithObject:self code:8 localizedDescription:[NSString stringWithFormat:@"Could not save store for device identifier '%@' at path: %@", self.deviceIdentifier, [self.storeURL path]] underlyingError:localError];
         return NO;
     }
 
@@ -772,7 +772,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         return;
         
 
-    // never resuscitate a deleted document
+    // never resuscitate a deleted store
     if ([self deleted])
         return;
     
@@ -918,7 +918,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     }
     self.databaseTimestamps = newDatabaseTimestamps;
     
-    // document loaded the first time --> set all the data at once
+    // store loaded the first time --> set all the data at once
     if (!loaded)
     {
         [self.memoryQueue dispatchAsynchronously:^
@@ -931,7 +931,7 @@ NSString *PARDevicesDirectoryName = @"devices";
          }];
     }
     
-    // when document was already loaded, we need to create a dictionary change and merge with current values
+    // when store was already loaded, we need to create a dictionary change and merge with current values
     else if (hasForeignChanges)
     {
         [self.memoryQueue dispatchAsynchronously:^
@@ -1016,7 +1016,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (void)presentedItemDidMoveToURL:(NSURL *)newURL
 {
-    // TODO: close the context, open new context at new location, (and read to update document contents?)
+    // TODO: close the context, open new context at new location, (and read to update store contents?)
 	self.storeURL = newURL;
 }
 
@@ -1064,12 +1064,12 @@ NSString *PARDevicesDirectoryName = @"devices";
 	DebugLog(@"%s", __func__);
 }
 
-// block access to the document while another presenter tries to read or write stuff: other processes or threads will do their work inside the `reader` or `writer` block, and then call the block we pass as argument when they are done
+// block access to the store while another presenter tries to read or write stuff: other processes or threads will do their work inside the `reader` or `writer` block, and then call the block we pass as argument when they are done
 - (void)blockdatabaseQueueWhileRunningBlock:(void (^)(void (^callbackWhenDone)(void)))blockAccessingTheFile
 {
     DebugLog(@"%@", NSStringFromSelector(_cmd));
 
-    // when a file coordinator wants to read or write to our document, we can block access to our context using the databaseQueue and a semaphore
+    // when a file coordinator wants to read or write to our store, we can block access to our context using the databaseQueue and a semaphore
     [self.databaseQueue dispatchAsynchronously:^
      {
          // the semaphore will be used to block the datatase queue until access to the file is done
@@ -1086,7 +1086,7 @@ NSString *PARDevicesDirectoryName = @"devices";
          // giving up is not a big risk, because it's still safe to change the db while other presenters are trying to read the file, and if those presenters take more than xx secs, we have bigger problems
          NSTimeInterval timeout = 5.0;
          if (0 != dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, timeout * NSEC_PER_SEC)))
-             ErrorLog(@"TIMEOUT: timeout on device '%@' while waiting for file coordinator to access document with URL: %@", self.deviceIdentifier, self.storeURL);
+             ErrorLog(@"TIMEOUT: timeout on device '%@' while waiting for file coordinator to access store with URL: %@", self.deviceIdentifier, self.storeURL);
          semaphore = NULL;
      }];
 }
