@@ -318,13 +318,31 @@ NSString *PARDevicesDirectoryName = @"devices";
     static NSManagedObjectModel *mom = nil;
     dispatch_once(&pred,
       ^{
-          NSBundle *thisBundle = [NSBundle bundleForClass:[self class]];
-          NSString *filename = @"Log";
-          NSString *extension = @"momd";
-          NSString *modelPath  = [thisBundle pathForResource:filename ofType:extension];
-          mom = [[NSManagedObjectModel alloc] initWithContentsOfURL:[NSURL fileURLWithPath:modelPath]];
-          if (!mom)
-              ErrorLog(@"Could not load managed object model with file name %@.%@", filename, extension);
+          NSAttributeDescription *blobAttribute = [[NSAttributeDescription alloc] init];
+          blobAttribute.name = @"blob";
+          blobAttribute.attributeType = NSBinaryDataAttributeType;
+          
+          NSAttributeDescription *keyAttribute = [[NSAttributeDescription alloc] init];
+          keyAttribute.name = @"key";
+          keyAttribute.indexed = YES;
+          keyAttribute.attributeType = NSStringAttributeType;
+          
+          NSAttributeDescription *timestampAttribute = [[NSAttributeDescription alloc] init];
+          timestampAttribute.name = @"timestamp";
+          timestampAttribute.indexed = YES;
+          timestampAttribute.attributeType = NSInteger64AttributeType;
+          
+          NSAttributeDescription *parentTimestampAttribute = [[NSAttributeDescription alloc] init];
+          parentTimestampAttribute.name = @"parentTimestamp";
+          parentTimestampAttribute.indexed = YES;
+          parentTimestampAttribute.attributeType = NSInteger64AttributeType;
+          
+          NSEntityDescription *entity = [[NSEntityDescription alloc] init];
+          entity.name = @"Log";
+          entity.properties = @[blobAttribute, keyAttribute, timestampAttribute, parentTimestampAttribute];
+          
+          mom = [[NSManagedObjectModel alloc] init];
+          mom.entities = @[entity];
       });
     return mom;
 }
