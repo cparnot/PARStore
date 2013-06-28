@@ -79,19 +79,19 @@ static int PARIsCurrentValue = 1;
 // DISPATCH_QUEUE_PRIORITY_HIGH
 // DISPATCH_QUEUE_PRIORITY_LOW
 
+static PARDispatchQueue *PARMainDispatchQueue = nil;
 + (PARDispatchQueue *)mainDispatchQueue
 {
     static dispatch_once_t pred = 0;
-    static PARDispatchQueue *mainDispatchQueue = nil;
     dispatch_once(&pred, ^
       {
-          mainDispatchQueue = [self dispatchQueueWithGCDQueue:dispatch_get_main_queue() behavior:PARDeadlockBehaviorExecute];
-          const char *label = dispatch_queue_get_label(mainDispatchQueue.queue);
+          PARMainDispatchQueue = [self dispatchQueueWithGCDQueue:dispatch_get_main_queue() behavior:PARDeadlockBehaviorExecute];
+          const char *label = dispatch_queue_get_label(PARMainDispatchQueue.queue);
           if (label == NULL)
               label = "unlabeled";
-          mainDispatchQueue._label = [NSString stringWithUTF8String:label];
+          PARMainDispatchQueue._label = [NSString stringWithUTF8String:label];
       });
-    return mainDispatchQueue;
+    return PARMainDispatchQueue;
 }
 
 
@@ -179,6 +179,10 @@ static int PARIsCurrentValue = 1;
 
 - (BOOL)isInCurrentQueueStack
 {
+    // main queue is easier and safer to assert
+    if (self == PARMainDispatchQueue)
+        return [NSThread isMainThread];
+    
     NSArray *queueStack = (__bridge NSArray *)(dispatch_get_specific(&PARQueueStackKey));
     return [queueStack containsObject:self];
 }
