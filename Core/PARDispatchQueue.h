@@ -56,7 +56,7 @@ typedef NS_ENUM(NSInteger, PARDeadlockBehavior)
 - (BOOL)isInCurrentQueueStack;
 
 /// @name Adding and Updating Timers
-- (BOOL)scheduleTimerWithName:(NSString *)name timeInterval:(NSTimeInterval)delay behavior:(PARTimerBehavior)behavior block:(PARDispatchBlock)block;
+- (void)scheduleTimerWithName:(NSString *)name timeInterval:(NSTimeInterval)delay behavior:(PARTimerBehavior)behavior block:(PARDispatchBlock)block;
 - (void)cancelTimerWithName:(NSString *)name;
 - (void)cancelAllTimers;
 

@@ -271,21 +271,19 @@ static int PARIsCurrentValue = 1;
     [self.timers removeObjectForKey:name];
 }
 
-- (BOOL)scheduleTimerWithName:(NSString *)name timeInterval:(NSTimeInterval)delay behavior:(PARTimerBehavior)behavior block:(PARDispatchBlock)block
+- (void)scheduleTimerWithName:(NSString *)name timeInterval:(NSTimeInterval)delay behavior:(PARTimerBehavior)behavior block:(PARDispatchBlock)block
 {
-    __block BOOL success = YES;
-    [self dispatchSynchronously:^{ success = [self _scheduleTimerWithName:name timeInterval:delay behavior:behavior block:block]; }];
-    return success;
+    [self dispatchAsynchronously:^{ [self _scheduleTimerWithName:name timeInterval:delay behavior:behavior block:block]; }];
 }
 
 - (void)cancelTimerWithName:(NSString *)name
 {
-    [self dispatchSynchronously:^{ [self _cancelTimerWithName:name]; }];
+    [self dispatchAsynchronously:^{ [self _cancelTimerWithName:name]; }];
 }
 
 - (void)cancelAllTimers
 {
-    [self dispatchSynchronously:^
+    [self dispatchAsynchronously:^
     {
         for (NSString *name in [self.timers keyEnumerator])
             [self _cancelTimerWithName:name];
