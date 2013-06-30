@@ -198,7 +198,7 @@ static PARDispatchQueue *PARMainDispatchQueue = nil;
     NSTimeInterval t = mach_absolute_time();
     t *= info.numer;
     t /= info.denom;
-    return t;
+    return t / NSEC_PER_SEC;
 }
 
 - (BOOL)_scheduleTimerWithName:(NSString *)name timeInterval:(NSTimeInterval)delay behavior:(PARTimerBehavior)behavior block:(PARDispatchBlock)block
