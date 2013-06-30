@@ -201,7 +201,7 @@ static PARDispatchQueue *PARMainDispatchQueue = nil;
     return t / NSEC_PER_SEC;
 }
 
-- (BOOL)_scheduleTimerWithName:(NSString *)name timeInterval:(NSTimeInterval)delay behavior:(PARTimerBehavior)behavior block:(PARDispatchBlock)block
+- (BOOL)_scheduleTimerWithName:(NSString *)name referenceTime:(NSTimeInterval)time timeInterval:(NSTimeInterval)delay behavior:(PARTimerBehavior)behavior block:(PARDispatchBlock)block
 {
     if (!self.timers)
         self.timers = [NSMutableDictionary dictionary];
@@ -222,11 +222,15 @@ static PARDispatchQueue *PARMainDispatchQueue = nil;
         return NO;
     
     // adjust firing time only if needed: for coalesce behavior, only take into account earlier-than-currently-set firing
-    NSUInteger fireTime = [dateValue doubleValue];
-    NSUInteger newFireTime = [self _now] + delay;
+    NSTimeInterval now = [self _now];
+    NSTimeInterval adjustedDelay = delay - (now - time);
+    if (adjustedDelay < 0.0)
+        adjustedDelay = 0.0;
+    NSTimeInterval fireTime = [dateValue doubleValue];
+    NSTimeInterval newFireTime = now + adjustedDelay;
     if (dateValue == nil || behavior == PARTimerBehaviorDelay || newFireTime < fireTime)
     {
-        dispatch_source_set_timer(dispatchTimer, dispatch_time(DISPATCH_TIME_NOW, delay * NSEC_PER_SEC), 0, 0);
+        dispatch_source_set_timer(dispatchTimer, dispatch_time(DISPATCH_TIME_NOW, adjustedDelay * NSEC_PER_SEC), 0, 0);
     }
     
     // set the new event handler
@@ -277,7 +281,8 @@ static PARDispatchQueue *PARMainDispatchQueue = nil;
 
 - (void)scheduleTimerWithName:(NSString *)name timeInterval:(NSTimeInterval)delay behavior:(PARTimerBehavior)behavior block:(PARDispatchBlock)block
 {
-    [self dispatchAsynchronously:^{ [self _scheduleTimerWithName:name timeInterval:delay behavior:behavior block:block]; }];
+    NSTimeInterval time = [self _now];
+    [self dispatchAsynchronously:^{ [self _scheduleTimerWithName:name referenceTime:time timeInterval:delay behavior:behavior block:block]; }];
 }
 
 - (void)cancelTimerWithName:(NSString *)name
