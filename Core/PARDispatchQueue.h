@@ -32,8 +32,6 @@ typedef NS_ENUM(NSInteger, PARDeadlockBehavior)
 };
 
 
-@class PARBlockOperation;
-
 @interface PARDispatchQueue : NSObject
 
 /// @name Creating Queues
