@@ -146,6 +146,7 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
 - (void)closeNow
 {
     [self.memoryQueue dispatchSynchronously:^{ [self _close]; }];
+    [self.databaseQueue dispatchSynchronously:^{ }];
 }
 
 - (void)dealloc
