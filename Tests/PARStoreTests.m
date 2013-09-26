@@ -191,4 +191,55 @@
 	STAssertTrue(waitResult == 0, @"Timeout while waiting for document to load");
 }
 
+- (void)testPropertyListSetter
+{
+    NSString *title = @"Some title";
+    NSString *first = @"Albert";
+    
+    // first load = create document and save data
+    NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
+    PARStoreExample *document1 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
+    [document1 loadNow];
+    document1.title = title;
+    [document1 setPropertyListValue:first forKey:@"first"];
+    [document1 closeNow];
+    document1 = nil;
+    
+    // second load = load document and compare data
+    PARStoreExample *document2 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
+    [document2 loadNow];
+    NSString *actualTitle = [document2 propertyListValueForKey:@"title"];
+    NSString *actualFirst = document2.first;
+    STAssertEqualObjects(actualTitle, title, @"unexpected 'title' value after closing and reopening a document: '%@' instead of '%@'", actualTitle, title);
+    STAssertEqualObjects(actualFirst, first, @"unexpected 'first' value after closing and reopening a document: '%@' instead of '%@'", actualFirst, first);
+    [document2 closeNow];
+    document2 = nil;
+}
+
+- (void)testDictionarySetter
+{
+    NSString *title = @"Some title";
+    NSString *first = @"Albert";
+    NSDictionary *entries = @{@"title": title, @"first": first};
+    
+    // first load = create document and save data
+    NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
+    PARStoreExample *document1 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
+    [document1 loadNow];
+    [document1 setEntriesFromDictionary:entries];
+    [document1 closeNow];
+    document1 = nil;
+    
+    // second load = load document and compare data
+    PARStoreExample *document2 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
+    [document2 loadNow];
+    NSDictionary *actualEntries = document2.allRelevantValues;
+    NSString *actualTitle = actualEntries[@"title"];
+    NSString *actualFirst = actualEntries[@"first"];
+    STAssertEqualObjects(actualTitle, title, @"unexpected 'title' value after closing and reopening a document: '%@' instead of '%@'", actualTitle, title);
+    STAssertEqualObjects(actualFirst, first, @"unexpected 'first' value after closing and reopening a document: '%@' instead of '%@'", actualFirst, first);
+    [document2 closeNow];
+    document2 = nil;
+}
+
 @end
