@@ -35,6 +35,7 @@
 		56C7EE0E16E2843700FFBBF2 /* PARStore.m in Sources */ = {isa = PBXBuildFile; fileRef = 56EAE1BD16E24EAA00A7F31F /* PARStore.m */; };
 		56C7EE0F16E2848C00FFBBF2 /* CoreData.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56EAE16E16E24C7500A7F31F /* CoreData.framework */; };
 		56C7EE1216E284A600FFBBF2 /* PARDispatchQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = 569D021D16E24FDA002675BA /* PARDispatchQueue.m */; };
+		56D5A90617F4493800AEA626 /* CoreData.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56EAE16E16E24C7500A7F31F /* CoreData.framework */; };
 		56EAE16B16E24C7500A7F31F /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56EAE16A16E24C7500A7F31F /* Cocoa.framework */; };
 		56EAE18916E24C7500A7F31F /* SenTestingKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56EAE18816E24C7500A7F31F /* SenTestingKit.framework */; };
 		56EAE18A16E24C7500A7F31F /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56EAE16A16E24C7500A7F31F /* Cocoa.framework */; };
@@ -120,6 +121,7 @@
 			files = (
 				56C7EDC516E260EA00FFBBF2 /* UIKit.framework in Frameworks */,
 				56C7EDC716E260EA00FFBBF2 /* Foundation.framework in Frameworks */,
+				56D5A90617F4493800AEA626 /* CoreData.framework in Frameworks */,
 				56C7EDC916E260EA00FFBBF2 /* CoreGraphics.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
