@@ -638,7 +638,9 @@ NSString *PARDevicesDirectoryName = @"devices";
          NSMutableDictionary *oldTimestamps = [NSMutableDictionary dictionaryWithCapacity:dictionary.count];
          for (NSString *key in dictionary.keyEnumerator)
          {
-             [oldTimestamps setObject:self._memoryKeyTimestamps[key] forKey:key];
+             NSNumber *oldTimestamp = self._memoryKeyTimestamps[key];
+             if (oldTimestamp)
+                 [oldTimestamps setObject:self._memoryKeyTimestamps[key] forKey:key];
              self._memoryKeyTimestamps[key] = newTimestamp;
          }
          
