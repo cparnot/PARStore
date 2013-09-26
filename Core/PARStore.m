@@ -554,15 +554,6 @@ NSString *PARDevicesDirectoryName = @"devices";
     return allValues;
 }
 
-- (void)setEntriesFromDictionary:(NSDictionary *)dictionary
-{
-    [self.memoryQueue dispatchSynchronously:^
-     {
-         [self._memory addEntriesFromDictionary:dictionary];
-         [[PARDispatchQueue globalDispatchQueue] dispatchAsynchronously:^{[[NSNotificationCenter defaultCenter] postNotificationName:PARStoreDidChangeNotification object:self];}];
-     }];
-}
-
 - (id)propertyListValueForKey:(NSString *)key
 {
     __block id plist = nil;
@@ -625,6 +616,60 @@ NSString *PARDevicesDirectoryName = @"devices";
                   [self.databaseQueue scheduleTimerWithName:@"save_coalesce" timeInterval:15.0 behavior:PARTimerBehaviorCoalesce block:^{ [self save:NULL]; }];
               }];
          }
+     }];
+}
+
+- (void)setEntriesFromDictionary:(NSDictionary *)dictionary
+{
+    [self.memoryQueue dispatchSynchronously:^
+     {
+         [self._memory addEntriesFromDictionary:dictionary];
+         [[PARDispatchQueue globalDispatchQueue] dispatchAsynchronously:^{[[NSNotificationCenter defaultCenter] postNotificationName:PARStoreDidChangeNotification object:self];}];
+         
+         if (self._inMemory)
+             return;
+         
+         // set the timestamp **before** dispatching to the database queue, so we have the current date, not the date at which the block runs
+         // timestamp is cast to a signed 64-bit integer (we can't use NSInteger on iOS for that)
+         NSTimeInterval timestampInSeconds = [[NSDate date] timeIntervalSinceReferenceDate];
+         NSNumber *newTimestamp = @((uint64_t)(timestampInSeconds * MICROSECONDS_PER_SECOND));
+         
+         // memory timestamps
+         NSMutableDictionary *oldTimestamps = [NSMutableDictionary dictionaryWithCapacity:dictionary.count];
+         for (NSString *key in dictionary.keyEnumerator)
+         {
+             [oldTimestamps setObject:self._memoryKeyTimestamps[key] forKey:key];
+             self._memoryKeyTimestamps[key] = newTimestamp;
+         }
+         
+         [self.databaseQueue dispatchAsynchronously: ^
+          {
+              NSManagedObjectContext *moc = [self managedObjectContext];
+              if (!moc)
+                  return;
+              
+              // each key/value --> new Log
+              [dictionary enumerateKeysAndObjectsUsingBlock:^(id key, id plist, BOOL *stop)
+              {
+                  NSError *error = nil;
+                  NSData *blob = [self dataFromPropertyList:plist error:&error];
+                  if (!blob)
+                  {
+                      ErrorLog(@"Error creating data from plist:\nkey: %@:\nplist: %@\nerror: %@", key, plist, [error localizedDescription]);
+                      return;
+                  }
+
+                  NSManagedObject *newLog = [NSEntityDescription insertNewObjectForEntityForName:@"Log" inManagedObjectContext:moc];
+                  [newLog setValue:newTimestamp forKey:@"timestamp"];
+                  [newLog setValue:oldTimestamps[key] forKey:@"parentTimestamp"];
+                  [newLog setValue:key forKey:@"key"];
+                  [newLog setValue:blob forKey:@"blob"];
+              }];
+              
+              // make sure we save 1 sec after new logs stop being added, or else every 15 seconds
+              [self.databaseQueue scheduleTimerWithName:@"save_delay" timeInterval:1.0 behavior:PARTimerBehaviorDelay block:^{ [self save:NULL]; }];
+              [self.databaseQueue scheduleTimerWithName:@"save_coalesce" timeInterval:15.0 behavior:PARTimerBehaviorCoalesce block:^{ [self save:NULL]; }];
+          }];
      }];
 }
 
