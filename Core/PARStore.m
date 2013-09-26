@@ -35,6 +35,7 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
 @property (copy) NSDictionary *keyTimestamps;
 
 // memoryQueue serializes access to in-memory storage
+// to avoid deadlocks, the memoryQueue should never schedule synchronous blocks in databaseQueue (but the opposite is fine)
 @property (retain) PARDispatchQueue *memoryQueue;
 @property (retain, nonatomic) NSMutableDictionary *_memory;
 @property (readwrite, nonatomic) BOOL _loaded;
@@ -114,8 +115,9 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
     NSAssert([self.memoryQueue isCurrentQueue], @"%@:%@ should only be called from within the memory queue", [self class], NSStringFromSelector(_cmd));
 
     // reset database
+    // to avoid deadlocks, it is **critical** that the call into the database queue be asynchronous
     if (!self._deleted && !self._inMemory)
-        [self.databaseQueue dispatchSynchronously:^
+        [self.databaseQueue dispatchAsynchronously:^
          {
              [self save:NULL];
              [self closeDatabase];
@@ -129,7 +131,11 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
     self._deleted = NO;
 
     // post notification outside of the queue, to avoid deadlocks when using a block for the notification callback and tries to access the data
-    [[PARDispatchQueue globalDispatchQueue] dispatchAsynchronously:^{[[NSNotificationCenter defaultCenter] postNotificationName:PARStoreDidCloseNotification object:self];}];
+    // in addition, to make sure the database is saved when the notification is received, the call is scheduled from within the database queue
+    [self.databaseQueue dispatchAsynchronously:^
+    {
+        [[PARDispatchQueue globalDispatchQueue] dispatchAsynchronously:^{[[NSNotificationCenter defaultCenter] postNotificationName:PARStoreDidCloseNotification object:self];}];
+    }];
 }
 
 - (void)close
