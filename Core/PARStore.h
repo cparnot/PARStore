@@ -51,9 +51,12 @@ extern NSString *PARStoreDidSyncNotification;
 - (void)applySyncChangeWithValues:(NSDictionary *)values timestamps:(NSDictionary *)timestamps;
 
 /// @name Synchronous Method Calls
+// Synchronous calls can potentially result in longer wait, and should be avoided in the main thread.
+// In addition, syncing and saving should normally be triggered automatically and asynchronously.
 - (void)loadNow;
 - (void)closeNow;
 - (void)syncNow;
+- (void)saveNow;
 
 // TODO: history
 

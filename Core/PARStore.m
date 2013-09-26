@@ -497,6 +497,11 @@ NSString *PARDevicesDirectoryName = @"devices";
     return YES;
 }
 
+- (void)saveNow
+{
+    [self.databaseQueue dispatchSynchronously:^{ if ([self loaded]) [self save:NULL]; }];
+}
+
 - (void)closeDatabase
 {
     NSAssert([self.databaseQueue isCurrentQueue], @"%@:%@ should only be called from within the database queue", [self class],NSStringFromSelector(_cmd));
