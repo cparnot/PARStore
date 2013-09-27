@@ -769,6 +769,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         ErrorLog(@"Error writing blob: %@", localError);
         if (error != NULL)
             *error = localError;
+        return NO;
     }
     return YES;
 }
