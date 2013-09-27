@@ -844,6 +844,54 @@ NSString *PARDevicesDirectoryName = @"devices";
     return YES;
 }
 
+- (BOOL)deleteBlobAtPath:(NSString *)path error:(NSError **)error
+{
+    // nil path = error
+    if (path == nil)
+    {
+        NSString *description = [NSString stringWithFormat:@"Blob cannot be deleted because method '%@' was called with 'path' parameter nil, in store at path '%@'", NSStringFromSelector(_cmd), self.storeURL.path];
+        ErrorLog(@"%@", description);
+        if (error != NULL)
+            *error = [NSError errorWithObject:self code:10 localizedDescription:description underlyingError:nil];
+        return NO;
+    }
+    
+    // blobs for in-memory store are stored... in memory
+    if (self._inMemory)
+    {
+        [self.memoryQueue dispatchAsynchronously:^
+         {
+             [self._memoryFileData removeObjectForKey:path];
+         }];
+        return YES;
+    }
+    
+    // otherwise blobs are stored in a special blob directory
+    __block NSError *localError = nil;
+    NSURL *fileURL = [[self blobDirectoryURL] URLByAppendingPathComponent:path];
+    NSError *coordinatorError = nil;
+    [[[NSFileCoordinator alloc] initWithFilePresenter:self] coordinateWritingItemAtURL:fileURL options:NSFileCoordinatorWritingForReplacing error:&coordinatorError byAccessor:^(NSURL *newURL)
+     {
+         // write to disk (overwrite any file that was at that same path before)
+         NSError *error = nil;
+         BOOL success = [[NSFileManager defaultManager] removeItemAtURL:fileURL error:&error];
+         if (!success)
+             localError = [NSError errorWithObject:self code:12 localizedDescription:[NSString stringWithFormat:@"Could not delete data blob at path '%@'", newURL.path] underlyingError:error];
+     }];
+    
+    // error handling
+    if (coordinatorError && !localError)
+        localError = coordinatorError;
+    if (localError)
+    {
+        ErrorLog(@"Error deleting blob: %@", localError);
+        if (error != NULL)
+            *error = localError;
+        return NO;
+    }
+    return YES;
+}
+
 - (NSData *)blobDataAtPath:(NSString *)path error:(NSError **)error;
 {
     // nil path = error
