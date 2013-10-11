@@ -1,5 +1,5 @@
 //  PARStore
-//  Created by Charles Parnot on 10/10/12.
+//  Author: Charles Parnot
 //  Licensed under the terms of the BSD License, as specified in the file 'LICENSE-BSD.txt' included with this distribution
 
 
