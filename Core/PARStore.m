@@ -169,6 +169,11 @@ NSString *PARDevicesDirectoryName = @"devices";
     return [[self.storeURL path] stringByAppendingPathComponent:PARDevicesDirectoryName];
 }
 
+- (NSString *)databasePathForDeviceIdentifier:(NSString *)deviceIdentifier
+{
+    return [[[self deviceRootPath] stringByAppendingPathComponent:deviceIdentifier] stringByAppendingPathComponent:PARDatabaseFileName];
+}
+
 - (NSString *)readwriteDirectoryPath
 {
     if (self._inMemory || ![self.storeURL isFileURL])
@@ -257,7 +262,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (NSArray *)readonlyDirectoryPaths
 {
-    // URL should be a file
+    // store should be a file on disk
     if (self._inMemory || ![self.storeURL isFileURL])
         return @[];
     
@@ -1195,6 +1200,35 @@ NSString *PARDevicesDirectoryName = @"devices";
 - (void)syncNow
 {
     [self.databaseQueue dispatchSynchronously:^{ if ([self loaded]) [self _sync]; }];
+}
+
+
+#pragma mark - Getting Timestamps
+
+- (NSNumber *)mostRecentTimestampWithDeviceIdentifier:(NSString *)deviceIdentifier
+{
+    if (deviceIdentifier == nil)
+        return nil;
+    
+    __block NSNumber *timestamp = nil;
+    [self.databaseQueue dispatchSynchronously:^
+    {
+        // store to fetch
+        NSPersistentStore *store = [self._managedObjectContext.persistentStoreCoordinator persistentStoreForURL:[NSURL fileURLWithPath:[self databasePathForDeviceIdentifier:deviceIdentifier]]];
+        if (!store)
+            return;
+        
+        // fetch
+        NSFetchRequest *request = [NSFetchRequest fetchRequestWithEntityName:@"Log"];
+        [request setSortDescriptors:@[[NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:NO]]];
+        [request setAffectedStores:@[store]];
+        [request setFetchLimit:1];
+        [request setReturnsObjectsAsFaults:NO];
+        NSManagedObject *log = [[self._managedObjectContext executeFetchRequest:request error:NULL] lastObject];
+        timestamp = [log valueForKey:@"timestamp"];
+    }];
+    
+    return timestamp;
 }
 
 
