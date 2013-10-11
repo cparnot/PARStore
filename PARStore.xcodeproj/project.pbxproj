@@ -21,7 +21,6 @@
 		56C7EDD716E260EB00FFBBF2 /* Default.png in Resources */ = {isa = PBXBuildFile; fileRef = 56C7EDD616E260EB00FFBBF2 /* Default.png */; };
 		56C7EDD916E260EB00FFBBF2 /* Default@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 56C7EDD816E260EB00FFBBF2 /* Default@2x.png */; };
 		56C7EDDB16E260EB00FFBBF2 /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 56C7EDDA16E260EB00FFBBF2 /* Default-568h@2x.png */; };
-		56C7EDE216E260EB00FFBBF2 /* SenTestingKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56EAE18816E24C7500A7F31F /* SenTestingKit.framework */; };
 		56C7EDE316E260EB00FFBBF2 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56C7EDC416E260EA00FFBBF2 /* UIKit.framework */; };
 		56C7EDE416E260EB00FFBBF2 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56C7EDC616E260EA00FFBBF2 /* Foundation.framework */; };
 		56C7EDF716E2687F00FFBBF2 /* PARStoreTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 56EAE19416E24C7500A7F31F /* PARStoreTests.m */; };
@@ -37,7 +36,6 @@
 		56C7EE1216E284A600FFBBF2 /* PARDispatchQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = 569D021D16E24FDA002675BA /* PARDispatchQueue.m */; };
 		56D5A90617F4493800AEA626 /* CoreData.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56EAE16E16E24C7500A7F31F /* CoreData.framework */; };
 		56EAE16B16E24C7500A7F31F /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56EAE16A16E24C7500A7F31F /* Cocoa.framework */; };
-		56EAE18916E24C7500A7F31F /* SenTestingKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56EAE18816E24C7500A7F31F /* SenTestingKit.framework */; };
 		56EAE18A16E24C7500A7F31F /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56EAE16A16E24C7500A7F31F /* Cocoa.framework */; };
 		56EAE19216E24C7500A7F31F /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 56EAE19016E24C7500A7F31F /* InfoPlist.strings */; };
 		56EAE19516E24C7500A7F31F /* PARStoreTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 56EAE19416E24C7500A7F31F /* PARStoreTests.m */; };
@@ -99,8 +97,7 @@
 		56EAE16D16E24C7500A7F31F /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		56EAE16E16E24C7500A7F31F /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
 		56EAE16F16E24C7500A7F31F /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
-		56EAE18716E24C7500A7F31F /* Mac-PARStoreTests.octest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Mac-PARStoreTests.octest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		56EAE18816E24C7500A7F31F /* SenTestingKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SenTestingKit.framework; path = Library/Frameworks/SenTestingKit.framework; sourceTree = DEVELOPER_DIR; };
+		56EAE18716E24C7500A7F31F /* Mac-PARStoreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Mac-PARStoreTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		56EAE18F16E24C7500A7F31F /* PARStoreTests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "PARStoreTests-Info.plist"; sourceTree = "<group>"; };
 		56EAE19116E24C7500A7F31F /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		56EAE19316E24C7500A7F31F /* PARStoreTests.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PARStoreTests.h; sourceTree = "<group>"; };
@@ -130,7 +127,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				56C7EDE216E260EB00FFBBF2 /* SenTestingKit.framework in Frameworks */,
 				56C7EDE316E260EB00FFBBF2 /* UIKit.framework in Frameworks */,
 				56C7EDE416E260EB00FFBBF2 /* Foundation.framework in Frameworks */,
 			);
@@ -149,7 +145,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				56EAE18916E24C7500A7F31F /* SenTestingKit.framework in Frameworks */,
 				56EAE18A16E24C7500A7F31F /* Cocoa.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -199,7 +194,7 @@
 			isa = PBXGroup;
 			children = (
 				56EAE16616E24C7500A7F31F /* Mac-PARStore.app */,
-				56EAE18716E24C7500A7F31F /* Mac-PARStoreTests.octest */,
+				56EAE18716E24C7500A7F31F /* Mac-PARStoreTests.xctest */,
 				56C7EDC216E260EA00FFBBF2 /* iOS-PARStore.app */,
 				56C7EDE116E260EB00FFBBF2 /* iOS-PARStoreTests.octest */,
 			);
@@ -210,7 +205,6 @@
 			isa = PBXGroup;
 			children = (
 				56EAE16A16E24C7500A7F31F /* Cocoa.framework */,
-				56EAE18816E24C7500A7F31F /* SenTestingKit.framework */,
 				56C7EDC416E260EA00FFBBF2 /* UIKit.framework */,
 				56C7EDC616E260EA00FFBBF2 /* Foundation.framework */,
 				56C7EDC816E260EA00FFBBF2 /* CoreGraphics.framework */,
@@ -363,8 +357,8 @@
 			);
 			name = "Mac-PARStoreTests";
 			productName = PARStoreTests;
-			productReference = 56EAE18716E24C7500A7F31F /* Mac-PARStoreTests.octest */;
-			productType = "com.apple.product-type.bundle";
+			productReference = 56EAE18716E24C7500A7F31F /* Mac-PARStoreTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -712,7 +706,6 @@
 				INFOPLIST_FILE = "Tests/PARStoreTests-Info.plist";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TEST_HOST = "$(BUNDLE_LOADER)";
-				WRAPPER_EXTENSION = octest;
 			};
 			name = Debug;
 		};
@@ -727,7 +720,6 @@
 				INFOPLIST_FILE = "Tests/PARStoreTests-Info.plist";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TEST_HOST = "$(BUNDLE_LOADER)";
-				WRAPPER_EXTENSION = octest;
 			};
 			name = Release;
 		};

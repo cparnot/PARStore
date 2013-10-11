@@ -3,9 +3,9 @@
 //  Copyright (c) 2013 Charles Parnot. All rights reserved.
 
 
-#import <SenTestingKit/SenTestingKit.h>
+#import <XCTest/XCTest.h>
 
-@interface PARTestCase : SenTestCase
+@interface PARTestCase : XCTestCase
 
 // utilities
 - (NSURL *)urlWithUniqueTmpDirectory;

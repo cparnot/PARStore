@@ -17,7 +17,7 @@
     NSURL *url = [NSURL fileURLWithPath:path];
     NSError *error = nil;
     BOOL success = [[NSFileManager defaultManager] createDirectoryAtURL:url withIntermediateDirectories:YES attributes:nil error:&error];
-    STAssertTrue(success, @"Could not create temporary directory:\npath: %@\nerror: %@", path, error);
+    XCTAssertTrue(success, @"Could not create temporary directory:\npath: %@\nerror: %@", path, error);
     return url;
 }
 
