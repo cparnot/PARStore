@@ -174,6 +174,11 @@ NSString *PARDevicesDirectoryName = @"devices";
     return [[[self deviceRootPath] stringByAppendingPathComponent:deviceIdentifier] stringByAppendingPathComponent:PARDatabaseFileName];
 }
 
+- (NSString *)deviceIdentifierForDatabasePath:(NSString *)path
+{
+    return [[path stringByDeletingLastPathComponent] lastPathComponent];
+}
+
 - (NSString *)readwriteDirectoryPath
 {
     if (self._inMemory || ![self.storeURL isFileURL])
@@ -448,7 +453,8 @@ NSString *PARDevicesDirectoryName = @"devices";
     for (NSString *path in allDirs)
     {
 		NSString *storePath = [path stringByAppendingPathComponent:PARDatabaseFileName];
-        if ([currentDirs containsObject:storePath]) {
+        if ([currentDirs containsObject:storePath])
+        {
 			// instead of ignoring this store, reload it to get the synced contents if available
 			// TODO: very inefficient, should only reload when it has been changed of course.
 			
@@ -1101,7 +1107,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         if (!timestamp)
             timestamp = self.keyTimestamps[key];
         if (!timestamp)
-            timestamp = [NSNumber numberWithInteger:NSIntegerMin]; // distant past
+            timestamp = [PARStore timestampForDistantPath]; // distant past
         newKeyTimestamps[key] = timestamp;
     }
     self.keyTimestamps = [NSDictionary dictionaryWithDictionary:newKeyTimestamps];
@@ -1114,7 +1120,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         if (!timestamp)
             timestamp = [self.databaseTimestamps objectForKey:store];
         if (!timestamp)
-            timestamp = [NSNumber numberWithInteger:NSIntegerMin]; // distant past
+            timestamp = [PARStore timestampForDistantPath]; // distant past
         [newDatabaseTimestamps setObject:timestamp forKey:store];
     }
     self.databaseTimestamps = newDatabaseTimestamps;
@@ -1205,6 +1211,37 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 #pragma mark - Getting Timestamps
 
++ (NSNumber *)timestampForDistantPath
+{
+    static NSNumber *timestampForDistantPath = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        timestampForDistantPath = @(NSIntegerMin);
+    });
+    return timestampForDistantPath;
+}
+
+- (NSDictionary *)mostRecentTimestampsByDeviceIdentifiers
+{
+    NSMutableDictionary *timestamps = [NSMutableDictionary dictionary];
+    [self.databaseQueue dispatchSynchronously:^
+     {
+         NSArray *allStores = [self._managedObjectContext.persistentStoreCoordinator persistentStores];
+         for (NSPersistentStore *store in allStores)
+         {
+             NSString *deviceIdentifier = [self deviceIdentifierForDatabasePath:store.URL.path];
+             if (!deviceIdentifier)
+                 continue;
+             NSNumber *timestamp = [self.databaseTimestamps objectForKey:store];
+             if (!timestamp)
+                 timestamp = [PARStore timestampForDistantPath];
+             timestamps[deviceIdentifier] = deviceIdentifier;
+         }
+     }];
+    return [NSDictionary dictionaryWithDictionary:timestamps];
+}
+
 - (NSNumber *)mostRecentTimestampWithDeviceIdentifier:(NSString *)deviceIdentifier
 {
     if (deviceIdentifier == nil)
@@ -1213,19 +1250,13 @@ NSString *PARDevicesDirectoryName = @"devices";
     __block NSNumber *timestamp = nil;
     [self.databaseQueue dispatchSynchronously:^
     {
-        // store to fetch
+        // store
         NSPersistentStore *store = [self._managedObjectContext.persistentStoreCoordinator persistentStoreForURL:[NSURL fileURLWithPath:[self databasePathForDeviceIdentifier:deviceIdentifier]]];
         if (!store)
             return;
         
-        // fetch
-        NSFetchRequest *request = [NSFetchRequest fetchRequestWithEntityName:@"Log"];
-        [request setSortDescriptors:@[[NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:NO]]];
-        [request setAffectedStores:@[store]];
-        [request setFetchLimit:1];
-        [request setReturnsObjectsAsFaults:NO];
-        NSManagedObject *log = [[self._managedObjectContext executeFetchRequest:request error:NULL] lastObject];
-        timestamp = [log valueForKey:@"timestamp"];
+        // timestamp
+        timestamp = [self.databaseTimestamps objectForKey:store];
     }];
     
     return timestamp;
