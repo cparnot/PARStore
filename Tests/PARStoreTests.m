@@ -258,6 +258,7 @@
     NSString *title = @"The Title";
 	store1.title = title;
     [store1 saveNow];
+    [store2 syncNow];
 
     // check timestamps
     NSNumber *timestamp11 = [store1 mostRecentTimestampWithDeviceIdentifier:@"1"];
