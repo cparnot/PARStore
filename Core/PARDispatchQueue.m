@@ -294,7 +294,7 @@ static PARDispatchQueue *PARMainDispatchQueue = nil;
 {
     [self dispatchAsynchronously:^
     {
-        for (NSString *name in [self.timers keyEnumerator])
+        for (NSString *name in self.timers.allKeys)
             [self _cancelTimerWithName:name];
     }];
 }
