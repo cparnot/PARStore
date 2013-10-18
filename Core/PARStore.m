@@ -628,6 +628,7 @@ NSString *PARDevicesDirectoryName = @"devices";
                   [newLog setValue:oldTimestamp forKey:@"parentTimestamp"];
                   [newLog setValue:key forKey:@"key"];
                   [newLog setValue:blob forKey:@"blob"];
+                  [self.databaseTimestamps setObject:newTimestamp forKey:self.readwriteDatabase];
                   
                   // make sure we save 1 sec after new logs stop being added, or else every 15 seconds
                   [self.databaseQueue scheduleTimerWithName:@"save_delay" timeInterval:1.0 behavior:PARTimerBehaviorDelay block:^{ [self save:NULL]; }];
@@ -685,6 +686,7 @@ NSString *PARDevicesDirectoryName = @"devices";
                   [newLog setValue:key forKey:@"key"];
                   [newLog setValue:blob forKey:@"blob"];
               }];
+              [self.databaseTimestamps setObject:newTimestamp forKey:self.readwriteDatabase];
               
               // make sure we save 1 sec after new logs stop being added, or else every 15 seconds
               [self.databaseQueue scheduleTimerWithName:@"save_delay" timeInterval:1.0 behavior:PARTimerBehaviorDelay block:^{ [self save:NULL]; }];
@@ -1114,7 +1116,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     
     // update the timestamps for the databases
     NSMapTable *newDatabaseTimestamps = [NSMapTable weakToStrongObjectsMapTable];
-    for (NSPersistentStore *store in self.readonlyDatabases)
+    for (NSPersistentStore *store in [self.readonlyDatabases arrayByAddingObject:self.readwriteDatabase])
     {
         NSNumber *timestamp = [updatedDatabaseTimestamps objectForKey:store];
         if (!timestamp)
