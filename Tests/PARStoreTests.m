@@ -265,12 +265,14 @@
     NSNumber *timestamp12 = [store1 mostRecentTimestampWithDeviceIdentifier:@"2"];
     NSNumber *timestamp21 = [store2 mostRecentTimestampWithDeviceIdentifier:@"1"];
     NSNumber *timestamp22 = [store2 mostRecentTimestampWithDeviceIdentifier:@"2"];
+    NSNumber *timestampForDistantPath = [PARStore timestampForDistantPath];
     XCTAssertNotNil(timestamp11, @"timestamp expected in store 1");
     XCTAssertNotNil(timestamp21, @"timestamp expected in store 1");
     XCTAssertEqualObjects(timestamp11, timestamp21, @"");
-    XCTAssertNil(timestamp12, @"no timestamp expected in store 2");
-    XCTAssertNil(timestamp22, @"no timestamp expected in store 2");
     
+    XCTAssertEqualObjects(nil, timestamp12, @"no timestamp expected in store 2");
+    XCTAssertEqualObjects(timestampForDistantPath, timestamp22, @"no timestamp expected in store 2");
+
     [store1 closeNow];
     [store2 closeNow];
 }
