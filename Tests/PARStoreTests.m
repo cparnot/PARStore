@@ -97,6 +97,16 @@
     store2 = nil;
 }
 
+- (void)testStoreSyncWithOneDevice
+{
+    // testing a bug that was still in commit 29c3af64047946244e23f52e85ebd8fe08c3fc8e, where the assertion for 'Inconsistent tracking of persistent stores' was wrongly raised
+	NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"SyncTest.parstore"];
+    PARStoreExample *store1 = [PARStoreExample storeWithURL:url deviceIdentifier:@"1"];
+    [store1 loadNow];
+	store1.title = @"New title";
+    [store1 syncNow];
+}
+
 - (void)testStoreSync
 {
 	NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"SyncTest.parstore"];

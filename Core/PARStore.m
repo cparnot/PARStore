@@ -1021,10 +1021,10 @@ NSString *PARDevicesDirectoryName = @"devices";
     {
         // there are 2 ways to determine `timestampLimit`, which depends on wether a new database was added since the last sync
         [self refreshStoreList];
-        BOOL countPreviousReadonlyDatabases = [self.databaseTimestamps count];
-        BOOL countCurrentReadonlyDatabases = [self.readonlyDatabases count];
-        NSAssert(countCurrentReadonlyDatabases >= countPreviousReadonlyDatabases, @"Inconsistent tracking of persistent stores");
-        BOOL newStoreAdded = (countCurrentReadonlyDatabases < countPreviousReadonlyDatabases);
+        NSUInteger countAllDatabasesBefore   = [self.databaseTimestamps count];
+        NSUInteger countReadonlyDatabasesNow = [self.readonlyDatabases count];
+        NSAssert(countReadonlyDatabasesNow + 1 >= countAllDatabasesBefore, @"Inconsistent tracking of persistent stores");
+        BOOL newStoreAdded = (countAllDatabasesBefore < countReadonlyDatabasesNow + 1);
         
         // Case 1: new store was added --> use the oldest of the latest timestamps from each valid key
         // Case 2: no new store added  --> use the oldest of the latest timestamps from each store
