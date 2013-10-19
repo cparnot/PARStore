@@ -1238,7 +1238,7 @@ NSString *PARDevicesDirectoryName = @"devices";
              NSNumber *timestamp = [self.databaseTimestamps objectForKey:store];
              if (!timestamp)
                  timestamp = [PARStore timestampForDistantPath];
-             timestamps[deviceIdentifier] = deviceIdentifier;
+             timestamps[deviceIdentifier] = timestamp;
          }
      }];
     return [NSDictionary dictionaryWithDictionary:timestamps];

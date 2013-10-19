@@ -277,5 +277,40 @@
     [store2 closeNow];
 }
 
+- (void)testMostRecentTimestampDictionary
+{
+	NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"SyncTest.parstore"];
+	
+    PARStoreExample *store1 = [PARStoreExample storeWithURL:url deviceIdentifier:@"1"];
+    [store1 loadNow];
+	XCTAssertTrue([store1 loaded], @"Store not loaded");
+	
+	PARStoreExample *store2 = [PARStoreExample storeWithURL:url deviceIdentifier:@"2"];
+    [store2 loadNow];
+	XCTAssertTrue([store2 loaded], @"Store not loaded");
+	
+    // change first store
+    NSString *title = @"The Title";
+	store1.title = title;
+    [store1 saveNow];
+    [store2 syncNow];
+    
+    // check timestamps
+    NSNumber *timestamp11 = [store1 mostRecentTimestampsByDeviceIdentifiers][@"1"];
+    NSNumber *timestamp12 = [store1 mostRecentTimestampsByDeviceIdentifiers][@"2"];
+    NSNumber *timestamp21 = [store2 mostRecentTimestampsByDeviceIdentifiers][@"1"];
+    NSNumber *timestamp22 = [store2 mostRecentTimestampsByDeviceIdentifiers][@"2"];
+    NSNumber *timestampForDistantPath = [PARStore timestampForDistantPath];
+    XCTAssertNotNil(timestamp11, @"timestamp expected in store 1");
+    XCTAssertNotNil(timestamp21, @"timestamp expected in store 1");
+    XCTAssertEqualObjects(timestamp11, timestamp21, @"");
+    
+    XCTAssertEqualObjects(nil, timestamp12, @"no timestamp expected in store 2");
+    XCTAssertEqualObjects(timestampForDistantPath, timestamp22, @"no timestamp expected in store 2");
+    
+    [store1 closeNow];
+    [store2 closeNow];
+}
+
 
 @end
