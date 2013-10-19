@@ -6,6 +6,11 @@
 #import "PARStoreExample.h"
 #import <objc/runtime.h>
 
+@interface PARStore (PARStorePrivate)
+@property (retain) PARDispatchQueue *notificationQueue;
+- (void)postNotificationWithName:(NSString *)notificationName;
+@end
+
 @implementation PARStoreExample
 
 
@@ -70,6 +75,19 @@ void metadataSetter(id self, SEL _cmd, id newValue)
     
     // set metadata value
     [self setPropertyListValue:newValue forKey:property];
+}
+
+#pragma mark - Throttling notifications
+
+// to test that notifications are all sent when `waitUntilFinished` returns, we introduce here an extra delay to make sure the test fails without the proper queuing
+- (void)postNotificationWithName:(NSString *)notificationName
+{
+    [self.notificationQueue dispatchAsynchronously:^
+     {
+         if (self.shouldThrottleNotifications)
+             [NSThread sleepForTimeInterval:0.3];
+     }];
+    [super postNotificationWithName:notificationName];
 }
 
 

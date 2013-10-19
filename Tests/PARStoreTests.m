@@ -312,5 +312,48 @@
     [store2 closeNow];
 }
 
+- (void)testWaitUntilFinished
+{
+	NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"SyncTest.parstore"];
+	
+    PARStoreExample *store1 = [PARStoreExample storeWithURL:url deviceIdentifier:@"1"];
+    [store1 loadNow];
+	XCTAssertTrue([store1 loaded], @"Store not loaded");
+    
+    // add second device --> should trigger a sync in the first store, though no change yet
+	PARStoreExample *store2 = [PARStoreExample storeWithURL:url deviceIdentifier:@"2"];
+    [store2 loadNow];
+	XCTAssertTrue([store2 loaded], @"Store not loaded");
+
+    // by throttling notifications, we increase the chance that the test will fail if `waitUntilFinished` is flawed
+    store1.shouldThrottleNotifications = YES;
+    store2.shouldThrottleNotifications = YES;
+
+    // setup semaphores for the expected notifications after a change in store 1
+    PARNotificationSemaphore *semaphore1 = [PARNotificationSemaphore semaphoreForNotificationName:PARStoreDidChangeNotification object:store1];
+    PARNotificationSemaphore *semaphore2 = [PARNotificationSemaphore semaphoreForNotificationName:PARStoreDidSyncNotification object:store2];
+
+    // change first store --> should trigger a notification change in the store 1 and a sync notification in store 2
+	store1.title = @"New Title";
+    
+    // once `waitUntilFinished` returns, the change notification should have been sent
+    [store1 waitUntilFinished];
+    XCTAssertTrue(semaphore1.notificationWasPosted, @"change notification for store 1 not posted yet");
+
+    // once `waitUntilFinished` returns, the sync notification should have been sent
+    [store2 syncNow];
+    [store2 waitUntilFinished];
+    XCTAssertTrue(semaphore2.notificationWasPosted, @"sync notification for store 2 not posted yet");
+
+    // timeout
+    BOOL completedWithoutTimeout1 = [semaphore1 waitUntilNotificationWithTimeout:10.0];
+    XCTAssertTrue(completedWithoutTimeout1, @"Timeout while waiting for store 1 change notification");
+    BOOL completedWithoutTimeout2 = [semaphore2 waitUntilNotificationWithTimeout:10.0];
+    XCTAssertTrue(completedWithoutTimeout2, @"Timeout while waiting for store 2 sync notification");
+    
+    // done
+    [store1 closeNow];
+    [store2 closeNow];
+}
 
 @end

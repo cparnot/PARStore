@@ -15,4 +15,6 @@
 
 - (NSArray *)relevantKeysForSync;
 
+@property BOOL shouldThrottleNotifications;
+
 @end
