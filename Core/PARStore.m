@@ -44,6 +44,9 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
 @property (retain, nonatomic) NSMutableDictionary *_memoryFileData;
 @property (retain) NSMutableDictionary *_memoryKeyTimestamps;
 
+// queue for the notifications
+@property (retain) PARDispatchQueue *notificationQueue;
+
 // queue needed for NSFilePresenter protocol
 @property (retain) NSOperationQueue *presenterQueue;
 
@@ -60,10 +63,12 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
     
     // queue labels appear in crash reports and other debugging info
     NSString *urlLabel = [[url lastPathComponent] stringByReplacingOccurrencesOfString:@"." withString:@"_"];
-    NSString *databaseQueueLabel = [PARDispatchQueue labelByPrependingBundleIdentifierToString:[NSString stringWithFormat:@"database_queue.%@", urlLabel]];
-    NSString *memoryQueueLabel = [PARDispatchQueue labelByPrependingBundleIdentifierToString:[NSString stringWithFormat:@"memory_queue.%@", urlLabel]];
-    store.databaseQueue  = [PARDispatchQueue dispatchQueueWithLabel:databaseQueueLabel];
-    store.memoryQueue = [PARDispatchQueue dispatchQueueWithLabel:memoryQueueLabel];
+    NSString *databaseQueueLabel = [PARDispatchQueue labelByPrependingBundleIdentifierToString:[NSString stringWithFormat:@"database.%@", urlLabel]];
+    NSString *memoryQueueLabel = [PARDispatchQueue labelByPrependingBundleIdentifierToString:[NSString stringWithFormat:@"memory.%@", urlLabel]];
+    NSString *notificationQueueLabel = [PARDispatchQueue labelByPrependingBundleIdentifierToString:[NSString stringWithFormat:@"notifications.%@", urlLabel]];
+    store.databaseQueue     = [PARDispatchQueue dispatchQueueWithLabel:databaseQueueLabel];
+    store.memoryQueue       = [PARDispatchQueue dispatchQueueWithLabel:memoryQueueLabel];
+    store.notificationQueue = [PARDispatchQueue dispatchQueueWithLabel:notificationQueueLabel];
     
     // misc initializations
     store.databaseTimestamps = [NSMapTable weakToStrongObjectsMapTable];
@@ -130,11 +135,10 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
     self._loaded = NO;
     self._deleted = NO;
 
-    // post notification outside of the queue, to avoid deadlocks when using a block for the notification callback and tries to access the data
-    // in addition, to make sure the database is saved when the notification is received, the call is scheduled from within the database queue
+    // to make sure the database is saved when the notification is received, the call is scheduled from within the database queue
     [self.databaseQueue dispatchAsynchronously:^
     {
-        [[PARDispatchQueue globalDispatchQueue] dispatchAsynchronously:^{[[NSNotificationCenter defaultCenter] postNotificationName:PARStoreDidCloseNotification object:self];}];
+        [self postNotificationWithName:PARStoreDidCloseNotification];
     }];
 }
 
@@ -145,8 +149,9 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
 
 - (void)closeNow
 {
-    [self.memoryQueue dispatchSynchronously:^{ [self _close]; }];
-    [self.databaseQueue dispatchSynchronously:^{ }];
+    [self.memoryQueue       dispatchSynchronously:^{ [self _close]; }];
+    [self.databaseQueue     dispatchSynchronously:^{ }];
+    [self.notificationQueue dispatchSynchronously:^{ }];
 }
 
 - (void)dealloc
@@ -601,7 +606,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     [self.memoryQueue dispatchSynchronously:^
      {
          self._memory[key] = plist;
-         [[PARDispatchQueue globalDispatchQueue] dispatchAsynchronously:^{[[NSNotificationCenter defaultCenter] postNotificationName:PARStoreDidChangeNotification object:self];}];
+         [self postNotificationWithName:PARStoreDidChangeNotification];
          
          if (self._inMemory)
              return;
@@ -643,7 +648,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     [self.memoryQueue dispatchSynchronously:^
      {
          [self._memory addEntriesFromDictionary:dictionary];
-         [[PARDispatchQueue globalDispatchQueue] dispatchAsynchronously:^{[[NSNotificationCenter defaultCenter] postNotificationName:PARStoreDidChangeNotification object:self];}];
+         [self postNotificationWithName:PARStoreDidChangeNotification];
          
          if (self._inMemory)
              return;
@@ -977,9 +982,10 @@ NSString *PARDevicesDirectoryName = @"devices";
 - (void)_sync
 {
     NSAssert([self.databaseQueue isCurrentQueue], @"%@:%@ should only be called from within the database queue", [self class],NSStringFromSelector(_cmd));
+    
+    // sync is not relevant for in-memory stores
     if (self._inMemory)
         return;
-        
 
     // never resuscitate a deleted store
     if ([self deleted])
@@ -1023,7 +1029,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         }
     }
     
-    // fetch Log rows in timestamp order, starting at `timestampLimit`
+    // fetch Log rows in reverse timestamp order, starting at `timestampLimit`
     NSError *errorLogs = nil;
     NSFetchRequest *logsRequest = [NSFetchRequest fetchRequestWithEntityName:@"Log"];
     if (timestampLimit)
@@ -1135,8 +1141,7 @@ NSString *PARDevicesDirectoryName = @"devices";
              self._memory = [NSMutableDictionary dictionaryWithDictionary:updatedValues];
              self._memoryKeyTimestamps = [NSMutableDictionary dictionaryWithDictionary:updatedKeyTimestamps];
              self._loaded = YES;
-             // post notification outside of the queue, to avoid deadlocks when using a block for the notification callback and tries to access the data
-             [[PARDispatchQueue globalDispatchQueue] dispatchAsynchronously:^{[[NSNotificationCenter defaultCenter] postNotificationName:PARStoreDidLoadNotification object:self];}];
+             [self postNotificationWithName:PARStoreDidLoadNotification];
          }];
     }
     
@@ -1160,8 +1165,7 @@ NSString *PARDevicesDirectoryName = @"devices";
               }];
              
              [self applySyncChangeWithValues:changedValues timestamps:changedTimestamps];
-             // post notification outside of the queue, to avoid deadlocks when using a block for the notification callback and tries to access the data
-             [[PARDispatchQueue globalDispatchQueue] dispatchAsynchronously:^{[[NSNotificationCenter defaultCenter] postNotificationName:PARStoreDidSyncNotification object:self];}];
+             [self postNotificationWithName:PARStoreDidSyncNotification];
          }];
     }
 }
@@ -1208,6 +1212,26 @@ NSString *PARDevicesDirectoryName = @"devices";
 - (void)syncNow
 {
     [self.databaseQueue dispatchSynchronously:^{ if ([self loaded]) [self _sync]; }];
+}
+
+
+#pragma mark - Notifications
+
+// post notifications asynchronously, in a dedicated serial queue, to
+// (1) avoid deadlocks when using a block for the notification callback and tries to access the data
+// (2) enforce serialization of the notifications
+// (3) allows us to properly close the store with all the notifications sent
+- (void)postNotificationWithName:(NSString *)notificationName
+{
+    [self.notificationQueue dispatchAsynchronously:^
+    {
+        #ifdef TEST
+        if (self.shouldThrottleNotifications)
+            [NSThread sleepForTimeInterval:1.0];
+        #endif
+        [[NSNotificationCenter defaultCenter] postNotificationName:notificationName object:self];
+    }];
+    
 }
 
 
@@ -1398,7 +1422,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 		completionHandler(nil);
 	}
     
-    [[NSNotificationCenter defaultCenter] postNotificationName:PARStoreDidDeleteNotification object:self];
+    [self postNotificationWithName:PARStoreDidDeleteNotification];
 }
 
 @end
