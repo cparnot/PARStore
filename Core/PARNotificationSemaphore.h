@@ -9,4 +9,6 @@
 + (PARNotificationSemaphore *)semaphoreForNotificationName:(NSString *)name object:(id)obj;
 - (BOOL)waitUntilNotificationWithTimeout:(NSTimeInterval)timeout;
 
+@property (readonly) BOOL notificationWasPosted;
+
 @end

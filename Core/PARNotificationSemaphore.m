@@ -8,6 +8,7 @@
 @interface PARNotificationSemaphore()
 @property (strong) dispatch_semaphore_t dispatchSemaphore;
 @property (strong) NSOperationQueue *operationQueue;
+@property (readwrite) BOOL _notificationWasPosted;
 @end
 
 @implementation PARNotificationSemaphore
@@ -19,6 +20,7 @@
     notificationSemaphore.operationQueue = [[NSOperationQueue alloc] init];
     [[NSNotificationCenter defaultCenter] addObserverForName:name object:obj queue:notificationSemaphore.operationQueue usingBlock:^(NSNotification *note)
     {
+        notificationSemaphore._notificationWasPosted = YES;
         dispatch_semaphore_signal(notificationSemaphore.dispatchSemaphore);
     }];
     return notificationSemaphore;
@@ -28,6 +30,11 @@
 {
     long waitResult = dispatch_semaphore_wait(self.dispatchSemaphore, dispatch_time(DISPATCH_TIME_NOW, timeout * NSEC_PER_SEC));
     return (waitResult == 0);
+}
+
+- (BOOL)notificationWasPosted
+{
+    return self._notificationWasPosted;
 }
 
 @end
