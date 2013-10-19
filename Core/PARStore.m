@@ -154,6 +154,13 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
     [self.notificationQueue dispatchSynchronously:^{ }];
 }
 
+- (void)waitUntilFinished
+{
+    [self.memoryQueue       dispatchSynchronously:^{ }];
+    [self.databaseQueue     dispatchSynchronously:^{ [self save:NULL]; [self _sync]; }];
+    [self.notificationQueue dispatchSynchronously:^{ }];
+}
+
 - (void)dealloc
 {
     // do not access '_loaded' via the queue or via the safe [self loaded] accessor, to avoid further waiting for a queue: if closed properly, this will be safe, and otherwise, we are already in trouble

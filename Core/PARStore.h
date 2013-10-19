@@ -63,6 +63,7 @@ extern NSString *PARStoreDidSyncNotification;
 - (void)closeNow;
 - (void)syncNow;
 - (void)saveNow;
+- (void)waitUntilFinished;
 
 // TODO: history
 
