@@ -532,6 +532,12 @@ NSString *PARDevicesDirectoryName = @"devices";
     [self.databaseQueue dispatchSynchronously:^{ if ([self loaded]) [self save:NULL]; }];
 }
 
+- (void)saveSoon
+{
+    [self.databaseQueue scheduleTimerWithName:@"save_delay" timeInterval:1.0 behavior:PARTimerBehaviorDelay block:^{ [self save:NULL]; }];
+    [self.databaseQueue scheduleTimerWithName:@"save_coalesce" timeInterval:15.0 behavior:PARTimerBehaviorCoalesce block:^{ [self save:NULL]; }];
+}
+
 - (void)closeDatabase
 {
     NSAssert([self.databaseQueue isCurrentQueue], @"%@:%@ should only be called from within the database queue", [self class],NSStringFromSelector(_cmd));
@@ -642,9 +648,8 @@ NSString *PARDevicesDirectoryName = @"devices";
                   [newLog setValue:blob forKey:@"blob"];
                   [self.databaseTimestamps setObject:newTimestamp forKey:self.readwriteDatabase];
                   
-                  // make sure we save 1 sec after new logs stop being added, or else every 15 seconds
-                  [self.databaseQueue scheduleTimerWithName:@"save_delay" timeInterval:1.0 behavior:PARTimerBehaviorDelay block:^{ [self save:NULL]; }];
-                  [self.databaseQueue scheduleTimerWithName:@"save_coalesce" timeInterval:15.0 behavior:PARTimerBehaviorCoalesce block:^{ [self save:NULL]; }];
+                  // schedule database save
+                  [self saveSoon];
               }];
          }
      }];
@@ -700,9 +705,8 @@ NSString *PARDevicesDirectoryName = @"devices";
               }];
               [self.databaseTimestamps setObject:newTimestamp forKey:self.readwriteDatabase];
               
-              // make sure we save 1 sec after new logs stop being added, or else every 15 seconds
-              [self.databaseQueue scheduleTimerWithName:@"save_delay" timeInterval:1.0 behavior:PARTimerBehaviorDelay block:^{ [self save:NULL]; }];
-              [self.databaseQueue scheduleTimerWithName:@"save_coalesce" timeInterval:15.0 behavior:PARTimerBehaviorCoalesce block:^{ [self save:NULL]; }];
+              // schedule database save
+              [self saveSoon];
           }];
      }];
 }
