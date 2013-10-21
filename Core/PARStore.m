@@ -540,11 +540,8 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (void)closeDatabase
 {
-    NSAssert([self.databaseQueue isCurrentQueue], @"%@:%@ should only be called from within the database queue", [self class],NSStringFromSelector(_cmd));
-    [self.databaseQueue cancelTimerWithName:@"save_delay"];
-    [self.databaseQueue cancelTimerWithName:@"save_coalesce"];
-    [self.databaseQueue cancelTimerWithName:@"sync_delay"];
-    [self.databaseQueue cancelTimerWithName:@"sync_coalesce"];
+    NSAssert([self.databaseQueue isCurrentQueue], @"%@:%@ should only be called from within the database queue", [self class], NSStringFromSelector(_cmd));
+    [self.databaseQueue cancelAllTimers];
     self._managedObjectContext = nil;
 }
 
