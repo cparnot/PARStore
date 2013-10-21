@@ -9,6 +9,9 @@
 ///  - transparent syncing between multiple devices sharing the file via Dropbox, iCloud, or other file-based syncing system
 ///  - includes full history
 
+/// Note on memory management: before releasing a store object, it is recommended to call `saveNow` or `waitUntilFinished`, but not necessary. Any change will schedule a save operation that will still be performed and the object will still be retained until that happens. It is not necessary to explicitely `close` a store.
+
+
 /// @name Notifications
 extern NSString *PARStoreDidLoadNotification;
 extern NSString *PARStoreDidCloseNotification;

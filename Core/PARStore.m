@@ -161,11 +161,14 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
     [self.notificationQueue dispatchSynchronously:^{ }];
 }
 
+// since `self` is retained by the blocks used for scheduling a 'save' or a 'sync', we do not expect to be in a situation where the store is in an unsaved or inconsistent state when dealloc-ed
+// the database queue should not have any timer set anymore
 - (void)dealloc
 {
     // do not access '_loaded' via the queue or via the safe [self loaded] accessor, to avoid further waiting for a queue: if closed properly, this will be safe, and otherwise, we are already in trouble
-    if (self._loaded && !self._inMemory)
-        ErrorLog(@"Store should be properly closed before deallocating store with path: %@", [self.storeURL path]);
+    NSUInteger timerCount = _databaseQueue.timerCount;
+    if (timerCount > 0)
+        ErrorLog(@"Unexpected timer count of %@ for the database queue of store at path: %@", @(timerCount), [self.storeURL path]);
 }
 
 
