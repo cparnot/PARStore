@@ -19,6 +19,7 @@ static int PARIsCurrentValue = 1;
 @property (strong) NSMutableDictionary *timers;
 @property (nonatomic) PARDeadlockBehavior _deadlockBehavior;
 @property BOOL concurrent;
+@property NSUInteger timerCountPrivate;
 @end
 
 
@@ -282,12 +283,20 @@ static PARDispatchQueue *PARMainDispatchQueue = nil;
 - (void)scheduleTimerWithName:(NSString *)name timeInterval:(NSTimeInterval)delay behavior:(PARTimerBehavior)behavior block:(PARDispatchBlock)block
 {
     NSTimeInterval time = [self _now];
-    [self dispatchAsynchronously:^{ [self _scheduleTimerWithName:name referenceTime:time timeInterval:delay behavior:behavior block:block]; }];
+    [self dispatchAsynchronously:^
+    {
+        [self _scheduleTimerWithName:name referenceTime:time timeInterval:delay behavior:behavior block:block];
+        self.timerCountPrivate = self.timers.count;
+    }];
 }
 
 - (void)cancelTimerWithName:(NSString *)name
 {
-    [self dispatchAsynchronously:^{ [self _cancelTimerWithName:name]; }];
+    [self dispatchAsynchronously:^
+    {
+        [self _cancelTimerWithName:name];
+        self.timerCountPrivate = self.timers.count;
+    }];
 }
 
 - (void)cancelAllTimers
@@ -296,7 +305,15 @@ static PARDispatchQueue *PARMainDispatchQueue = nil;
     {
         for (NSString *name in self.timers.allKeys)
             [self _cancelTimerWithName:name];
+        self.timerCountPrivate = self.timers.count;
     }];
+}
+
+// the whole point of having a property timerCountPrivate` separate from the `timers` dictionary, is to not require a synchronous call into the queue, while still having an atomic accessor
+// the returned value may well be outdated by the time it is used (except if used **inside** the queue), but this should be obvious to the client
+- (NSUInteger)timerCount
+{
+    return _timerCountPrivate;
 }
 
 @end

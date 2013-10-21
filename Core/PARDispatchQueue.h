@@ -57,6 +57,7 @@ typedef NS_ENUM(NSInteger, PARDeadlockBehavior)
 - (void)scheduleTimerWithName:(NSString *)name timeInterval:(NSTimeInterval)delay behavior:(PARTimerBehavior)behavior block:(PARDispatchBlock)block;
 - (void)cancelTimerWithName:(NSString *)name;
 - (void)cancelAllTimers;
+- (NSUInteger)timerCount; // the returned value cannot be fully trusted, of course
 
 @end
 
