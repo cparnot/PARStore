@@ -27,6 +27,8 @@
     return @"948E9EEE-3398-4DD7-9183-C56866EF2350";
 }
 
+#pragma mark - Testing Store Creation
+
 - (void)testCreateThenLoadDocument
 {
     // first load = create and load store
@@ -97,6 +99,63 @@
     store2 = nil;
 }
 
+
+#pragma mark - Testing Content Access
+
+- (void)testPropertyListSetter
+{
+    NSString *title = @"Some title";
+    NSString *first = @"Albert";
+    
+    // first load = create document and save data
+    NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
+    PARStoreExample *document1 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
+    [document1 loadNow];
+    document1.title = title;
+    [document1 setPropertyListValue:first forKey:@"first"];
+    [document1 closeNow];
+    document1 = nil;
+    
+    // second load = load document and compare data
+    PARStoreExample *document2 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
+    [document2 loadNow];
+    NSString *actualTitle = [document2 propertyListValueForKey:@"title"];
+    NSString *actualFirst = document2.first;
+    XCTAssertEqualObjects(actualTitle, title, @"unexpected 'title' value after closing and reopening a document: '%@' instead of '%@'", actualTitle, title);
+    XCTAssertEqualObjects(actualFirst, first, @"unexpected 'first' value after closing and reopening a document: '%@' instead of '%@'", actualFirst, first);
+    [document2 closeNow];
+    document2 = nil;
+}
+
+- (void)testDictionarySetter
+{
+    NSString *title = @"Some title";
+    NSString *first = @"Albert";
+    NSDictionary *entries = @{@"title": title, @"first": first};
+    
+    // first load = create document and save data
+    NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
+    PARStoreExample *document1 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
+    [document1 loadNow];
+    [document1 setEntriesFromDictionary:entries];
+    [document1 closeNow];
+    document1 = nil;
+    
+    // second load = load document and compare data
+    PARStoreExample *document2 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
+    [document2 loadNow];
+    NSDictionary *actualEntries = document2.allRelevantValues;
+    NSString *actualTitle = actualEntries[@"title"];
+    NSString *actualFirst = actualEntries[@"first"];
+    XCTAssertEqualObjects(actualTitle, title, @"unexpected 'title' value after closing and reopening a document: '%@' instead of '%@'", actualTitle, title);
+    XCTAssertEqualObjects(actualFirst, first, @"unexpected 'first' value after closing and reopening a document: '%@' instead of '%@'", actualFirst, first);
+    [document2 closeNow];
+    document2 = nil;
+}
+
+
+#pragma mark - Testing Sync
+
 - (void)testStoreSyncWithOneDevice
 {
     // testing a bug that was still in commit 29c3af64047946244e23f52e85ebd8fe08c3fc8e, where the assertion for 'Inconsistent tracking of persistent stores' was wrongly raised
@@ -165,94 +224,10 @@
     [store2 closeNow];
 }
 
-// old bug now fixed
-- (void) testStoreLoadNotificationDeadlock
-{
-	NSUUID *deviceUUID = [NSUUID UUID];
-	NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
-	
-	// create a store
-	PARStoreExample *store1 = [PARStoreExample storeWithURL:url deviceIdentifier:[deviceUUID UUIDString]];
-	[store1 loadNow];
-    NSString *title = @"The Title";
-	store1.title = title;
-	[store1 closeNow];
-	
-	// load store at same url again
-	PARStoreExample *store2 = [PARStoreExample storeWithURL:url deviceIdentifier:[deviceUUID UUIDString]];
-	
-    // accessing a property on the dataQueue should not result in a dead-lock
-	[[NSNotificationCenter defaultCenter] addObserverForName:PARStoreDidLoadNotification object:store2 queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification *note)
-     {
-         NSString *title2 = store2.title;
-         title2 = nil;
-     }];
-	dispatch_semaphore_t sema = dispatch_semaphore_create(0);
-	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^
-    {
-		// fires did load notification on data queue, observer accesses layout, which also performs sync op on dataqueue
-		[store2 loadNow];
-		dispatch_semaphore_signal(sema);
-	});
-    
-	long waitResult = dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, 10.0 * NSEC_PER_SEC));
-	// NSLog(@"Wait result: %ld", waitResult);
-	
-	XCTAssertTrue(waitResult == 0, @"Timeout while waiting for document to load");
-}
 
-- (void)testPropertyListSetter
-{
-    NSString *title = @"Some title";
-    NSString *first = @"Albert";
-    
-    // first load = create document and save data
-    NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
-    PARStoreExample *document1 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
-    [document1 loadNow];
-    document1.title = title;
-    [document1 setPropertyListValue:first forKey:@"first"];
-    [document1 closeNow];
-    document1 = nil;
-    
-    // second load = load document and compare data
-    PARStoreExample *document2 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
-    [document2 loadNow];
-    NSString *actualTitle = [document2 propertyListValueForKey:@"title"];
-    NSString *actualFirst = document2.first;
-    XCTAssertEqualObjects(actualTitle, title, @"unexpected 'title' value after closing and reopening a document: '%@' instead of '%@'", actualTitle, title);
-    XCTAssertEqualObjects(actualFirst, first, @"unexpected 'first' value after closing and reopening a document: '%@' instead of '%@'", actualFirst, first);
-    [document2 closeNow];
-    document2 = nil;
-}
+#pragma mark - Testing Timestamps
 
-- (void)testDictionarySetter
-{
-    NSString *title = @"Some title";
-    NSString *first = @"Albert";
-    NSDictionary *entries = @{@"title": title, @"first": first};
-    
-    // first load = create document and save data
-    NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
-    PARStoreExample *document1 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
-    [document1 loadNow];
-    [document1 setEntriesFromDictionary:entries];
-    [document1 closeNow];
-    document1 = nil;
-    
-    // second load = load document and compare data
-    PARStoreExample *document2 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
-    [document2 loadNow];
-    NSDictionary *actualEntries = document2.allRelevantValues;
-    NSString *actualTitle = actualEntries[@"title"];
-    NSString *actualFirst = actualEntries[@"first"];
-    XCTAssertEqualObjects(actualTitle, title, @"unexpected 'title' value after closing and reopening a document: '%@' instead of '%@'", actualTitle, title);
-    XCTAssertEqualObjects(actualFirst, first, @"unexpected 'first' value after closing and reopening a document: '%@' instead of '%@'", actualFirst, first);
-    [document2 closeNow];
-    document2 = nil;
-}
-
-- (void)testMostRecentTimestamp
+- (void)testMostRecentTimestampForDeviceIdentifier
 {
 	NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"SyncTest.parstore"];
 	
@@ -269,7 +244,7 @@
 	store1.title = title;
     [store1 saveNow];
     [store2 syncNow];
-
+    
     // check timestamps
     NSNumber *timestamp11 = [store1 mostRecentTimestampWithDeviceIdentifier:@"1"];
     NSNumber *timestamp12 = [store1 mostRecentTimestampWithDeviceIdentifier:@"2"];
@@ -282,12 +257,12 @@
     
     XCTAssertEqualObjects(nil, timestamp12, @"no timestamp expected in store 2");
     XCTAssertEqualObjects(timestampForDistantPath, timestamp22, @"no timestamp expected in store 2");
-
+    
     [store1 closeNow];
     [store2 closeNow];
 }
 
-- (void)testMostRecentTimestampDictionary
+- (void)testMostRecentTimestampsByDeviceIdentifiers
 {
 	NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"SyncTest.parstore"];
 	
@@ -322,6 +297,46 @@
     [store2 closeNow];
 }
 
+
+#pragma mark - Testing Queues
+
+// old bug now fixed
+- (void) testStoreLoadNotificationDeadlock
+{
+	NSUUID *deviceUUID = [NSUUID UUID];
+	NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
+	
+	// create a store
+	PARStoreExample *store1 = [PARStoreExample storeWithURL:url deviceIdentifier:[deviceUUID UUIDString]];
+	[store1 loadNow];
+    NSString *title = @"The Title";
+	store1.title = title;
+	[store1 closeNow];
+	
+	// load store at same url again
+	PARStoreExample *store2 = [PARStoreExample storeWithURL:url deviceIdentifier:[deviceUUID UUIDString]];
+	
+    // accessing a property on the dataQueue should not result in a dead-lock
+	[[NSNotificationCenter defaultCenter] addObserverForName:PARStoreDidLoadNotification object:store2 queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification *note)
+     {
+         NSString *title2 = store2.title;
+         title2 = nil;
+     }];
+	dispatch_semaphore_t sema = dispatch_semaphore_create(0);
+	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^
+                   {
+                       // fires did load notification on data queue, observer accesses layout, which also performs sync op on dataqueue
+                       [store2 loadNow];
+                       dispatch_semaphore_signal(sema);
+                   });
+    
+	long waitResult = dispatch_semaphore_wait(sema, dispatch_time(DISPATCH_TIME_NOW, 10.0 * NSEC_PER_SEC));
+	// NSLog(@"Wait result: %ld", waitResult);
+	
+	XCTAssertTrue(waitResult == 0, @"Timeout while waiting for document to load");
+}
+
+
 - (void)testWaitUntilFinished
 {
 	NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"SyncTest.parstore"];
@@ -334,27 +349,27 @@
 	PARStoreExample *store2 = [PARStoreExample storeWithURL:url deviceIdentifier:@"2"];
     [store2 loadNow];
 	XCTAssertTrue([store2 loaded], @"Store not loaded");
-
+    
     // by throttling notifications, we increase the chance that the test will fail if `waitUntilFinished` is flawed
     store1.shouldThrottleNotifications = YES;
     store2.shouldThrottleNotifications = YES;
-
+    
     // setup semaphores for the expected notifications after a change in store 1
     PARNotificationSemaphore *semaphore1 = [PARNotificationSemaphore semaphoreForNotificationName:PARStoreDidChangeNotification object:store1];
     PARNotificationSemaphore *semaphore2 = [PARNotificationSemaphore semaphoreForNotificationName:PARStoreDidSyncNotification object:store2];
-
+    
     // change first store --> should trigger a notification change in the store 1 and a sync notification in store 2
 	store1.title = @"New Title";
     
     // once `waitUntilFinished` returns, the change notification should have been sent
     [store1 waitUntilFinished];
     XCTAssertTrue(semaphore1.notificationWasPosted, @"change notification for store 1 not posted yet");
-
+    
     // once `waitUntilFinished` returns, the sync notification should have been sent
     [store2 syncNow];
     [store2 waitUntilFinished];
     XCTAssertTrue(semaphore2.notificationWasPosted, @"sync notification for store 2 not posted yet");
-
+    
     // timeout
     BOOL completedWithoutTimeout1 = [semaphore1 waitUntilNotificationWithTimeout:10.0];
     XCTAssertTrue(completedWithoutTimeout1, @"Timeout while waiting for store 1 change notification");
