@@ -1279,7 +1279,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     return [NSDictionary dictionaryWithDictionary:timestamps];
 }
 
-- (NSNumber *)mostRecentTimestampWithDeviceIdentifier:(NSString *)deviceIdentifier
+- (NSNumber *)mostRecentTimestampForDeviceIdentifier:(NSString *)deviceIdentifier
 {
     if (deviceIdentifier == nil)
         return nil;
@@ -1296,6 +1296,25 @@ NSString *PARDevicesDirectoryName = @"devices";
         timestamp = [self.databaseTimestamps objectForKey:store];
     }];
     
+    return timestamp;
+}
+
+- (NSDictionary *)mostRecentTimestampByKeys
+{
+    __block NSDictionary *timestamps = [NSMutableDictionary dictionary];
+    [self.memoryQueue dispatchSynchronously:^
+     {
+         timestamps = [NSDictionary dictionaryWithDictionary:self._memoryKeyTimestamps];
+     }];
+    return timestamps;
+}
+
+- (NSNumber *)mostRecentTimestampForKey:(NSString *)key
+{
+    if (key == nil)
+        return nil;
+    __block NSNumber *timestamp = nil;
+    [self.memoryQueue dispatchSynchronously:^ { timestamp = self._memoryKeyTimestamps[key]; }];
     return timestamp;
 }
 

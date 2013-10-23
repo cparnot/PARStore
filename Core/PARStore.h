@@ -56,8 +56,10 @@ extern NSString *PARStoreDidSyncNotification;
 
 /// @name Getting Timestamps
 + (NSNumber *)timestampForDistantPath;
-- (NSDictionary  *)mostRecentTimestampsByDeviceIdentifiers;
-- (NSNumber *)mostRecentTimestampWithDeviceIdentifier:(NSString *)deviceIdentifier;
+- (NSDictionary *)mostRecentTimestampsByDeviceIdentifiers;
+- (NSNumber *)mostRecentTimestampForDeviceIdentifier:(NSString *)deviceIdentifier;
+- (NSDictionary *)mostRecentTimestampByKeys;
+- (NSNumber *)mostRecentTimestampForKey:(NSString *)key;
 
 /// @name Synchronous Method Calls
 // Synchronous calls can potentially result in longer wait, and should be avoided in the main thread.
