@@ -612,7 +612,6 @@ NSString *PARDevicesDirectoryName = @"devices";
 }
 
 
-#define MICROSECONDS_PER_SECOND (1000 * 1000)
 
 - (void)setPropertyListValue:(id)plist forKey:(NSString *)key
 {
@@ -633,8 +632,7 @@ NSString *PARDevicesDirectoryName = @"devices";
              // set the timestamp **before** dispatching the block, so we have the current date, not the date at which the block will be run
              // timestamp is cast to a signed 64-bit integer (we can't use NSInteger on iOS for that)
              NSNumber *oldTimestamp = self._memoryKeyTimestamps[key];
-             NSTimeInterval timestampInSeconds = [[NSDate date] timeIntervalSinceReferenceDate];
-             NSNumber *newTimestamp = @((uint64_t)(timestampInSeconds * MICROSECONDS_PER_SECOND));
+             NSNumber *newTimestamp = [PARStore timestampNow];
              self._memoryKeyTimestamps[key] = newTimestamp;
              [self.databaseQueue dispatchAsynchronously:
               ^{
@@ -666,9 +664,7 @@ NSString *PARDevicesDirectoryName = @"devices";
              return;
          
          // set the timestamp **before** dispatching to the database queue, so we have the current date, not the date at which the block runs
-         // timestamp is cast to a signed 64-bit integer (we can't use NSInteger on iOS for that)
-         NSTimeInterval timestampInSeconds = [[NSDate date] timeIntervalSinceReferenceDate];
-         NSNumber *newTimestamp = @((uint64_t)(timestampInSeconds * MICROSECONDS_PER_SECOND));
+         NSNumber *newTimestamp = [PARStore timestampNow];
          
          // memory timestamps
          NSMutableDictionary *oldTimestamps = [NSMutableDictionary dictionaryWithCapacity:dictionary.count];
@@ -1257,6 +1253,14 @@ NSString *PARDevicesDirectoryName = @"devices";
         timestampForDistantPath = @(NSIntegerMin);
     });
     return timestampForDistantPath;
+}
+
+#define MICROSECONDS_PER_SECOND (1000 * 1000)
++ (NSNumber *)timestampNow
+{
+    // timestamp is cast to a signed 64-bit integer (we can't use NSInteger on iOS for that)
+    NSTimeInterval timestampInSeconds = [[NSDate date] timeIntervalSinceReferenceDate];
+    return @((uint64_t)(timestampInSeconds * MICROSECONDS_PER_SECOND));
 }
 
 - (NSDictionary *)mostRecentTimestampsByDeviceIdentifiers
