@@ -246,10 +246,10 @@
     [store2 syncNow];
     
     // check timestamps
-    NSNumber *timestamp11 = [store1 mostRecentTimestampWithDeviceIdentifier:@"1"];
-    NSNumber *timestamp12 = [store1 mostRecentTimestampWithDeviceIdentifier:@"2"];
-    NSNumber *timestamp21 = [store2 mostRecentTimestampWithDeviceIdentifier:@"1"];
-    NSNumber *timestamp22 = [store2 mostRecentTimestampWithDeviceIdentifier:@"2"];
+    NSNumber *timestamp11 = [store1 mostRecentTimestampForDeviceIdentifier:@"1"];
+    NSNumber *timestamp12 = [store1 mostRecentTimestampForDeviceIdentifier:@"2"];
+    NSNumber *timestamp21 = [store2 mostRecentTimestampForDeviceIdentifier:@"1"];
+    NSNumber *timestamp22 = [store2 mostRecentTimestampForDeviceIdentifier:@"2"];
     NSNumber *timestampForDistantPath = [PARStore timestampForDistantPath];
     XCTAssertNotNil(timestamp11, @"timestamp expected in store 1");
     XCTAssertNotNil(timestamp21, @"timestamp expected in store 1");
@@ -295,6 +295,67 @@
     
     [store1 closeNow];
     [store2 closeNow];
+}
+
+- (void)testMostRecentTimestampForKey
+{
+	NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"SyncTest.parstore"];
+	
+    PARStoreExample *store = [PARStoreExample storeWithURL:url deviceIdentifier:@"1"];
+    [store loadNow];
+	XCTAssertTrue([store loaded], @"Store not loaded");
+
+    // change first store
+	store.first = @"Alice";
+	store.title = @"The Title";
+    [store saveNow];
+    
+    // check timestamps
+    NSNumber *timestamp1 = [store mostRecentTimestampForDeviceIdentifier:@"1"];
+    NSNumber *timestamp2 = [store mostRecentTimestampForKey:@"first"];
+    NSNumber *timestamp3 = [store mostRecentTimestampForKey:@"title"];
+    XCTAssertNotNil(timestamp1, @"timestamp expected in store 1");
+    XCTAssertNotNil(timestamp2, @"timestamp expected for key 'first'");
+    XCTAssertNotNil(timestamp3, @"timestamp expected for key 'title'");
+    XCTAssertEqualObjects(timestamp1, timestamp3, @"timestamps should be the same for device and 'title' key but are %@ and %@", timestamp1, timestamp2);
+    XCTAssertNotEqualObjects(timestamp1, timestamp2, @"timestamps should be different for device and 'first' key but are %@ and %@", timestamp1, timestamp2);
+    
+    [store closeNow];
+}
+
+- (void)testMostRecentTimestampsByKeys
+{
+	NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"SyncTest.parstore"];
+	
+    PARStoreExample *store = [PARStoreExample storeWithURL:url deviceIdentifier:@"1"];
+    [store loadNow];
+	XCTAssertTrue([store loaded], @"Store not loaded");
+    
+    // change first store
+	store.first = @"Alice";
+	store.title = @"The Title";
+    [store saveNow];
+    
+    // check timestamps
+    NSNumber *timestamp1  = [store mostRecentTimestampForDeviceIdentifier:@"1"];
+    NSNumber *timestamp2a = [store mostRecentTimestampForKey:@"first"];
+    NSNumber *timestamp3a = [store mostRecentTimestampForKey:@"title"];
+    NSNumber *timestamp2b = [store mostRecentTimestampByKeys][@"first"];
+    NSNumber *timestamp3b = [store mostRecentTimestampByKeys][@"title"];
+    
+    XCTAssertNotNil(timestamp1, @"timestamp expected in store 1");
+    XCTAssertNotNil(timestamp2a, @"timestamp expected for key 'first'");
+    XCTAssertNotNil(timestamp3a, @"timestamp expected for key 'title'");
+    XCTAssertNotNil(timestamp2b, @"timestamp expected for key 'first'");
+    XCTAssertNotNil(timestamp3b, @"timestamp expected for key 'title'");
+    
+    XCTAssertEqualObjects(timestamp1, timestamp3a, @"timestamps should be the same for device and 'title' key but are %@ and %@", timestamp1, timestamp2a);
+    XCTAssertNotEqualObjects(timestamp1, timestamp2a, @"timestamps should be different for device and 'first' key but are %@ and %@", timestamp1, timestamp2a);
+
+    XCTAssertEqualObjects(timestamp2a, timestamp2b, @"timestamps should be the same for 'first' key but are %@ and %@", timestamp2a, timestamp2b);
+    XCTAssertEqualObjects(timestamp3a, timestamp3b, @"timestamps should be the same for 'title' key but are %@ and %@", timestamp3a, timestamp3b);
+
+    [store closeNow];
 }
 
 
