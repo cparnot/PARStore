@@ -297,6 +297,56 @@
     [store2 closeNow];
 }
 
+- (void)testTimestampOrder
+{
+	NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"SyncTest.parstore"];
+	
+    PARStoreExample *store = [PARStoreExample storeWithURL:url deviceIdentifier:@"1"];
+    [store loadNow];
+	XCTAssertTrue([store loaded], @"Store not loaded");
+    
+    // change #1
+    NSNumber *timestamp1A = [PARStore timestampNow];
+	store.first = @"Alice";
+    NSNumber *timestamp1B = [PARStore timestampNow];
+    NSNumber *timestamp1 = [store mostRecentTimestampForKey:@"first"];
+    
+    // change #2
+    NSNumber *timestamp2A = [PARStore timestampNow];
+	store.title = @"The Title";
+    NSNumber *timestamp2B = [PARStore timestampNow];
+    NSNumber *timestamp2 = [store mostRecentTimestampForKey:@"title"];
+
+    // check timestamps not nil
+    XCTAssertNotNil(timestamp1, @"timestamp expected for key 'first'");
+    XCTAssertNotNil(timestamp2, @"timestamp expected for key 'title'");
+    XCTAssertNotNil(timestamp1A, @"timestamp expected with [PARStore timestampNow]");
+    XCTAssertNotNil(timestamp1B, @"timestamp expected with [PARStore timestampNow]");
+    XCTAssertNotNil(timestamp2A, @"timestamp expected with [PARStore timestampNow]");
+    XCTAssertNotNil(timestamp2B, @"timestamp expected with [PARStore timestampNow]");
+
+    // check timestamp order
+    NSArray *expectedOrders = @[
+                                @[@"1A before 1", timestamp1A, timestamp1],
+                                @[@"1B after  1", timestamp1, timestamp1B],
+                                
+                                @[@"2A before 2", timestamp2A, timestamp2],
+                                @[@"2B after  2", timestamp2, timestamp2B],
+
+                                @[@"1 before 2", timestamp1A, timestamp2],
+                                ];
+    for (NSArray *expectation in expectedOrders)
+    {
+        NSString *description = expectation[0];
+        NSNumber *timestampX = expectation[1];
+        NSNumber *timestampY = expectation[2];
+        BOOL orderIsCorrect = [timestampX compare:timestampY] == NSOrderedAscending;
+        XCTAssertTrue(orderIsCorrect, @"incorrect order: expected %@ but %@ is after %@", description, timestampX, timestampY);
+    }
+    
+    [store closeNow];
+}
+
 - (void)testMostRecentTimestampForKey
 {
 	NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"SyncTest.parstore"];
