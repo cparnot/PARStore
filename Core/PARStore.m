@@ -1263,7 +1263,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     return @((uint64_t)(timestampInSeconds * MICROSECONDS_PER_SECOND));
 }
 
-- (NSDictionary *)mostRecentTimestampsByDeviceIdentifiers
+- (NSDictionary *)mostRecentTimestampsByDeviceIdentifier
 {
     NSMutableDictionary *timestamps = [NSMutableDictionary dictionary];
     [self.databaseQueue dispatchSynchronously:^
@@ -1303,7 +1303,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     return timestamp;
 }
 
-- (NSDictionary *)mostRecentTimestampByKeys
+- (NSDictionary *)mostRecentTimestampsByKey
 {
     __block NSDictionary *timestamps = [NSMutableDictionary dictionary];
     [self.memoryQueue dispatchSynchronously:^

@@ -57,9 +57,9 @@ extern NSString *PARStoreDidSyncNotification;
 /// @name Getting Timestamps
 + (NSNumber *)timestampForDistantPath;
 + (NSNumber *)timestampNow;
-- (NSDictionary *)mostRecentTimestampsByDeviceIdentifiers;
+- (NSDictionary *)mostRecentTimestampsByDeviceIdentifier;
 - (NSNumber *)mostRecentTimestampForDeviceIdentifier:(NSString *)deviceIdentifier;
-- (NSDictionary *)mostRecentTimestampByKeys;
+- (NSDictionary *)mostRecentTimestampsByKey;
 - (NSNumber *)mostRecentTimestampForKey:(NSString *)key;
 
 /// @name Synchronous Method Calls

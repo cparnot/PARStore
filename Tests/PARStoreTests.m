@@ -281,10 +281,10 @@
     [store2 syncNow];
     
     // check timestamps
-    NSNumber *timestamp11 = [store1 mostRecentTimestampsByDeviceIdentifiers][@"1"];
-    NSNumber *timestamp12 = [store1 mostRecentTimestampsByDeviceIdentifiers][@"2"];
-    NSNumber *timestamp21 = [store2 mostRecentTimestampsByDeviceIdentifiers][@"1"];
-    NSNumber *timestamp22 = [store2 mostRecentTimestampsByDeviceIdentifiers][@"2"];
+    NSNumber *timestamp11 = [store1 mostRecentTimestampsByDeviceIdentifier][@"1"];
+    NSNumber *timestamp12 = [store1 mostRecentTimestampsByDeviceIdentifier][@"2"];
+    NSNumber *timestamp21 = [store2 mostRecentTimestampsByDeviceIdentifier][@"1"];
+    NSNumber *timestamp22 = [store2 mostRecentTimestampsByDeviceIdentifier][@"2"];
     NSNumber *timestampForDistantPath = [PARStore timestampForDistantPath];
     XCTAssertNotNil(timestamp11, @"timestamp expected in store 1");
     XCTAssertNotNil(timestamp21, @"timestamp expected in store 1");
@@ -390,8 +390,8 @@
     NSNumber *timestamp1  = [store mostRecentTimestampForDeviceIdentifier:@"1"];
     NSNumber *timestamp2a = [store mostRecentTimestampForKey:@"first"];
     NSNumber *timestamp3a = [store mostRecentTimestampForKey:@"title"];
-    NSNumber *timestamp2b = [store mostRecentTimestampByKeys][@"first"];
-    NSNumber *timestamp3b = [store mostRecentTimestampByKeys][@"title"];
+    NSNumber *timestamp2b = [store mostRecentTimestampsByKey][@"first"];
+    NSNumber *timestamp3b = [store mostRecentTimestampsByKey][@"title"];
     
     XCTAssertNotNil(timestamp1, @"timestamp expected in store 1");
     XCTAssertNotNil(timestamp2a, @"timestamp expected for key 'first'");
