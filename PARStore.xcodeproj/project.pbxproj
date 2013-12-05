@@ -85,7 +85,7 @@
 		56C7EDD616E260EB00FFBBF2 /* Default.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Default.png; sourceTree = "<group>"; };
 		56C7EDD816E260EB00FFBBF2 /* Default@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default@2x.png"; sourceTree = "<group>"; };
 		56C7EDDA16E260EB00FFBBF2 /* Default-568h@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-568h@2x.png"; sourceTree = "<group>"; };
-		56C7EDE116E260EB00FFBBF2 /* iOS-PARStoreTests.octest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "iOS-PARStoreTests.octest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		56C7EDE116E260EB00FFBBF2 /* iOS-PARStoreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "iOS-PARStoreTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		56C7EDFA16E26D0700FFBBF2 /* PARTestCase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PARTestCase.h; sourceTree = "<group>"; };
 		56C7EDFB16E26D0700FFBBF2 /* PARTestCase.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PARTestCase.m; sourceTree = "<group>"; };
 		56C7EDFE16E270C600FFBBF2 /* PARStoreExample.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PARStoreExample.h; sourceTree = "<group>"; };
@@ -196,7 +196,7 @@
 				56EAE16616E24C7500A7F31F /* Mac-PARStore.app */,
 				56EAE18716E24C7500A7F31F /* Mac-PARStoreTests.xctest */,
 				56C7EDC216E260EA00FFBBF2 /* iOS-PARStore.app */,
-				56C7EDE116E260EB00FFBBF2 /* iOS-PARStoreTests.octest */,
+				56C7EDE116E260EB00FFBBF2 /* iOS-PARStoreTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -321,7 +321,7 @@
 			);
 			name = "iOS-PARStoreTests";
 			productName = "iOS-PARStoreTests";
-			productReference = 56C7EDE116E260EB00FFBBF2 /* iOS-PARStoreTests.octest */;
+			productReference = 56C7EDE116E260EB00FFBBF2 /* iOS-PARStoreTests.xctest */;
 			productType = "com.apple.product-type.bundle";
 		};
 		56EAE16516E24C7500A7F31F /* Mac-PARStore */ = {
@@ -593,10 +593,15 @@
 				GCC_PREFIX_HEADER = "iOS/iOS-PARStore-Prefix.pch";
 				INFOPLIST_FILE = "iOS/iOS-PARStore-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					XCTest,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				TEST_HOST = "$(BUNDLE_LOADER)";
-				WRAPPER_EXTENSION = octest;
+				WRAPPER_EXTENSION = xctest;
 			};
 			name = Debug;
 		};
@@ -612,11 +617,16 @@
 				GCC_PREFIX_HEADER = "iOS/iOS-PARStore-Prefix.pch";
 				INFOPLIST_FILE = "iOS/iOS-PARStore-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					XCTest,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				TEST_HOST = "$(BUNDLE_LOADER)";
 				VALIDATE_PRODUCT = YES;
-				WRAPPER_EXTENSION = octest;
+				WRAPPER_EXTENSION = xctest;
 			};
 			name = Release;
 		};
