@@ -13,6 +13,7 @@
 
 
 /// @name Notifications
+/// Notifications are posted asynchronously. You cannot expect the store to be in the state that it was after the last operation that triggered the notification. The 'Change' and 'Sync' notifications includes a user info dictionary with two entries @"values" and @"timestamps"; each entry contain a dictionary where the keys correspond to the keys changed by the sync, and the values corresponding property list values and timestamps, respectively. In the case of 'Sync' notifications, these are the same dictionaries as the one passed to the method `applySyncChangeWithValues:timestamps:`.
 extern NSString *PARStoreDidLoadNotification;
 extern NSString *PARStoreDidCloseNotification;
 extern NSString *PARStoreDidDeleteNotification;

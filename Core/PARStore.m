@@ -138,7 +138,7 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
     // to make sure the database is saved when the notification is received, the call is scheduled from within the database queue
     [self.databaseQueue dispatchAsynchronously:^
     {
-        [self postNotificationWithName:PARStoreDidCloseNotification];
+        [self postNotificationWithName:PARStoreDidCloseNotification userInfo:nil];
     }];
 }
 
@@ -617,11 +617,15 @@ NSString *PARDevicesDirectoryName = @"devices";
 {
     [self.memoryQueue dispatchSynchronously:^
      {
+         // get the timestamp **now**, so we have the current date, not the date at which the database block will run
+         NSNumber *newTimestamp = [PARStore timestampNow];
+
          self._memory[key] = plist;
-         [self postNotificationWithName:PARStoreDidChangeNotification];
-         
          if (self._inMemory)
+         {
+             [self postNotificationWithName:PARStoreDidChangeNotification userInfo:@{@"values": @{key: plist}, @"timestamps": @{key: newTimestamp}}];
              return;
+         }
          
          NSError *error = nil;
          NSData *blob = [self dataFromPropertyList:plist error:&error];
@@ -629,11 +633,9 @@ NSString *PARDevicesDirectoryName = @"devices";
              ErrorLog(@"Error creating data from plist:\nkey: %@:\nplist: %@\nerror: %@", key, plist, [error localizedDescription]);
          else
          {
-             // set the timestamp **before** dispatching the block, so we have the current date, not the date at which the block will be run
-             // timestamp is cast to a signed 64-bit integer (we can't use NSInteger on iOS for that)
              NSNumber *oldTimestamp = self._memoryKeyTimestamps[key];
-             NSNumber *newTimestamp = [PARStore timestampNow];
              self._memoryKeyTimestamps[key] = newTimestamp;
+             [self postNotificationWithName:PARStoreDidChangeNotification userInfo:@{@"values": @{key: plist}, @"timestamps": @{key: newTimestamp}}];
              [self.databaseQueue dispatchAsynchronously:
               ^{
                   NSManagedObjectContext *moc = [self managedObjectContext];
@@ -657,25 +659,34 @@ NSString *PARDevicesDirectoryName = @"devices";
 {
     [self.memoryQueue dispatchSynchronously:^
      {
+         // get the timestamp **now**, so we have the current date, not the date at which the database block will run
+         NSNumber *newTimestamp = [PARStore timestampNow];
+
          [self._memory addEntriesFromDictionary:dictionary];
-         [self postNotificationWithName:PARStoreDidChangeNotification];
          
          if (self._inMemory)
+         {
+             NSMutableDictionary *newTimestamps = [NSMutableDictionary dictionaryWithCapacity:dictionary.count];
+             for (NSString *key in dictionary.keyEnumerator)
+                 newTimestamps[key] = newTimestamp;
+            [self postNotificationWithName:PARStoreDidChangeNotification userInfo:@{@"values": dictionary, @"timestamps": newTimestamps}];
              return;
-         
-         // set the timestamp **before** dispatching to the database queue, so we have the current date, not the date at which the block runs
-         NSNumber *newTimestamp = [PARStore timestampNow];
+         }
          
          // memory timestamps
          NSMutableDictionary *oldTimestamps = [NSMutableDictionary dictionaryWithCapacity:dictionary.count];
+         NSMutableDictionary *newTimestamps = [NSMutableDictionary dictionaryWithCapacity:dictionary.count];
          for (NSString *key in dictionary.keyEnumerator)
          {
              NSNumber *oldTimestamp = self._memoryKeyTimestamps[key];
              if (oldTimestamp)
-                 [oldTimestamps setObject:self._memoryKeyTimestamps[key] forKey:key];
+                 oldTimestamps[key] = self._memoryKeyTimestamps[key];
              self._memoryKeyTimestamps[key] = newTimestamp;
+             newTimestamps[key] = newTimestamp;
          }
-         
+
+         [self postNotificationWithName:PARStoreDidChangeNotification userInfo:@{@"values": dictionary, @"timestamps": newTimestamps}];
+
          [self.databaseQueue dispatchAsynchronously: ^
           {
               NSManagedObjectContext *moc = [self managedObjectContext];
@@ -1148,7 +1159,7 @@ NSString *PARDevicesDirectoryName = @"devices";
              self._memory = [NSMutableDictionary dictionaryWithDictionary:updatedValues];
              self._memoryKeyTimestamps = [NSMutableDictionary dictionaryWithDictionary:updatedKeyTimestamps];
              self._loaded = YES;
-             [self postNotificationWithName:PARStoreDidLoadNotification];
+             [self postNotificationWithName:PARStoreDidLoadNotification userInfo:nil];
          }];
     }
     
@@ -1172,7 +1183,7 @@ NSString *PARDevicesDirectoryName = @"devices";
               }];
              
              [self applySyncChangeWithValues:changedValues timestamps:changedTimestamps];
-             [self postNotificationWithName:PARStoreDidSyncNotification];
+             [self postNotificationWithName:PARStoreDidSyncNotification userInfo:@{@"values": changedValues, @"timestamps": changedTimestamps}];
          }];
     }
 }
@@ -1228,11 +1239,11 @@ NSString *PARDevicesDirectoryName = @"devices";
 // (1) avoid deadlocks when using a block for the notification callback and tries to access the data
 // (2) enforce serialization of the notifications
 // (3) allows us to properly close the store with all the notifications sent
-- (void)postNotificationWithName:(NSString *)notificationName
+- (void)postNotificationWithName:(NSString *)notificationName userInfo:(NSDictionary *)userInfo
 {
     [self.notificationQueue dispatchAsynchronously:^
     {
-        [[NSNotificationCenter defaultCenter] postNotificationName:notificationName object:self];
+        [[NSNotificationCenter defaultCenter] postNotificationName:notificationName object:self userInfo:userInfo];
     }];
     
 }
@@ -1452,7 +1463,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 		completionHandler(nil);
 	}
     
-    [self postNotificationWithName:PARStoreDidDeleteNotification];
+    [self postNotificationWithName:PARStoreDidDeleteNotification userInfo:nil];
 }
 
 @end
