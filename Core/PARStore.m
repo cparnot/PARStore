@@ -1232,10 +1232,6 @@ NSString *PARDevicesDirectoryName = @"devices";
 {
     [self.notificationQueue dispatchAsynchronously:^
     {
-        #ifdef TEST
-        if (self.shouldThrottleNotifications)
-            [NSThread sleepForTimeInterval:1.0];
-        #endif
         [[NSNotificationCenter defaultCenter] postNotificationName:notificationName object:self];
     }];
     
