@@ -978,6 +978,11 @@ NSString *PARDevicesDirectoryName = @"devices";
     return data;
 }
 
+- (NSString *)absolutePathForBlobPath:(NSString *)path
+{
+    return [[[self blobDirectoryURL] URLByAppendingPathComponent:path] path];
+}
+
 
 #pragma mark - Sync
 

@@ -47,6 +47,7 @@ extern NSString *PARStoreDidSyncNotification;
 - (BOOL)writeBlobFromPath:(NSString *)sourcePath toPath:(NSString *)path error:(NSError **)error;
 - (NSData *)blobDataAtPath:(NSString *)path error:(NSError **)error;
 - (BOOL)deleteBlobAtPath:(NSString *)path error:(NSError **)error;
+- (NSString *)absolutePathForBlobPath:(NSString *)path;
 
 /// @name Syncing
 - (void)sync;
