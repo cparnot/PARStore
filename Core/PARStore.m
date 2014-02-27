@@ -836,7 +836,11 @@ NSString *PARDevicesDirectoryName = @"devices";
     if (self._inMemory)
     {
         NSError *errorReadingData = nil;
-        NSData *sourceData = [NSData dataWithContentsOfFile:sourcePath options:NSDataReadingMappedIfSafe error:&errorReadingData];
+        NSData *sourceData = nil;
+        if (sourcePath.length > 0)
+            sourceData = [NSData dataWithContentsOfFile:sourcePath options:NSDataReadingMappedIfSafe error:&errorReadingData];
+        else
+            errorReadingData = [NSError errorWithObject:self code:15 localizedDescription:@"Cannot read data from empty path to store as blob in memory store" underlyingError:nil];
         if (!sourceData)
         {
             if (error != NULL)
