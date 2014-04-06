@@ -1260,23 +1260,34 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 #pragma mark - Getting Timestamps
 
-+ (NSNumber *)timestampForDistantPath
-{
-    static NSNumber *timestampForDistantPath = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        timestampForDistantPath = @(NSIntegerMin);
-    });
-    return timestampForDistantPath;
-}
-
 #define MICROSECONDS_PER_SECOND (1000 * 1000)
 + (NSNumber *)timestampNow
 {
     // timestamp is cast to a signed 64-bit integer (we can't use NSInteger on iOS for that)
     NSTimeInterval timestampInSeconds = [[NSDate date] timeIntervalSinceReferenceDate];
     return @((uint64_t)(timestampInSeconds * MICROSECONDS_PER_SECOND));
+}
+
++ (NSNumber *)timestampForDistantPath
+{
+    static NSNumber *timestampForDistantPath = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+      {
+          timestampForDistantPath = @(NSIntegerMin);
+      });
+    return timestampForDistantPath;
+}
+
++ (NSNumber *)timestampForDistantFuture
+{
+    static NSNumber *timestampForDistantFuture = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+      {
+          timestampForDistantFuture = @(NSIntegerMax);
+      });
+    return timestampForDistantFuture;
 }
 
 - (NSDictionary *)mostRecentTimestampsByDeviceIdentifier
