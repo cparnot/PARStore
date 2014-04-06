@@ -1142,7 +1142,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         if (!timestamp)
             timestamp = self.keyTimestamps[key];
         if (!timestamp)
-            timestamp = [PARStore timestampForDistantPath]; // distant past
+            timestamp = [PARStore timestampForDistantPast]; // distant past
         newKeyTimestamps[key] = timestamp;
     }
     self.keyTimestamps = [NSDictionary dictionaryWithDictionary:newKeyTimestamps];
@@ -1155,7 +1155,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         if (!timestamp)
             timestamp = [self.databaseTimestamps objectForKey:store];
         if (!timestamp)
-            timestamp = [PARStore timestampForDistantPath]; // distant past
+            timestamp = [PARStore timestampForDistantPast]; // distant past
         [newDatabaseTimestamps setObject:timestamp forKey:store];
     }
     self.databaseTimestamps = newDatabaseTimestamps;
@@ -1268,7 +1268,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     return @((uint64_t)(timestampInSeconds * MICROSECONDS_PER_SECOND));
 }
 
-+ (NSNumber *)timestampForDistantPath
++ (NSNumber *)timestampForDistantPast
 {
     static NSNumber *timestampForDistantPath = nil;
     static dispatch_once_t onceToken;
@@ -1303,7 +1303,7 @@ NSString *PARDevicesDirectoryName = @"devices";
                  continue;
              NSNumber *timestamp = [self.databaseTimestamps objectForKey:store];
              if (!timestamp)
-                 timestamp = [PARStore timestampForDistantPath];
+                 timestamp = [PARStore timestampForDistantPast];
              timestamps[deviceIdentifier] = timestamp;
          }
      }];

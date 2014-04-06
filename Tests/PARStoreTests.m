@@ -255,7 +255,7 @@
     NSNumber *timestamp12 = [store1 mostRecentTimestampForDeviceIdentifier:@"2"];
     NSNumber *timestamp21 = [store2 mostRecentTimestampForDeviceIdentifier:@"1"];
     NSNumber *timestamp22 = [store2 mostRecentTimestampForDeviceIdentifier:@"2"];
-    NSNumber *timestampForDistantPath = [PARStore timestampForDistantPath];
+    NSNumber *timestampForDistantPath = [PARStore timestampForDistantPast];
     XCTAssertNotNil(timestamp11, @"timestamp expected in store 1");
     XCTAssertNotNil(timestamp21, @"timestamp expected in store 1");
     XCTAssertEqualObjects(timestamp11, timestamp21, @"");
@@ -290,7 +290,7 @@
     NSNumber *timestamp12 = [store1 mostRecentTimestampsByDeviceIdentifier][@"2"];
     NSNumber *timestamp21 = [store2 mostRecentTimestampsByDeviceIdentifier][@"1"];
     NSNumber *timestamp22 = [store2 mostRecentTimestampsByDeviceIdentifier][@"2"];
-    NSNumber *timestampForDistantPath = [PARStore timestampForDistantPath];
+    NSNumber *timestampForDistantPath = [PARStore timestampForDistantPast];
     XCTAssertNotNil(timestamp11, @"timestamp expected in store 1");
     XCTAssertNotNil(timestamp21, @"timestamp expected in store 1");
     XCTAssertEqualObjects(timestamp11, timestamp21, @"");
@@ -511,7 +511,7 @@
 
 - (void)testTimestampDistantPath
 {
-    NSNumber *timestamp1 = [PARStore timestampForDistantPath];
+    NSNumber *timestamp1 = [PARStore timestampForDistantPast];
     NSNumber *timestamp2 = [PARStore timestampNow];
     XCTAssert([timestamp1 compare:timestamp2] == NSOrderedAscending, @"timestamp1 should be smaller than timestamp2 but %@ > %@", timestamp1, timestamp2);
 }
