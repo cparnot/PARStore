@@ -100,7 +100,6 @@
 		56EAE18716E24C7500A7F31F /* Mac-PARStoreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Mac-PARStoreTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		56EAE18F16E24C7500A7F31F /* PARStoreTests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "PARStoreTests-Info.plist"; sourceTree = "<group>"; };
 		56EAE19116E24C7500A7F31F /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		56EAE19316E24C7500A7F31F /* PARStoreTests.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PARStoreTests.h; sourceTree = "<group>"; };
 		56EAE19416E24C7500A7F31F /* PARStoreTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PARStoreTests.m; sourceTree = "<group>"; };
 		56EAE1B316E24E5500A7F31F /* PARStore-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "PARStore-Info.plist"; path = "Mac/PARStore-Info.plist"; sourceTree = SOURCE_ROOT; };
 		56EAE1B416E24E5500A7F31F /* PARStore-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "PARStore-Prefix.pch"; path = "Mac/PARStore-Prefix.pch"; sourceTree = SOURCE_ROOT; };
@@ -257,7 +256,6 @@
 				56C7EDFF16E270C600FFBBF2 /* PARStoreExample.m */,
 				56C7EDFA16E26D0700FFBBF2 /* PARTestCase.h */,
 				56C7EDFB16E26D0700FFBBF2 /* PARTestCase.m */,
-				56EAE19316E24C7500A7F31F /* PARStoreTests.h */,
 				56EAE19416E24C7500A7F31F /* PARStoreTests.m */,
 				56EAE18E16E24C7500A7F31F /* Supporting Files */,
 			);
