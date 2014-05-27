@@ -737,6 +737,10 @@ NSString *PARDevicesDirectoryName = @"devices";
     return deleted;
 }
 
+- (BOOL)inMemory
+{
+    return self._inMemory;
+}
 
 #pragma mark - Managing Blobs
 

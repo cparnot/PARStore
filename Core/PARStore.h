@@ -34,6 +34,7 @@ extern NSString *PARStoreDidSyncNotification;
 @property (readonly, copy) NSString *deviceIdentifier;
 @property (readonly) BOOL loaded;
 @property (readonly) BOOL deleted;
+@property (readonly) BOOL inMemory;
 
 /// @name Accessing Store Content
 - (id)propertyListValueForKey:(NSString *)key;
