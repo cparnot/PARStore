@@ -94,7 +94,7 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
 
 - (void)_load
 {
-    NSAssert([self.databaseQueue isCurrentQueue], @"%@:%@ should only be called from within the database queue", [self class], NSStringFromSelector(_cmd));
+    NSAssert([self.databaseQueue isInCurrentQueueStack], @"%@:%@ should only be called from within the database queue", [self class], NSStringFromSelector(_cmd));
     if ([self loaded])
         return;
     [self _sync];
@@ -117,7 +117,7 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
 
 - (void)_close
 {
-    NSAssert([self.memoryQueue isCurrentQueue], @"%@:%@ should only be called from within the memory queue", [self class], NSStringFromSelector(_cmd));
+    NSAssert([self.memoryQueue isInCurrentQueueStack], @"%@:%@ should only be called from within the memory queue", [self class], NSStringFromSelector(_cmd));
 
     // reset database
     // to avoid deadlocks, it is **critical** that the call into the database queue be asynchronous
@@ -413,7 +413,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 // only the 'main' store is read/write
 - (NSManagedObjectContext *)managedObjectContext
 {
-    NSAssert([self.databaseQueue isCurrentQueue], @"%@:%@ should only be called from within the database queue", [self class],NSStringFromSelector(_cmd));
+    NSAssert([self.databaseQueue isInCurrentQueueStack], @"%@:%@ should only be called from within the database queue", [self class],NSStringFromSelector(_cmd));
 
     // lazy creation
     NSManagedObjectContext *managedObjectContext = self._managedObjectContext;
@@ -457,7 +457,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (void)refreshStoreList
 {
-    NSAssert([self.databaseQueue isCurrentQueue], @"%@:%@ should only be called from within the database queue", [self class],NSStringFromSelector(_cmd));
+    NSAssert([self.databaseQueue isInCurrentQueueStack], @"%@:%@ should only be called from within the database queue", [self class],NSStringFromSelector(_cmd));
     if (self._inMemory)
         return;
     
@@ -490,7 +490,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (BOOL)save:(NSError **)error
 {
-    NSAssert([self.databaseQueue isCurrentQueue], @"%@:%@ should only be called from within the database queue", [self class],NSStringFromSelector(_cmd));
+    NSAssert([self.databaseQueue isInCurrentQueueStack], @"%@:%@ should only be called from within the database queue", [self class],NSStringFromSelector(_cmd));
     [self.databaseQueue cancelTimerWithName:@"save_delay"];
     [self.databaseQueue cancelTimerWithName:@"save_coalesce"];
     if (self._inMemory || [self deleted])
@@ -543,7 +543,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (void)closeDatabase
 {
-    NSAssert([self.databaseQueue isCurrentQueue], @"%@:%@ should only be called from within the database queue", [self class], NSStringFromSelector(_cmd));
+    NSAssert([self.databaseQueue isInCurrentQueueStack], @"%@:%@ should only be called from within the database queue", [self class], NSStringFromSelector(_cmd));
     [self.databaseQueue cancelAllTimers];
     self._managedObjectContext = nil;
 }
@@ -1001,7 +1001,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (void)applySyncChangeWithValues:(NSDictionary *)values timestamps:(NSDictionary *)timestamps
 {
-    NSAssert([self.memoryQueue isCurrentQueue], @"%@:%@ should only be called from within the memory queue", [self class],NSStringFromSelector(_cmd));
+    NSAssert([self.memoryQueue isInCurrentQueueStack], @"%@:%@ should only be called from within the memory queue", [self class],NSStringFromSelector(_cmd));
     [values enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *s)     { self._memory[key] = obj;              }];
     [timestamps enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *s) { self._memoryKeyTimestamps[key] = obj; }];
 }
@@ -1012,7 +1012,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (void)_sync
 {
-    NSAssert([self.databaseQueue isCurrentQueue], @"%@:%@ should only be called from within the database queue", [self class],NSStringFromSelector(_cmd));
+    NSAssert([self.databaseQueue isInCurrentQueueStack], @"%@:%@ should only be called from within the database queue", [self class],NSStringFromSelector(_cmd));
     
     // sync is not relevant for in-memory stores
     if (self._inMemory)
