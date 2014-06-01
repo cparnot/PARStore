@@ -9,7 +9,6 @@
 // keys and context used for the `dispatch_xxx_specific` APIs and to keep track of the stack of queues
 static int PARQueueStackKey  = 1;
 static int PARIsCurrentKey   = 1;
-static int PARIsCurrentValue = 1;
 
 
 // private properties
@@ -30,7 +29,7 @@ static int PARIsCurrentValue = 1;
     PARDispatchQueue *newQueue = [[self alloc] init];
     newQueue.queue = gcdQueue;
     newQueue._deadlockBehavior = behavior;
-    dispatch_queue_set_specific(gcdQueue, &PARIsCurrentKey, &PARIsCurrentValue, NULL);
+    dispatch_queue_set_specific(gcdQueue, &PARIsCurrentKey, (__bridge void *)(newQueue), NULL);
     return newQueue;
 }
 
@@ -175,7 +174,7 @@ static PARDispatchQueue *PARMainDispatchQueue = nil;
 // see: https://devforums.apple.com/message/710745 for why using dispatch_get_current_queue() is not a good way to check the current queue, and why it's deprecated in iOS 6.0
 - (BOOL)isCurrentQueue
 {
-    return (dispatch_get_specific(&PARIsCurrentKey) == &PARIsCurrentValue);
+    return (dispatch_get_specific(&PARIsCurrentKey) == (__bridge void *)(self));
 }
 
 - (BOOL)isInCurrentQueueStack
