@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		560C93E116F1272C00C0E890 /* NSError+Factory.m in Sources */ = {isa = PBXBuildFile; fileRef = 560C93E016F1272C00C0E890 /* NSError+Factory.m */; };
 		560C93E216F1272C00C0E890 /* NSError+Factory.m in Sources */ = {isa = PBXBuildFile; fileRef = 560C93E016F1272C00C0E890 /* NSError+Factory.m */; };
+		561148E7196E952800F488F2 /* PARSQLiteTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 561148E6196E952800F488F2 /* PARSQLiteTests.m */; };
 		569D021E16E24FDA002675BA /* PARDispatchQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = 569D021D16E24FDA002675BA /* PARDispatchQueue.m */; };
 		569D022116E2509F002675BA /* PARAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 569D022016E2509F002675BA /* PARAppDelegate.m */; };
 		569D022316E250A7002675BA /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 569D022216E250A7002675BA /* MainMenu.xib */; };
@@ -65,6 +66,7 @@
 /* Begin PBXFileReference section */
 		560C93DF16F1272C00C0E890 /* NSError+Factory.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSError+Factory.h"; sourceTree = "<group>"; };
 		560C93E016F1272C00C0E890 /* NSError+Factory.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSError+Factory.m"; sourceTree = "<group>"; };
+		561148E6196E952800F488F2 /* PARSQLiteTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PARSQLiteTests.m; sourceTree = "<group>"; };
 		569D021C16E24FDA002675BA /* PARDispatchQueue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PARDispatchQueue.h; sourceTree = "<group>"; };
 		569D021D16E24FDA002675BA /* PARDispatchQueue.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PARDispatchQueue.m; sourceTree = "<group>"; };
 		569D021F16E2509F002675BA /* PARAppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PARAppDelegate.h; sourceTree = "<group>"; };
@@ -257,6 +259,7 @@
 				56C7EDFA16E26D0700FFBBF2 /* PARTestCase.h */,
 				56C7EDFB16E26D0700FFBBF2 /* PARTestCase.m */,
 				56EAE19416E24C7500A7F31F /* PARStoreTests.m */,
+				561148E6196E952800F488F2 /* PARSQLiteTests.m */,
 				56EAE18E16E24C7500A7F31F /* Supporting Files */,
 			);
 			path = Tests;
@@ -501,6 +504,7 @@
 			files = (
 				56EAE19516E24C7500A7F31F /* PARStoreTests.m in Sources */,
 				56C7EDFC16E26D0700FFBBF2 /* PARTestCase.m in Sources */,
+				561148E7196E952800F488F2 /* PARSQLiteTests.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
