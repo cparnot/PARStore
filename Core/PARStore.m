@@ -393,11 +393,15 @@ NSString *PARDevicesDirectoryName = @"devices";
 	
 	// create the store
     NSError *localError = nil;
+    NSDictionary *pragmas = @{
+                              @"journal_mode": @"TRUNCATE"
+                              };
     NSDictionary *storeOptions = @{
-        NSMigratePersistentStoresAutomaticallyOption : @YES,
-        NSInferMappingModelAutomaticallyOption:        @YES,
-        NSReadOnlyPersistentStoreOption:               readOnly ? @YES : @NO
-    };
+                                   NSMigratePersistentStoresAutomaticallyOption : @YES,
+                                   NSInferMappingModelAutomaticallyOption:        @YES,
+                                   NSReadOnlyPersistentStoreOption:               @(readOnly),
+                                   NSSQLitePragmasOption:                         pragmas,
+                                   };
     NSPersistentStore *store = [psc addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:[NSURL fileURLWithPath:storePath] options:storeOptions error:&localError];
     if (!store)
     {
