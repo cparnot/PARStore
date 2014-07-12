@@ -44,6 +44,7 @@
 		56EAE1BA16E24E7300A7F31F /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 56EAE1B716E24E7300A7F31F /* InfoPlist.strings */; };
 		56EAE1BB16E24E7300A7F31F /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 56EAE1B816E24E7300A7F31F /* main.m */; };
 		56EAE1BE16E24EAA00A7F31F /* PARStore.m in Sources */ = {isa = PBXBuildFile; fileRef = 56EAE1BD16E24EAA00A7F31F /* PARStore.m */; };
+		56FA3D771970359C00BF81D3 /* libsqlite3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 56FA3D761970359C00BF81D3 /* libsqlite3.dylib */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -110,6 +111,7 @@
 		56EAE1B816E24E7300A7F31F /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = Mac/main.m; sourceTree = SOURCE_ROOT; };
 		56EAE1BC16E24EAA00A7F31F /* PARStore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PARStore.h; path = Core/PARStore.h; sourceTree = SOURCE_ROOT; };
 		56EAE1BD16E24EAA00A7F31F /* PARStore.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PARStore.m; path = Core/PARStore.m; sourceTree = SOURCE_ROOT; };
+		56FA3D761970359C00BF81D3 /* libsqlite3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libsqlite3.dylib; path = usr/lib/libsqlite3.dylib; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -146,6 +148,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				56FA3D771970359C00BF81D3 /* libsqlite3.dylib in Frameworks */,
 				56EAE18A16E24C7500A7F31F /* Cocoa.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -205,6 +208,7 @@
 		56EAE16916E24C7500A7F31F /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				56FA3D761970359C00BF81D3 /* libsqlite3.dylib */,
 				56EAE16A16E24C7500A7F31F /* Cocoa.framework */,
 				56C7EDC416E260EA00FFBBF2 /* UIKit.framework */,
 				56C7EDC616E260EA00FFBBF2 /* Foundation.framework */,

@@ -288,14 +288,14 @@
     XCTAssert(snapshotWal.count == snapshotTruncate.count, @"snapshots have different number of elements: %@ and %@", @(snapshotWal.count), @(snapshotTruncate.count));
     NSEnumerator *e1 = snapshotWal.objectEnumerator;
     NSEnumerator *e2 = snapshotTruncate.objectEnumerator;
-    NSManagedObject *mo1 = nil;
-    NSManagedObject *mo2 = nil;
-    while ((mo1 = e1.nextObject) && (mo2 = e2.nextObject))
+    NSDictionary *rep1 = nil;
+    NSDictionary *rep2 = nil;
+    while ((rep1 = e1.nextObject) && (rep2 = e2.nextObject))
     {
-        NSString *foo1 = [mo1 valueForKey:@"foo"];
-        NSString *foo2 = [mo2 valueForKey:@"foo"];
-        NSString *bar1 = [mo1 valueForKey:@"bar"];
-        NSString *bar2 = [mo2 valueForKey:@"bar"];
+        NSString *foo1 = rep1[@"foo"];
+        NSString *foo2 = rep2[@"foo"];
+        NSString *bar1 = rep1[@"bar"];
+        NSString *bar2 = rep2[@"bar"];
         XCTAssertEqualObjects(foo1, foo2, @"foo property should be the same");
         XCTAssertEqualObjects(bar1, bar2, @"bar property should be the same");
     }
@@ -327,25 +327,308 @@
     XCTAssert(snapshotWal.count == snapshotTruncate.count, @"snapshots have different number of elements: %@ and %@", @(snapshotWal.count), @(snapshotTruncate.count));
     e1 = snapshotWal.objectEnumerator;
     e2 = snapshotTruncate.objectEnumerator;
-    mo1 = nil;
-    mo2 = nil;
-    while ((mo1 = e1.nextObject) && (mo2 = e2.nextObject))
+    rep1 = nil;
+    rep2 = nil;
+    while ((rep1 = e1.nextObject) && (rep2 = e2.nextObject))
     {
-        NSString *foo1 = [mo1 valueForKey:@"foo"];
-        NSString *foo2 = [mo2 valueForKey:@"foo"];
-        NSString *bar1 = [mo1 valueForKey:@"bar"];
-        NSString *bar2 = [mo2 valueForKey:@"bar"];
+        NSString *foo1 = rep1[@"foo"];
+        NSString *foo2 = rep2[@"foo"];
+        NSString *bar1 = rep1[@"bar"];
+        NSString *bar2 = rep2[@"bar"];
         XCTAssertEqualObjects(foo1, foo2, @"foo property should be the same");
         XCTAssertEqualObjects(bar1, bar2, @"bar property should be the same");
     }
 }
 
 
+#pragma mark - SQLite Tests
+
+- (void)testSqliteHotJournalCapture
+{
+    // paths
+    NSString *directory = [[self urlWithUniqueTmpDirectory] path];
+    NSString *databaseName = @"test";
+    NSString *databasePath = [self databasePathWithName:databaseName directory:directory];
+    NSString *journal = [self journalPathWithName:databaseName directory:directory];
+    NSString *journalCopy = [self journalCopyPathWithName:databaseName directory:directory];
+    
+    // create database using Core Data
+    NSManagedObjectContext *moc = [self managedObjectContextForDatabaseAtPath:databasePath populate:YES];
+    moc = nil;
+    
+    // assert files
+    [self assertFileExists:databasePath];
+    [self assertFileExists:journal];
+    [self assertFileDoesNotExist:journalCopy];
+    [self assertFileIsEmpty:journal];
+
+    // capture sqlite database in "hot" state
+    [self captureHotJournalWithDatabaseName:databaseName directory:directory addFooValue:@"ZZZ" barValue:@"ZZZ"];
+
+    // assert files
+    [self assertFileExists:databasePath];
+    [self assertFileExists:journal];
+    [self assertFileExists:journalCopy];
+    [self assertFileIsEmpty:journal];
+    [self assertFileIsNotEmpty:journalCopy];
+}
+
+- (void)testSqliteToCoreData
+{
+    // database path
+    NSString *directory = [[self urlWithUniqueTmpDirectory] path];
+    NSString *databaseName = @"test";
+    NSString *databasePath = [self databasePathWithName:databaseName directory:directory];
+    
+    // create database using Core Data
+    NSManagedObjectContext *moc = [self managedObjectContextForDatabaseAtPath:databasePath populate:YES];
+    NSArray *snapshot1 = [self allManagedObjectRepresentationsForManagedObjectContext:moc];
+    moc = nil;
+    
+    // capture sqlite database in "hot" state
+    [self captureHotJournalWithDatabaseName:databaseName directory:directory addFooValue:@"ZZZ" barValue:@"ZZZ"];
+    
+    // there should be a new row in Core Data
+    moc = [self managedObjectContextForDatabaseAtPath:databasePath populate:NO];
+    NSArray *snapshot2 = [self allManagedObjectRepresentationsForManagedObjectContext:moc];
+    moc = nil;
+    
+    // compare snapshots
+    snapshot1 = [snapshot1 arrayByAddingObject:@{@"foo" : @"ZZZ", @"bar" : @"ZZZ"}];
+    XCTAssert(snapshot1.count == snapshot2.count, @"snapshots have different number of elements: %@ and %@", @(snapshot1.count), @(snapshot2.count));
+    NSEnumerator *e1 = snapshot1.objectEnumerator;
+    NSEnumerator *e2 = snapshot2.objectEnumerator;
+    NSDictionary *rep1 = nil;
+    NSDictionary *rep2 = nil;
+    while ((rep1 = e1.nextObject) && (rep2 = e2.nextObject))
+    {
+        NSString *foo1 = rep1[@"foo"];
+        NSString *foo2 = rep2[@"foo"];
+        NSString *bar1 = rep1[@"bar"];
+        NSString *bar2 = rep2[@"bar"];
+        XCTAssertEqualObjects(foo1, foo2, @"foo property should be the same");
+        XCTAssertEqualObjects(bar1, bar2, @"bar property should be the same");
+    }
+}
+
+- (void)testSqliteHotJournal
+{
+    // database path
+    NSString *directory = [[self urlWithUniqueTmpDirectory] path];
+    NSString *databaseName = @"test";
+    NSString *databasePath = [self databasePathWithName:databaseName directory:directory];
+    NSString *databaseCopy = [self databaseCopyPathWithName:databaseName directory:directory];
+    NSString *journalCopy = [self journalCopyPathWithName:databaseName directory:directory];
+    
+    // create database using Core Data
+    NSManagedObjectContext *moc = [self managedObjectContextForDatabaseAtPath:databasePath populate:YES];
+    NSArray *snapshot1 = [self allManagedObjectRepresentationsForManagedObjectContext:moc];
+    moc = nil;
+    
+    // capture sqlite database in "hot" state
+    [self captureHotJournalWithDatabaseName:databaseName directory:directory addFooValue:@"ZZZ" barValue:@"ZZZ"];
+    
+    // open the "hot" database with Core Data
+    moc = [self managedObjectContextForDatabaseAtPath:databaseCopy populate:NO];
+    NSArray *snapshot2 = [self allManagedObjectRepresentationsForManagedObjectContext:moc];
+    moc = nil;
+    
+    // Merely opening the database, without changing the content, like we just did, apparently does **not** reset the journal database. But the SQLite docs indicate that if the journal is "hot", it should be reset (see: http://www.sqlite.org/lockingv3.html#hot_journals). It is thus possible that the above does not generate a journal considered "hot"
+    [self assertFileIsNotEmpty:journalCopy];
+
+    // the "hot" database should have the same content as the initial database, since the new content was not committed
+    XCTAssert(snapshot1.count == snapshot2.count, @"snapshots have different number of elements: %@ and %@", @(snapshot1.count), @(snapshot2.count));
+    NSEnumerator *e1 = snapshot1.objectEnumerator;
+    NSEnumerator *e2 = snapshot2.objectEnumerator;
+    NSDictionary *rep1 = nil;
+    NSDictionary *rep2 = nil;
+    while ((rep1 = e1.nextObject) && (rep2 = e2.nextObject))
+    {
+        NSString *foo1 = rep1[@"foo"];
+        NSString *foo2 = rep2[@"foo"];
+        NSString *bar1 = rep1[@"bar"];
+        NSString *bar2 = rep2[@"bar"];
+        XCTAssertEqualObjects(foo1, foo2, @"foo property should be the same");
+        XCTAssertEqualObjects(bar1, bar2, @"bar property should be the same");
+    }
+
+    // opening the "hot" database **and** modifying content will reset the journal file
+    [self captureHotJournalWithDatabaseName:[self databaseCopyNameWithName:databaseName] directory:directory addFooValue:@"ZZZ" barValue:@"ZZZ"];
+    [self assertFileExists:databaseCopy];
+    [self assertFileExists:journalCopy];
+    [self assertFileIsEmpty:journalCopy];
+}
+
+- (void)testSqliteSwapHotJournal
+{
+    // database path
+    NSString *directory = [[self urlWithUniqueTmpDirectory] path];
+    NSString *databaseName = @"test";
+    NSString *databasePath = [self databasePathWithName:databaseName directory:directory];
+    NSString *databaseCopy = [self databaseCopyPathWithName:databaseName directory:directory];
+    NSString *journal = [self journalPathWithName:databaseName directory:directory];
+    NSString *journalCopy = [self journalCopyPathWithName:databaseName directory:directory];
+    
+    // create database using Core Data
+    NSManagedObjectContext *moc = [self managedObjectContextForDatabaseAtPath:databasePath populate:YES];
+    NSArray *snapshot1 = [self allManagedObjectRepresentationsForManagedObjectContext:moc];
+    moc = nil;
+    
+    // capture sqlite database in "hot" state
+    [self captureHotJournalWithDatabaseName:databaseName directory:directory addFooValue:@"ZZZ" barValue:@"ZZZ"];
+    
+    // copy the hot journal to apply it to the non-hot database --> "heated" database
+    [[NSFileManager defaultManager] removeItemAtPath:journal error:NULL];
+    [[NSFileManager defaultManager] copyItemAtPath:journalCopy toPath:journal error:NULL];
+    [self assertFileExists:journal];
+    [self assertFileIsNotEmpty:journal];
+    
+    // open the "heated" database with Core Data
+    moc = [self managedObjectContextForDatabaseAtPath:databasePath populate:NO];
+    NSArray *snapshot2 = [self allManagedObjectRepresentationsForManagedObjectContext:moc];
+    moc = nil;
+    
+    // Merely opening the database, without changing the content, like we just did, apparently does **not** reset the journal database. But the SQLite docs indicate that if the journal is "hot", it should be reset (see: http://www.sqlite.org/lockingv3.html#hot_journals). It is thus possible that the above does not generate a journal considered "hot"
+    [self assertFileIsNotEmpty:journal];
+    
+    // adding the "hot" journal should not have change the content of the database, since it was not committed
+    snapshot1 = [snapshot1 arrayByAddingObject:@{@"foo" : @"ZZZ", @"bar" : @"ZZZ"}];
+    XCTAssert(snapshot1.count == snapshot2.count, @"snapshots have different number of elements: %@ and %@", @(snapshot1.count), @(snapshot2.count));
+    NSEnumerator *e1 = snapshot1.objectEnumerator;
+    NSEnumerator *e2 = snapshot2.objectEnumerator;
+    NSDictionary *rep1 = nil;
+    NSDictionary *rep2 = nil;
+    while ((rep1 = e1.nextObject) && (rep2 = e2.nextObject))
+    {
+        NSString *foo1 = rep1[@"foo"];
+        NSString *foo2 = rep2[@"foo"];
+        NSString *bar1 = rep1[@"bar"];
+        NSString *bar2 = rep2[@"bar"];
+        XCTAssertEqualObjects(foo1, foo2, @"foo property should be the same");
+        XCTAssertEqualObjects(bar1, bar2, @"bar property should be the same");
+    }
+    
+    // opening the "heated" database **and** modifying content will reset the journal file
+    [self captureHotJournalWithDatabaseName:[self databaseCopyNameWithName:databaseName] directory:directory addFooValue:@"ZZZ" barValue:@"ZZZ"];
+    [self assertFileExists:databaseCopy];
+    [self assertFileExists:journalCopy];
+    [self assertFileIsEmpty:journalCopy];
+}
+
+- (NSManagedObjectContext *)managedObjectContextForDatabaseAtPath:(NSString *)databasePath populate:(BOOL)populate
+{
+    // create Core Data stack
+    NSManagedObjectContext *moc = [self managedObjectContext];
+    NSPersistentStore *store1 = [self addPersistentStoreWithCoordinator:moc.persistentStoreCoordinator storePath:databasePath readOnly:NO journalMode:@"TRUNCATE"];
+    
+    // add content
+    NSUInteger numberOfObjectsToAdd = populate ? 100 : 0;
+    for (NSUInteger i = 0; i < numberOfObjectsToAdd; i++)
+    {
+        [self addTestManagedObjectToPersistentStore:store1 managedObjectContext:moc];
+    }
+    
+    // save and tear down Core Data
+    NSError *saveError = nil;
+    BOOL saveSuccess = [moc save:&saveError];
+    XCTAssertTrue(saveSuccess, @"error saving: %@", saveError);
+    
+    return moc;
+}
+
+// - open database using sqlite
+// - bring it to a state where a journal file is created (in the middle of a transaction)
+// - capture the db and journal file by copying the file
+// - tear things down
+- (void)captureHotJournalWithDatabaseName:(NSString *)databaseName directory:(NSString *)directory addFooValue:(NSString *)fooValue barValue:(NSString *)barValue
+{
+    NSString *databasePath = [self databasePathWithName:databaseName directory:directory];
+    NSString *databaseCopy = [self databaseCopyPathWithName:databaseName directory:directory];
+    NSString *journal = [self journalPathWithName:databaseName directory:directory];
+    NSString *journalCopy = [self journalCopyPathWithName:databaseName directory:directory];
+
+    // open sqlite
+    sqlite3 *sqlitedb = [self openSqliteDatabaseAtPath:databasePath];
+    [self executeStatement:@"PRAGMA journal_mode = TRUNCATE" sqliteDatabase:sqlitedb];
+    
+    // set up a transaction
+	[self executeStatement:@"BEGIN IMMEDIATE TRANSACTION" sqliteDatabase:sqlitedb];
+    
+    // add a row
+    NSString *entityName = [self managedObjectModel].entitiesByName.allKeys.firstObject;
+    NSString *tableName = [@"Z" stringByAppendingString:entityName];
+    NSString *insertStatement = [NSString stringWithFormat:@"INSERT INTO %@ (Z_ENT, Z_OPT, ZFOO, ZBAR) VALUES (1, 1, '%@', '%@')", tableName, fooValue ?: @"value1", barValue ?: @"value2"];
+	[self executeStatement:insertStatement sqliteDatabase:sqlitedb];
+    
+    // make a copy of the journal file, which is not empty at this point
+    [self assertFileIsNotEmpty:journal];
+    [[NSFileManager defaultManager] copyItemAtPath:journal toPath:journalCopy error:NULL];
+    [[NSFileManager defaultManager] copyItemAtPath:databasePath toPath:databaseCopy error:NULL];
+    [self assertFileExists:journalCopy];
+    [self assertFileExists:databaseCopy];
+    
+    // end transaction
+	[self executeStatement:@"COMMIT TRANSACTION" sqliteDatabase:sqlitedb];
+    
+    // close sqlite
+    [self closeSqliteDatabase:sqlitedb];
+}
+
+
+#pragma mark - SQLite Utilities
+
+- (sqlite3 *)openSqliteDatabaseAtPath:(NSString *)databasePath
+{
+    sqlite3 *sqlitedb;
+    int err = sqlite3_open([databasePath fileSystemRepresentation], &sqlitedb);
+    XCTAssertEqual(err, SQLITE_OK, @"error opening sqlite database: %@ - %@", @(err), @(sqlite3_errmsg(sqlitedb)));
+    if (err != SQLITE_OK)
+    {
+        // NOTE: according to the docs for sqlite3_open, a database handle is returned even on
+        // error (it will only be NULL if SQLite is unable to allocate memory), and the SQLite
+        // close command should be used to release any resources associated with the db handle
+        if (sqlitedb != NULL)
+            [self closeSqliteDatabase:sqlitedb];
+        return NULL;
+    }
+
+    XCTAssert(sqlitedb != NULL, @"sqlite handle should not be nil after opening the database");
+    return sqlitedb;
+}
+
+- (BOOL)closeSqliteDatabase:(sqlite3 *)sqlitedb
+{
+    __block int err = sqlite3_close(sqlitedb);
+    
+    XCTAssertNotEqual(err, SQLITE_BUSY, @"Database busy when closing");
+    XCTAssertEqual(err, SQLITE_OK, @"error closing sqlite database: %@ - %@", @(err), @(sqlite3_errmsg(sqlitedb)));
+
+    return err != SQLITE_OK;
+}
+
+- (BOOL)executeStatement:(NSString *)statement sqliteDatabase:(sqlite3 *)sqlitedb
+{
+    int err = sqlite3_exec(sqlitedb, [statement UTF8String], NULL, NULL, NULL);
+    XCTAssertEqual(err, SQLITE_OK, @"error executing statement: %@ - %@", @(err), @(sqlite3_errmsg(sqlitedb)));
+    return err != SQLITE_OK;
+}
+
+
 #pragma mark - Path Utilities
+
+- (NSString *)databaseCopyNameWithName:(NSString *)name
+{
+    return [name stringByAppendingString:@"-copy"];
+}
 
 - (NSString *)databasePathWithName:(NSString *)name directory:(NSString *)directory
 {
     return [directory stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.db", name]];
+}
+
+- (NSString *)databaseCopyPathWithName:(NSString *)name directory:(NSString *)directory
+{
+    return [self databasePathWithName:[self databaseCopyNameWithName:name] directory:directory];
 }
 
 - (NSString *)walPathWithName:(NSString *)name directory:(NSString *)directory
@@ -361,6 +644,11 @@
 - (NSString *)journalPathWithName:(NSString *)name directory:(NSString *)directory
 {
     return [[self databasePathWithName:name directory:directory] stringByAppendingString:@"-journal"];
+}
+
+- (NSString *)journalCopyPathWithName:(NSString *)name directory:(NSString *)directory
+{
+    return [self journalPathWithName:[self databaseCopyNameWithName:name] directory:directory];
 }
 
 
@@ -384,14 +672,14 @@
 {
     NSDictionary *attributes = [[NSFileManager defaultManager] attributesOfItemAtPath:path error:NULL];
     NSNumber *fileSize = attributes[NSFileSize];
-    XCTAssert(attributes != nil && [attributes[NSFileSize] isEqualToNumber:@(0.0)] == YES, @"file size is expected to be zero but is %@ at path: %@", fileSize, path);
+    XCTAssert(attributes != nil && [fileSize isEqualToNumber:@(0.0)] == YES, @"file size is expected to be zero but is %@ at path: %@", fileSize, path);
 }
 
 - (void)assertFileIsNotEmpty:(NSString *)path
 {
     NSDictionary *attributes = [[NSFileManager defaultManager] attributesOfItemAtPath:path error:NULL];
     NSNumber *fileSize = attributes[NSFileSize];
-    XCTAssert(attributes != nil && [attributes[NSFileSize] isEqualToNumber:@(0.0)] == NO, @"file size is expected to be non-zero but is %@ at path: %@", fileSize, path);
+    XCTAssert(attributes != nil && [fileSize isEqualToNumber:@(0.0)] == NO, @"file size is expected to be non-zero but is %@ at path: %@", fileSize, path);
     
 }
 
@@ -417,8 +705,6 @@
                               @"journal_mode": journalMode ?: @"WAL"
                               };
     NSDictionary *storeOptions = @{
-                                   NSMigratePersistentStoresAutomaticallyOption : @YES,
-                                   NSInferMappingModelAutomaticallyOption:        @YES,
                                    NSReadOnlyPersistentStoreOption:               @(readOnly),
                                    NSSQLitePragmasOption:                         pragmas,
                                    };
