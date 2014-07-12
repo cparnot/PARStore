@@ -505,8 +505,9 @@
     NSNumber *timestamp1 = [PARStore timestampNow];
     NSNumber *timestamp2 = [PARStore timestampNow];
     NSNumber *timestamp3 = [PARStore timestampNow];
-    XCTAssert([timestamp1 compare:timestamp2] == NSOrderedAscending, @"timestamp1 should be smaller than timestamp2 but %@ > %@", timestamp1, timestamp2);
-    XCTAssert([timestamp2 compare:timestamp3] == NSOrderedAscending, @"timestamp2 should be smaller than timestamp3 but %@ > %@", timestamp2, timestamp3);
+    XCTAssert([timestamp1 compare:timestamp2] != NSOrderedDescending, @"timestamp1 should be smaller than timestamp2 but %@ > %@", timestamp1, timestamp2);
+    XCTAssert([timestamp1 compare:timestamp3] != NSOrderedDescending, @"timestamp1 should be smaller than timestamp3 but %@ > %@", timestamp1, timestamp3);
+    XCTAssert([timestamp2 compare:timestamp3] != NSOrderedDescending, @"timestamp2 should be smaller than timestamp3 but %@ > %@", timestamp2, timestamp3);
 }
 
 - (void)testTimestampDistantPath
