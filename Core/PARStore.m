@@ -1199,8 +1199,11 @@ NSString *PARDevicesDirectoryName = @"devices";
                   }
               }];
              
-             [self applySyncChangeWithValues:changedValues timestamps:changedTimestamps];
-             [self postNotificationWithName:PARStoreDidSyncNotification userInfo:@{@"values": changedValues, @"timestamps": changedTimestamps}];
+             if (changedValues.count > 0)
+             {
+                 [self applySyncChangeWithValues:changedValues timestamps:changedTimestamps];
+                 [self postNotificationWithName:PARStoreDidSyncNotification userInfo:@{@"values": changedValues, @"timestamps": changedTimestamps}];
+             }
          }];
     }
 }
