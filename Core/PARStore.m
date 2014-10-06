@@ -532,6 +532,22 @@ NSString *PARDevicesDirectoryName = @"devices";
             *error = [NSError errorWithObject:self code:8 localizedDescription:[NSString stringWithFormat:@"Could not save store for device identifier '%@' at path: %@", self.deviceIdentifier, [self.storeURL path]] underlyingError:localError];
         return NO;
     }
+    
+    #if TARGET_OS_IPHONE | TARGET_IPHONE_SIMULATOR
+    
+    #elif TARGET_OS_MAC
+    // save was successful: "blink" the database which relinquishes the lock on the file just enough for a service like Dropbox to upload the new version on the server
+    // not needed on iOS where the files are all under the control of the app and would need to be manually uploaded to online file services
+    else
+    {
+        NSPersistentStore *store = self.readwriteDatabase;
+        if (store !=  nil)
+        {
+            // "blinking" can be done by simply setting again the URL of the persistent store
+            [[self._managedObjectContext persistentStoreCoordinator] setURL:store.URL forPersistentStore:store];
+        }
+    }
+    #endif
 
     return YES;
 }
