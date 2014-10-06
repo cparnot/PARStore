@@ -472,22 +472,24 @@ NSString *PARDevicesDirectoryName = @"devices";
     for (NSString *path in allDirs)
     {
 		NSString *storePath = [path stringByAppendingPathComponent:PARDatabaseFileName];
+        
+        // store is already known
+        // refresh the URL to force a cache flush and reload the synced contents if available
         if ([currentDirs containsObject:storePath])
         {
 			// instead of ignoring this store, reload it to get the synced contents if available
-			// TODO: very inefficient, should only reload when it has been changed of course.
-			
+			// TODO: should only reload when it has actually changed
 			NSPersistentStore *existingStore = [psc persistentStoreForURL:[NSURL fileURLWithPath:storePath]];
-			NSError *removeError = nil;
-			
-			if (![psc removePersistentStore:existingStore error:&removeError]) {
-				ErrorLog(@"Error removing store: %@", removeError);
-			}
+            [psc setURL:existingStore.URL forPersistentStore:existingStore];
 		}
 		
-        NSPersistentStore *store = [self addPersistentStoreWithCoordinator:psc dirPath:path readOnly:YES error:NULL];
-        if (store)
-            [stores addObject:store];
+        // new store
+        else
+        {
+            NSPersistentStore *newStore = [self addPersistentStoreWithCoordinator:psc dirPath:path readOnly:YES error:NULL];
+            if (newStore)
+                [stores addObject:newStore];
+        }
     }
     self.readonlyDatabases = [NSArray arrayWithArray:stores];
 }
