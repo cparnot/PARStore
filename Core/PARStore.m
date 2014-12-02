@@ -50,7 +50,21 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
 // queue needed for NSFilePresenter protocol
 @property (retain) NSOperationQueue *presenterQueue;
 
+// responding to file system events (Mac only)
+#if TARGET_OS_IPHONE | TARGET_IPHONE_SIMULATOR
+#elif TARGET_OS_MAC
+@property (strong) PARDispatchQueue *fileSystemEventQueue;
+@property FSEventStreamRef eventStreamDevices;
+@property FSEventStreamRef eventStreamLogs;
+#endif
+
+- (void)createFileSystemEventQueue;
+- (void)startFileSystemEventStreams;
+- (void)refreshFileSystemEventStreamLogs;
+- (void)stopFileSystemEventStreams;
+
 @end
+
 
 
 @implementation PARStore
@@ -69,6 +83,7 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
     store.databaseQueue     = [PARDispatchQueue dispatchQueueWithLabel:databaseQueueLabel];
     store.memoryQueue       = [PARDispatchQueue dispatchQueueWithLabel:memoryQueueLabel];
     store.notificationQueue = [PARDispatchQueue dispatchQueueWithLabel:notificationQueueLabel];
+    [store createFileSystemEventQueue];
     
     // misc initializations
     store.databaseTimestamps = [NSMapTable weakToStrongObjectsMapTable];
@@ -102,6 +117,7 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
     {
         DebugLog(@"%@ added as file presenter", self.deviceIdentifier);
         [NSFileCoordinator addFilePresenter:self];
+        [self startFileSystemEventStreams];
     }
 }
 
@@ -127,6 +143,7 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
              [self save:NULL];
              [self closeDatabase];
              [NSFileCoordinator removeFilePresenter:self];
+             [self stopFileSystemEventStreams];
          }];
     
     // reset in-memory info
@@ -1262,12 +1279,18 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (void)sync
 {
-    [self.databaseQueue dispatchAsynchronously:^{ if ([self loaded]) [self _sync]; }];
+    [self syncSoon];
 }
 
 - (void)syncNow
 {
     [self.databaseQueue dispatchSynchronously:^{ if ([self loaded]) [self _sync]; }];
+}
+
+- (void)syncSoon
+{
+    [self.databaseQueue scheduleTimerWithName:@"sync_delay" timeInterval:1.0 behavior:PARTimerBehaviorDelay block:^{ [self _sync]; }];
+    [self.databaseQueue scheduleTimerWithName:@"sync_coalesce" timeInterval:15.0 behavior:PARTimerBehaviorCoalesce block:^{ [self _sync]; }];
 }
 
 
@@ -1411,9 +1434,8 @@ NSString *PARDevicesDirectoryName = @"devices";
 	{
 		return;
 	}
-        
-    [self.databaseQueue scheduleTimerWithName:@"sync_delay" timeInterval:1.0 behavior:PARTimerBehaviorDelay block:^{ [self _sync]; }];
-    [self.databaseQueue scheduleTimerWithName:@"sync_coalesce" timeInterval:15.0 behavior:PARTimerBehaviorCoalesce block:^{ [self _sync]; }];
+    
+    [self syncSoon];
 }
 
 - (void)presentedSubitemDidAppearAtURL:(NSURL *)url
@@ -1480,7 +1502,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     DebugLog(@"%@", NSStringFromSelector(_cmd));
     //[self blockdatabaseQueueWhileRunningBlock:writer];
 	writer(^{
-        [self sync];
+        [self syncSoon];
     });
 }
 
@@ -1514,5 +1536,207 @@ NSString *PARDevicesDirectoryName = @"devices";
     
     [self postNotificationWithName:PARStoreDidDeleteNotification userInfo:nil];
 }
+
+
+
+#pragma mark - File System Events
+
+
+#if TARGET_OS_IPHONE | TARGET_IPHONE_SIMULATOR
+
+- (void)createFileSystemEventQueue      { }
+- (void)startFileSystemEventStreams  { }
+- (void)stopFileSystemEventStreams   { }
+
+
+#elif TARGET_OS_MAC
+
+// FSEventStream callbacks
+static void PARStoreDevicesDidChange(
+                                  ConstFSEventStreamRef streamRef,
+                                  void *callbackContext,
+                                  size_t numEvents,
+                                  void *eventPaths,
+                                  const FSEventStreamEventFlags eventFlags[],
+                                  const FSEventStreamEventId eventIds[]);
+static void PARStoreLogsDidChange(
+                                   ConstFSEventStreamRef streamRef,
+                                   void *callbackContext,
+                                   size_t numEvents,
+                                   void *eventPaths,
+                                   const FSEventStreamEventFlags eventFlags[],
+                                   const FSEventStreamEventId eventIds[]);
+
+- (void)createFileSystemEventQueue
+{
+    if (self.fileSystemEventQueue != nil)
+    {
+        ErrorLog(@"The file system event queue should be created only once in the init method");
+        return;
+    }
+    
+    NSString *urlLabel = [[self.storeURL lastPathComponent] stringByReplacingOccurrencesOfString:@"." withString:@"_"];
+    NSString *fileSystemEventQueueLabel = [PARDispatchQueue labelByPrependingBundleIdentifierToString:[NSString stringWithFormat:@"fsevent.%@", urlLabel]];
+    self.fileSystemEventQueue = [PARDispatchQueue dispatchQueueWithLabel:fileSystemEventQueueLabel];
+}
+
+- (void)startFileSystemEventStreams
+{
+    if (self.inMemory)
+        return;
+    
+    [self.fileSystemEventQueue dispatchAsynchronously:^
+    {
+        if (_eventStreamDevices != NULL)
+            return;
+        
+        // create event stream
+        FSEventStreamContext callbackContext;
+        callbackContext.version			= 0;
+        callbackContext.info			= (__bridge void *)self;
+        callbackContext.retain			= NULL;
+        callbackContext.release			= NULL;
+        callbackContext.copyDescription	= NULL;
+        self.eventStreamDevices = FSEventStreamCreate(kCFAllocatorDefault,
+                                               &PARStoreDevicesDidChange,
+                                               &callbackContext,
+                                               (__bridge CFArrayRef)@[[self deviceRootPath]],
+                                               kFSEventStreamEventIdSinceNow,
+                                               3.0,
+                                               kFSEventStreamCreateFlagUseCFTypes | kFSEventStreamCreateFlagWatchRoot);
+        // schedule and start the stream
+        FSEventStreamSetDispatchQueue(_eventStreamDevices, [self.fileSystemEventQueue valueForKey:@"queue"]);
+        
+        // error
+        if (FSEventStreamStart(_eventStreamDevices) == false)
+        {
+            ErrorLog(@"ERROR: could not start FSEventStream for path %@", [self deviceRootPath]);
+            FSEventStreamRelease(_eventStreamDevices);
+            self.eventStreamDevices = NULL;
+            return;
+        }
+        
+        // we can now also start the event streams for the log databases
+        [self refreshFileSystemEventStreamLogs];
+    }];
+}
+
+- (void)refreshFileSystemEventStreamLogs
+{
+    NSArray *directoriesToObserve = [self readonlyDirectoryPaths];
+
+    [self.fileSystemEventQueue dispatchAsynchronously:^
+     {
+         // remove old stream
+         if (_eventStreamLogs != NULL)
+         {
+             FSEventStreamStop(_eventStreamLogs);
+             FSEventStreamInvalidate(_eventStreamLogs);
+             FSEventStreamRelease(_eventStreamLogs);
+             self.eventStreamLogs = NULL;
+         }
+         
+         // no stream needed
+         if (directoriesToObserve.count == 0)
+         {
+             return;
+         }
+         
+         // create event stream
+         FSEventStreamContext callbackContext;
+         callbackContext.version			= 0;
+         callbackContext.info			= (__bridge void *)self;
+         callbackContext.retain			= NULL;
+         callbackContext.release			= NULL;
+         callbackContext.copyDescription	= NULL;
+         self.eventStreamLogs = FSEventStreamCreate(kCFAllocatorDefault,
+                                                       &PARStoreLogsDidChange,
+                                                       &callbackContext,
+                                                       (__bridge CFArrayRef)directoriesToObserve,
+                                                       kFSEventStreamEventIdSinceNow,
+                                                       3.0,
+                                                       kFSEventStreamCreateFlagUseCFTypes | kFSEventStreamCreateFlagWatchRoot);
+         // schedule and start the stream
+         FSEventStreamSetDispatchQueue(_eventStreamLogs, [self.fileSystemEventQueue valueForKey:@"queue"]);
+         if (FSEventStreamStart(_eventStreamLogs) == false)
+         {
+             ErrorLog(@"ERROR: could not start FSEventStream for paths: %@", directoriesToObserve);
+             FSEventStreamRelease(_eventStreamLogs);
+             self.eventStreamLogs = NULL;
+         }
+     }];
+
+}
+
+- (void)stopFileSystemEventStreams
+{
+    [self.fileSystemEventQueue dispatchSynchronously:^
+     {
+         if (_eventStreamDevices != NULL)
+         {
+             FSEventStreamStop(_eventStreamDevices);
+             FSEventStreamInvalidate(_eventStreamDevices);
+             FSEventStreamRelease(_eventStreamDevices);
+             self.eventStreamDevices = NULL;
+         }
+         if (_eventStreamLogs != NULL)
+         {
+             FSEventStreamStop(_eventStreamLogs);
+             FSEventStreamInvalidate(_eventStreamLogs);
+             FSEventStreamRelease(_eventStreamLogs);
+             self.eventStreamLogs = NULL;
+         }
+     }];
+}
+
+// one of the device directory changed --> one of the 'logs' db changed --> time to sync
+- (void)respondToFileSystemEventWithPath:(NSString *)path
+{
+    DebugLog(@"%@ %@", NSStringFromSelector(_cmd), path);
+    [self syncSoon];
+}
+
+
+// the 'devices' directory changed --> device was added or removed
+static void PARStoreDevicesDidChange(
+                                  ConstFSEventStreamRef streamRef,
+                                  void *callbackContext,
+                                  size_t numEvents,
+                                  void *eventPaths,
+                                  const FSEventStreamEventFlags eventFlags[],
+                                  const FSEventStreamEventId eventIds[])
+{
+    __weak PARStore *store = (__bridge PARStore *)callbackContext;
+    [store refreshFileSystemEventStreamLogs];
+}
+
+// one of the device directory changed --> one of the 'logs' db changed --> time to sync
+static void PARStoreLogsDidChange(
+                                         ConstFSEventStreamRef streamRef,
+                                         void *callbackContext,
+                                         size_t numEvents,
+                                         void *eventPaths,
+                                         const FSEventStreamEventFlags eventFlags[],
+                                         const FSEventStreamEventId eventIds[])
+{
+    @autoreleasepool
+    {
+        NSArray *eventPathsArray = (__bridge NSArray *)eventPaths;
+        
+        for (NSUInteger i = 0; i < numEvents; ++i)
+        {
+            // the filesystem event
+            // FSEventStreamEventFlags flags = eventFlags[i];
+            // FSEventStreamEventId identifier = eventIds[i];
+            NSString *eventPath	= [eventPathsArray[i] stringByStandardizingPath];
+            
+            // notify PARStore
+            __weak PARStore *store = (__bridge PARStore *)callbackContext;
+            [store respondToFileSystemEventWithPath:eventPath];
+        }
+    }
+}
+
+#endif
 
 @end
