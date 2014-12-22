@@ -1547,6 +1547,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 - (void)createFileSystemEventQueue      { }
 - (void)startFileSystemEventStreams  { }
 - (void)stopFileSystemEventStreams   { }
+- (void)refreshFileSystemEventStreamLogs {}
 
 
 #elif TARGET_OS_MAC
