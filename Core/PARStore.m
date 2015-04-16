@@ -984,7 +984,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         ErrorLog(@"%@", description);
         if (error != NULL)
             *error = [NSError errorWithObject:self code:18 localizedDescription:description underlyingError:nil];
-        return NO;
+        return nil;
     }
 
     // blobs for in-memory store are stored... in memory
