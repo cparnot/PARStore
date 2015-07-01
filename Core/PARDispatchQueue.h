@@ -9,10 +9,12 @@ typedef void (^PARDispatchBlock)(void);
 // Timer Behaviors
 // PARTimerBehaviorCoalesce: subsequent calls can only reduce the time until firing, not extend
 // PARTimerBehaviorDelay:    subsequent calls replace the existing time, potentially extending it
+// PARTimerBehaviorThrottle: subsequent calls can only fire after the elapsed time, potentially immediately
 typedef NS_ENUM(NSInteger, PARTimerBehavior)
 {
     PARTimerBehaviorCoalesce,
-    PARTimerBehaviorDelay
+    PARTimerBehaviorDelay,
+    PARTimerBehaviorThrottle,
 };
 
 

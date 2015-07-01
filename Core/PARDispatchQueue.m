@@ -234,7 +234,7 @@ static PARDispatchQueue *PARSharedConcurrentQueue = nil;
     NSDictionary *timerInfo = self.timers[name];
     NSNumber *dateValue = timerInfo[@"DateValue"];
     NSValue *timerValue = timerInfo[@"TimerValue"];
-    if (!timerValue)
+    if (timerValue == nil && behavior != PARTimerBehaviorThrottle)
         dateValue = nil;
     
     // get the underlying dispatch timer
@@ -246,16 +246,51 @@ static PARDispatchQueue *PARSharedConcurrentQueue = nil;
     if (!dispatchTimer)
         return NO;
     
-    // adjust firing time only if needed: for coalesce behavior, only take into account earlier-than-currently-set firing
+    // adjust firing time as needed:
     NSTimeInterval now = [self _now];
-    NSTimeInterval adjustedDelay = delay - (now - time);
-    if (adjustedDelay < 0.0)
-        adjustedDelay = 0.0;
-    NSTimeInterval fireTime = [dateValue doubleValue];
-    NSTimeInterval newFireTime = now + adjustedDelay;
-    if (dateValue == nil || behavior == PARTimerBehaviorDelay || newFireTime < fireTime)
+    NSTimeInterval newFireTime;
+
+    // - wait behavior: fire now or last date + delay
+    if (behavior == PARTimerBehaviorThrottle)
     {
-        dispatch_source_set_timer(dispatchTimer, dispatch_time(DISPATCH_TIME_NOW, adjustedDelay * NSEC_PER_SEC), 0, 0);
+        // timer already set: already throttled
+        if (timerValue != nil)
+        {
+            newFireTime = dateValue.doubleValue;
+        }
+        
+        else
+        {
+            // never fired or already past the throttle delay --> fire now
+            newFireTime = dateValue.doubleValue + delay;
+            if (dateValue == nil || newFireTime <= now)
+            {
+                newFireTime = now;
+                dispatch_source_set_timer(dispatchTimer, dispatch_time(DISPATCH_TIME_NOW, 0.0), 0, 0);
+            }
+            
+            // fired before --> apply throttle
+            else
+            {
+                NSTimeInterval adjustedDelay = newFireTime - now;
+                dispatch_source_set_timer(dispatchTimer, dispatch_time(DISPATCH_TIME_NOW, adjustedDelay * NSEC_PER_SEC), 0, 0);
+            }
+        }
+    }
+    
+    // - coalesce behavior: only take into account earlier-than-currently-set firing
+    // - delay behavior: firing always at now + delay
+    else
+    {
+        NSTimeInterval adjustedDelay = delay - (now - time);
+        if (adjustedDelay < 0.0)
+            adjustedDelay = 0.0;
+        NSTimeInterval fireTime = [dateValue doubleValue];
+        newFireTime = now + adjustedDelay;
+        if (dateValue == nil || behavior == PARTimerBehaviorDelay || newFireTime < fireTime)
+        {
+            dispatch_source_set_timer(dispatchTimer, dispatch_time(DISPATCH_TIME_NOW, adjustedDelay * NSEC_PER_SEC), 0, 0);
+        }
     }
     
     // set the new event handler
@@ -294,14 +329,19 @@ static PARDispatchQueue *PARSharedConcurrentQueue = nil;
 
 - (void)_cancelTimerWithName:(NSString *)name
 {
-    NSValue *timerValue = self.timers[name][@"TimerValue"];
+    NSDictionary *timerInfo = self.timers[name];
+    NSValue *timerValue = timerInfo[@"TimerValue"];
     if (!timerValue)
         return;
+    NSNumber *dateValue = timerInfo[@"DateValue"];
     
     // because we are using NSValue, we need to do the memory management ourselves
     dispatch_source_t dispatchTimer = (__bridge_transfer dispatch_source_t)[timerValue pointerValue];
     dispatch_source_cancel(dispatchTimer);
-    [self.timers removeObjectForKey:name];
+    // **from here on, the timerValue pointer can't be used anymore!**
+    
+    // for 'throttle' behavior, we need to keep track of last firing date, but still remove the timer value itself
+    self.timers[name] = @{ @"DateValue" : dateValue };
 }
 
 - (void)scheduleTimerWithName:(NSString *)name timeInterval:(NSTimeInterval)delay behavior:(PARTimerBehavior)behavior block:(PARDispatchBlock)block
