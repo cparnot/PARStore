@@ -95,6 +95,21 @@ static PARDispatchQueue *PARMainDispatchQueue = nil;
 }
 
 
+static PARDispatchQueue *PARSharedConcurrentQueue = nil;
++ (PARDispatchQueue *)sharedConcurrentQueue
+{
+    static dispatch_once_t pred = 0;
+    dispatch_once(&pred, ^
+      {
+          NSString *label = @"PARSharedConcurrentQueue";
+          PARSharedConcurrentQueue = [self dispatchQueueWithGCDQueue:dispatch_queue_create([label UTF8String], DISPATCH_QUEUE_CONCURRENT) behavior:PARDeadlockBehaviorBlock];
+          PARSharedConcurrentQueue._label = label;
+          PARSharedConcurrentQueue.concurrent = YES;
+      });
+    return PARSharedConcurrentQueue;
+}
+
+
 #pragma mark - Accessors
 
 - (NSString *)label
@@ -169,6 +184,16 @@ static PARDispatchQueue *PARMainDispatchQueue = nil;
                NSAssert([queueStack count] == 0, @"The queue stack should be empty after execution of a block dispatched asynchronously with queue: %@", self);
                dispatch_queue_set_specific(self.queue, &PARQueueStackKey, NULL, NULL);
            });
+}
+
+- (void)dispatchBarrierSynchronously:(PARDispatchBlock)block
+{
+    dispatch_barrier_sync(self.queue, block);
+}
+
+- (void)dispatchBarrierAsynchronously:(PARDispatchBlock)block
+{
+    dispatch_barrier_async(self.queue, block);
 }
 
 // see: https://devforums.apple.com/message/710745 for why using dispatch_get_current_queue() is not a good way to check the current queue, and why it's deprecated in iOS 6.0

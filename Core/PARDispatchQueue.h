@@ -34,24 +34,38 @@ typedef NS_ENUM(NSInteger, PARDeadlockBehavior)
 
 @interface PARDispatchQueue : NSObject
 
+
 /// @name Creating Queues
 + (PARDispatchQueue *)globalDispatchQueue;
 + (PARDispatchQueue *)mainDispatchQueue;
 + (PARDispatchQueue *)dispatchQueueWithLabel:(NSString *)label;
 + (PARDispatchQueue *)dispatchQueueWithLabel:(NSString *)label behavior:(PARDeadlockBehavior)behavior;
 
+// queue created lazily, then shared and guaranteed to be always the same
+// this is useful as an alternative to `globalDispatchQueue` to dispatch barrier blocks
++ (PARDispatchQueue *)sharedConcurrentQueue;
+
+
 /// @name Properties
 @property (readonly, copy) NSString *label;
 @property (readonly) PARDeadlockBehavior deadlockBehavior;
 
+
 /// @name Utilities
 + (NSString *)labelByPrependingBundleIdentifierToString:(NSString *)suffix;
 
+
 /// @name Dispatching Blocks
+
 - (void)dispatchSynchronously:(PARDispatchBlock)block;
 - (void)dispatchAsynchronously:(PARDispatchBlock)block;
+- (void)dispatchBarrierSynchronously:(PARDispatchBlock)block;
+- (void)dispatchBarrierAsynchronously:(PARDispatchBlock)block;
+
+// applicable only for serial queues, with one caveat for the main queue: all blocks in the stack should be dispatched using PARDispatchQueue `dispatchXXX:` calls
 - (BOOL)isCurrentQueue;
 - (BOOL)isInCurrentQueueStack;
+
 
 /// @name Adding and Updating Timers
 - (void)scheduleTimerWithName:(NSString *)name timeInterval:(NSTimeInterval)delay behavior:(PARTimerBehavior)behavior block:(PARDispatchBlock)block;
