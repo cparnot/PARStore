@@ -36,6 +36,7 @@
 		56C7EE0F16E2848C00FFBBF2 /* CoreData.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56EAE16E16E24C7500A7F31F /* CoreData.framework */; };
 		56C7EE1216E284A600FFBBF2 /* PARDispatchQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = 569D021D16E24FDA002675BA /* PARDispatchQueue.m */; };
 		56D5A90617F4493800AEA626 /* CoreData.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56EAE16E16E24C7500A7F31F /* CoreData.framework */; };
+		56E196E61B448CA300A51AB0 /* PARDispatchQueueTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 56E196E41B448BE600A51AB0 /* PARDispatchQueueTests.m */; };
 		56EAE16B16E24C7500A7F31F /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56EAE16A16E24C7500A7F31F /* Cocoa.framework */; };
 		56EAE18A16E24C7500A7F31F /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 56EAE16A16E24C7500A7F31F /* Cocoa.framework */; };
 		56EAE19216E24C7500A7F31F /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 56EAE19016E24C7500A7F31F /* InfoPlist.strings */; };
@@ -95,6 +96,7 @@
 		56C7EDFF16E270C600FFBBF2 /* PARStoreExample.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PARStoreExample.m; sourceTree = "<group>"; };
 		56C7EE0816E2811E00FFBBF2 /* PARNotificationSemaphore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PARNotificationSemaphore.h; sourceTree = "<group>"; };
 		56C7EE0916E2811E00FFBBF2 /* PARNotificationSemaphore.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PARNotificationSemaphore.m; sourceTree = "<group>"; };
+		56E196E41B448BE600A51AB0 /* PARDispatchQueueTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PARDispatchQueueTests.m; sourceTree = "<group>"; };
 		56EAE16616E24C7500A7F31F /* Mac-PARStore.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Mac-PARStore.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		56EAE16A16E24C7500A7F31F /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		56EAE16D16E24C7500A7F31F /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
@@ -264,6 +266,7 @@
 				56C7EDFB16E26D0700FFBBF2 /* PARTestCase.m */,
 				56EAE19416E24C7500A7F31F /* PARStoreTests.m */,
 				561148E6196E952800F488F2 /* PARSQLiteTests.m */,
+				56E196E41B448BE600A51AB0 /* PARDispatchQueueTests.m */,
 				56EAE18E16E24C7500A7F31F /* Supporting Files */,
 			);
 			path = Tests;
@@ -327,7 +330,7 @@
 			name = "iOS-PARStoreTests";
 			productName = "iOS-PARStoreTests";
 			productReference = 56C7EDE116E260EB00FFBBF2 /* iOS-PARStoreTests.xctest */;
-			productType = "com.apple.product-type.bundle";
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		56EAE16516E24C7500A7F31F /* Mac-PARStore */ = {
 			isa = PBXNativeTarget;
@@ -507,6 +510,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				56EAE19516E24C7500A7F31F /* PARStoreTests.m in Sources */,
+				56E196E61B448CA300A51AB0 /* PARDispatchQueueTests.m in Sources */,
 				56C7EDFC16E26D0700FFBBF2 /* PARTestCase.m in Sources */,
 				561148E7196E952800F488F2 /* PARSQLiteTests.m in Sources */,
 			);
