@@ -1402,6 +1402,46 @@ NSString *PARDevicesDirectoryName = @"devices";
 }
 
 
+#pragma mark - History
+
+- (NSArray *)changesSinceTimestamp:(NSNumber *)timestampLimit
+{
+    NSMutableArray *changes = [NSMutableArray array];
+    [self.databaseQueue dispatchBarrierSynchronously:^
+    {
+        // fetch Log rows in reverse timestamp order, starting at `timestampLimit`
+        NSError *errorLogs = nil;
+        NSFetchRequest *logsRequest = [NSFetchRequest fetchRequestWithEntityName:@"Log"];
+        if (timestampLimit != nil)
+        {
+            logsRequest.predicate = [NSPredicate predicateWithFormat:@"timestamp > %@", timestampLimit];
+        }
+        logsRequest.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:NO]];
+        logsRequest.resultType = NSDictionaryResultType;
+        NSArray *logs = [[self managedObjectContext] executeFetchRequest:logsRequest error:&errorLogs];
+        if (!logs)
+        {
+            ErrorLog(@"Error fetching logs for store at path '%@' because of error: %@", [self.storeURL path], errorLogs);
+            return;
+        }
+        
+        // logs --> changes
+        for (NSDictionary *logDictionary in logs)
+        {
+            NSNumber *timestamp = logDictionary[@"timestamp"];
+            NSNumber *parentTimestamp = logDictionary[@"parentTimestamp"];
+            NSString *key = logDictionary[@"key"];
+            NSData *blob = logDictionary[@"blob"];
+            id propertyList = [self propertyListFromData:blob error:NULL];
+            PARChange *change = [PARChange changeWithTimestamp:timestamp parentTimestamp:parentTimestamp key:key propertyList:propertyList];
+            [changes addObject:change];
+        }
+    }];
+    
+    return changes;
+}
+
+
 #pragma mark - File presenter protocol
 
 - (NSURL *) presentedItemURL
@@ -1741,3 +1781,29 @@ static void PARStoreLogsDidChange(
 #endif
 
 @end
+
+
+#pragma mark - PARChange
+
+@interface PARChange ()
+@property (readwrite, copy) NSNumber *timestamp;
+@property (readwrite, copy) NSNumber *parentTimestamp;
+@property (readwrite, copy) NSString *key;
+@property (readwrite, copy) id propertyList;
+@end
+
+
+@implementation PARChange
+
++ (PARChange *)changeWithTimestamp:(NSNumber *)timestamp parentTimestamp:(NSNumber *)parentTimestamp key:(NSString *)key propertyList:(id)propertyList
+{
+    PARChange *change = [[PARChange alloc] init];
+    change.timestamp = timestamp;
+    change.parentTimestamp = parentTimestamp;
+    change.key = change.key;
+    change.propertyList = propertyList;
+    return change;
+}
+
+@end
+

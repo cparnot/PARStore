@@ -75,10 +75,21 @@ extern NSString *PARStoreDidSyncNotification;
 - (void)saveNow;
 - (void)waitUntilFinished;
 
-// TODO: history
+/// @name History
+// array of PARChange instances
+- (NSArray *)changesSinceTimestamp:(NSNumber *)timestamp;
 
 // TODO: error handling
 
+@end
+
+
+@interface PARChange : NSObject
++ (PARChange *)changeWithTimestamp:(NSNumber *)timestamp parentTimestamp:(NSNumber *)parentTimestamp key:(NSString *)key propertyList:(id)propertyList;
+@property (readonly, copy) NSNumber *timestamp;
+@property (readonly, copy) NSNumber *parentTimestamp;
+@property (readonly, copy) NSString *key;
+@property (readonly, copy) id propertyList;
 @end
 
 
