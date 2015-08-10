@@ -1862,5 +1862,10 @@ static void PARStoreLogsDidChange(
     return YES;
 }
 
+- (NSString *)description
+{
+    return [NSString stringWithFormat:@"<%@:%p> = timestamp: %@, parentTimestamp: %@, key: %@, plist: %@", self.class, self, self.timestamp ?: @"", self.parentTimestamp ?: @"", self.key ?: @"–", self.propertyList ?: @"—"];
+}
+
 @end
 
