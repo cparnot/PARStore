@@ -1805,5 +1805,62 @@ static void PARStoreLogsDidChange(
     return change;
 }
 
+- (BOOL)isEqual:(id)object
+{
+    if ([object isKindOfClass:[PARChange class]] == NO)
+    {
+        return NO;
+    }
+
+    PARChange *change1 = self;
+    PARChange *change2 = object;
+    
+    NSNumber *timestamp1 = change1.timestamp;
+    NSNumber *timestamp2 = change2.timestamp;
+    if (timestamp1 != nil && timestamp2 != nil && [timestamp1 isEqual:timestamp2] == NO)
+    {
+        return NO;
+    }
+    if ((timestamp1 == nil || timestamp2 == nil) && timestamp1 != timestamp2)
+    {
+        return NO;
+    }
+
+    NSNumber *parentTimestamp1 = change1.parentTimestamp;
+    NSNumber *parentTimestamp2 = change2.parentTimestamp;
+    if (parentTimestamp1 != nil && parentTimestamp2 != nil && [parentTimestamp1 isEqual:parentTimestamp2] == NO)
+    {
+        return NO;
+    }
+    if ((parentTimestamp1 == nil || parentTimestamp2 == nil) && parentTimestamp1 != parentTimestamp2)
+    {
+        return NO;
+    }
+
+    NSString *key1 = change1.key;
+    NSString *key2 = change2.key;
+    if (key1 != nil && key2 != nil && [key1 isEqual:key2] == NO)
+    {
+        return NO;
+    }
+    if ((key1 == nil || key2 == nil) && key1 != key2)
+    {
+        return NO;
+    }
+
+    id plist1 = change1.propertyList;
+    id plist2 = change2.propertyList;
+    if (plist1 != nil && plist2 != nil && [plist1 isEqual:plist2] == NO)
+    {
+        return NO;
+    }
+    if ((plist1 == nil || plist2 == nil) && plist1 != plist2)
+    {
+        return NO;
+    }
+    
+    return YES;
+}
+
 @end
 

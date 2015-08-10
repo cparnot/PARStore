@@ -90,6 +90,7 @@ extern NSString *PARStoreDidSyncNotification;
 @property (readonly, copy) NSNumber *parentTimestamp;
 @property (readonly, copy) NSString *key;
 @property (readonly, copy) id propertyList;
+- (BOOL)isEqual:(id)object;
 @end
 
 
