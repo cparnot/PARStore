@@ -61,13 +61,14 @@ extern NSString *PARStoreDidSyncNotification;
 + (NSNumber *)timestampNow;
 + (NSNumber *)timestampForDistantPast;
 + (NSNumber *)timestampForDistantFuture;
-- (NSDictionary *)mostRecentTimestampsByDeviceIdentifier;
-- (NSNumber *)mostRecentTimestampForDeviceIdentifier:(NSString *)deviceIdentifier;
 - (NSDictionary *)mostRecentTimestampsByKey;
 - (NSNumber *)mostRecentTimestampForKey:(NSString *)key;
+// These methods should not be called from within a transaction, or they will fail.
+- (NSDictionary *)mostRecentTimestampsByDeviceIdentifier;
+- (NSNumber *)mostRecentTimestampForDeviceIdentifier:(NSString *)deviceIdentifier;
 
 /// @name Synchronous Method Calls
-// Synchronous calls can potentially result in longer wait, and should be avoided in the main thread.
+// Synchronous calls can potentially result in longer wait, and should be avoided in the main thread. These should not be called from within a transaction, or they will fail.
 // In addition, syncing and saving should normally be triggered automatically and asynchronously.
 - (void)loadNow;
 - (void)closeNow;
@@ -76,7 +77,7 @@ extern NSString *PARStoreDidSyncNotification;
 - (void)waitUntilFinished;
 
 /// @name History
-// array of PARChange instances
+// This method returns an array of PARChange instances. It should not be called from within a transaction, or it will fail.
 - (NSArray *)changesSinceTimestamp:(NSNumber *)timestamp;
 
 // TODO: error handling

@@ -128,6 +128,11 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
 
 - (void)loadNow
 {
+    if ([self.memoryQueue isInCurrentQueueStack])
+    {
+        ErrorLog(@"To avoid deadlocks, %@ should not be called within a transaction. Bailing out.", NSStringFromSelector(_cmd));
+        return;
+    }
     [self.databaseQueue dispatchSynchronously:^{ [self _load]; }];
 }
 
@@ -166,6 +171,11 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
 
 - (void)closeNow
 {
+    if ([self.memoryQueue isInCurrentQueueStack])
+    {
+        ErrorLog(@"To avoid deadlocks, %@ should not be called within a transaction. Bailing out.", NSStringFromSelector(_cmd));
+        return;
+    }
     [self.memoryQueue       dispatchSynchronously:^{ [self _close]; }];
     [self.databaseQueue     dispatchSynchronously:^{ }];
     [self.notificationQueue dispatchSynchronously:^{ }];
@@ -173,6 +183,11 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
 
 - (void)waitUntilFinished
 {
+    if ([self.memoryQueue isInCurrentQueueStack])
+    {
+        ErrorLog(@"To avoid deadlocks, %@ should not be called within a transaction. Bailing out.", NSStringFromSelector(_cmd));
+        return;
+    }
     [self.memoryQueue       dispatchSynchronously:^{ }];
     [self.databaseQueue     dispatchSynchronously:^{ [self save:NULL]; [self _sync]; }];
     [self.notificationQueue dispatchSynchronously:^{ }];
@@ -571,6 +586,11 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (void)saveNow
 {
+    if ([self.memoryQueue isInCurrentQueueStack])
+    {
+        ErrorLog(@"To avoid deadlocks, %@ should not be called within a transaction. Bailing out.", NSStringFromSelector(_cmd));
+        return;
+    }
     [self.databaseQueue dispatchSynchronously:^{ if ([self loaded]) [self save:NULL]; }];
 }
 
@@ -1247,6 +1267,12 @@ NSString *PARDevicesDirectoryName = @"devices";
 {
     if (self._inMemory)
         return nil;
+
+    if ([self.memoryQueue isInCurrentQueueStack])
+    {
+        ErrorLog(@"To avoid deadlocks, %@ should not be called within a transaction. Bailing out.", NSStringFromSelector(_cmd));
+        return nil;
+    }
     
     __block id plist = nil;
     [self.databaseQueue dispatchSynchronously:^
@@ -1284,6 +1310,11 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (void)syncNow
 {
+    if ([self.memoryQueue isInCurrentQueueStack])
+    {
+        ErrorLog(@"To avoid deadlocks, %@ should not be called within a transaction. Bailing out.", NSStringFromSelector(_cmd));
+        return;
+    }
     [self.databaseQueue dispatchSynchronously:^{ if ([self loaded]) [self _sync]; }];
 }
 
@@ -1344,6 +1375,12 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (NSDictionary *)mostRecentTimestampsByDeviceIdentifier
 {
+    if ([self.memoryQueue isInCurrentQueueStack])
+    {
+        ErrorLog(@"To avoid deadlocks, %@ should not be called within a transaction. Bailing out.", NSStringFromSelector(_cmd));
+        return nil;
+    }
+
     NSMutableDictionary *timestamps = [NSMutableDictionary dictionary];
     [self.databaseQueue dispatchSynchronously:^
      {
@@ -1366,7 +1403,13 @@ NSString *PARDevicesDirectoryName = @"devices";
 {
     if (deviceIdentifier == nil)
         return nil;
-    
+
+    if ([self.memoryQueue isInCurrentQueueStack])
+    {
+        ErrorLog(@"To avoid deadlocks, %@ should not be called within a transaction. Bailing out.", NSStringFromSelector(_cmd));
+        return nil;
+    }
+
     __block NSNumber *timestamp = nil;
     [self.databaseQueue dispatchSynchronously:^
     {
@@ -1406,6 +1449,12 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (NSArray *)changesSinceTimestamp:(NSNumber *)timestampLimit
 {
+    if ([self.memoryQueue isInCurrentQueueStack])
+    {
+        ErrorLog(@"To avoid deadlocks, %@ should not be called within a transaction. Bailing out.", NSStringFromSelector(_cmd));
+        return nil;
+    }
+
     NSMutableArray *changes = [NSMutableArray array];
     [self.databaseQueue dispatchSynchronously:^
     {
