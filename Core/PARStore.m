@@ -1800,7 +1800,7 @@ static void PARStoreLogsDidChange(
     PARChange *change = [[PARChange alloc] init];
     change.timestamp = timestamp;
     change.parentTimestamp = parentTimestamp;
-    change.key = change.key;
+    change.key = key;
     change.propertyList = propertyList;
     return change;
 }
