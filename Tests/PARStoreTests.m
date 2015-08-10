@@ -414,6 +414,69 @@
 }
 
 
+#pragma mark - Testing History
+
+- (void)testChangesHistory
+{
+    NSString *device1 = [[NSUUID UUID] UUIDString];
+    NSString *device2 = [[NSUUID UUID] UUIDString];
+    NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
+    NSString *first = @"Jane";
+    NSString *last  = @"Doe";
+    NSString *title = @"The Title";
+    
+    // feed data
+    PARStoreExample *store1 = [PARStoreExample storeWithURL:url deviceIdentifier:device1];
+    PARStoreExample *store2 = [PARStoreExample storeWithURL:url deviceIdentifier:device2];
+    [store1 loadNow];
+    [store2 loadNow];
+    NSNumber *beginTimestamp = [PARStore timestampNow];
+    store1.first = first;
+    store1.last  = last;
+    store2.title = title;
+    NSNumber *endTimestamp = [PARStore timestampNow];
+    [store1 syncNow];
+    [store2 syncNow];
+    [store1 saveNow];
+    [store2 saveNow];
+    
+    // actual changes
+    NSArray *changes1 = [store1 changesSinceTimestamp:nil];
+    NSArray *changes2 = [store2 changesSinceTimestamp:nil];
+    XCTAssertEqualObjects(changes1, changes2, @"changes should be consistent in store1 and store2 because they come from the same URL");
+    
+    // change count
+    XCTAssertTrue(changes1.count == 3, @"expected 3 changes but got %@", @(changes1.count));
+    if (changes1.count != 3)
+    {
+        return;
+    }
+    
+    // timestamp order
+    NSArray *actualTimestamps = [changes1 valueForKey:@"timestamp"];
+    NSArray *orderedTimestamps = [actualTimestamps sortedArrayUsingSelector:@selector(compare:)];
+    XCTAssertEqualObjects(actualTimestamps, orderedTimestamps, @"timestamps returned by API should already be ordered but are: %@\n instead of ordered timestamps: %@", actualTimestamps, orderedTimestamps);
+    
+    // timestamp range
+    for (NSNumber *timestamp in actualTimestamps)
+    {
+        XCTAssertTrue([timestamp compare:beginTimestamp] != NSOrderedAscending, @"timestamp %@ should be after beginTimestamp %@", timestamp, beginTimestamp);
+        XCTAssertTrue([timestamp compare:endTimestamp] != NSOrderedDescending, @"timestamp %@ should be before endTimestamp %@", timestamp, endTimestamp);
+    }
+    
+    // expected changes
+    PARChange *change0 = changes1[0];
+    PARChange *change1 = changes1[1];
+    PARChange *change2 = changes1[2];
+    NSArray *expectedChanges = @[
+                                 [PARChange changeWithTimestamp:change0.timestamp parentTimestamp:change0.parentTimestamp key:@"first" propertyList:first],
+                                 [PARChange changeWithTimestamp:change1.timestamp parentTimestamp:change1.parentTimestamp key:@"last" propertyList:last],
+                                 [PARChange changeWithTimestamp:change2.timestamp parentTimestamp:change2.parentTimestamp key:@"title" propertyList:title],
+                                 ];
+    XCTAssertEqualObjects(changes1, expectedChanges, @"unexpected changes: %@", changes1);
+}
+
+
 #pragma mark - Testing Queues
 
 // old bug now fixed
