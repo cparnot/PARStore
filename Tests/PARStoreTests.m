@@ -255,13 +255,13 @@
     NSNumber *timestamp12 = [store1 mostRecentTimestampForDeviceIdentifier:@"2"];
     NSNumber *timestamp21 = [store2 mostRecentTimestampForDeviceIdentifier:@"1"];
     NSNumber *timestamp22 = [store2 mostRecentTimestampForDeviceIdentifier:@"2"];
-    NSNumber *timestampForDistantPath = [PARStore timestampForDistantPast];
+    NSNumber *timestampForDistantPast = [PARStore timestampForDistantPast];
     XCTAssertNotNil(timestamp11, @"timestamp expected in store 1");
     XCTAssertNotNil(timestamp21, @"timestamp expected in store 1");
     XCTAssertEqualObjects(timestamp11, timestamp21, @"");
     
     XCTAssertEqualObjects(nil, timestamp12, @"no timestamp expected in store 2");
-    XCTAssertEqualObjects(timestampForDistantPath, timestamp22, @"no timestamp expected in store 2");
+    XCTAssertEqualObjects(timestampForDistantPast, timestamp22, @"no timestamp expected in store 2");
     
     [store1 closeNow];
     [store2 closeNow];
@@ -290,13 +290,13 @@
     NSNumber *timestamp12 = [store1 mostRecentTimestampsByDeviceIdentifier][@"2"];
     NSNumber *timestamp21 = [store2 mostRecentTimestampsByDeviceIdentifier][@"1"];
     NSNumber *timestamp22 = [store2 mostRecentTimestampsByDeviceIdentifier][@"2"];
-    NSNumber *timestampForDistantPath = [PARStore timestampForDistantPast];
+    NSNumber *timestampForDistantPast = [PARStore timestampForDistantPast];
     XCTAssertNotNil(timestamp11, @"timestamp expected in store 1");
     XCTAssertNotNil(timestamp21, @"timestamp expected in store 1");
     XCTAssertEqualObjects(timestamp11, timestamp21, @"");
     
     XCTAssertEqualObjects(nil, timestamp12, @"no timestamp expected in store 2");
-    XCTAssertEqualObjects(timestampForDistantPath, timestamp22, @"no timestamp expected in store 2");
+    XCTAssertEqualObjects(timestampForDistantPast, timestamp22, @"no timestamp expected in store 2");
     
     [store1 closeNow];
     [store2 closeNow];
