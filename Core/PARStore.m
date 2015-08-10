@@ -1407,16 +1407,16 @@ NSString *PARDevicesDirectoryName = @"devices";
 - (NSArray *)changesSinceTimestamp:(NSNumber *)timestampLimit
 {
     NSMutableArray *changes = [NSMutableArray array];
-    [self.databaseQueue dispatchBarrierSynchronously:^
+    [self.databaseQueue dispatchSynchronously:^
     {
-        // fetch Log rows in reverse timestamp order, starting at `timestampLimit`
+        // fetch Log rows in timestamp order, starting at `timestampLimit`
         NSError *errorLogs = nil;
         NSFetchRequest *logsRequest = [NSFetchRequest fetchRequestWithEntityName:@"Log"];
         if (timestampLimit != nil)
         {
             logsRequest.predicate = [NSPredicate predicateWithFormat:@"timestamp > %@", timestampLimit];
         }
-        logsRequest.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:NO]];
+        logsRequest.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:YES]];
         logsRequest.resultType = NSDictionaryResultType;
         NSArray *logs = [[self managedObjectContext] executeFetchRequest:logsRequest error:&errorLogs];
         if (!logs)
