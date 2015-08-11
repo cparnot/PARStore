@@ -1265,9 +1265,14 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (id)syncedPropertyListValueForKey:(NSString *)key
 {
+    return [self syncedPropertyListValueForKey:key timestamp:nil];
+}
+
+- (id)syncedPropertyListValueForKey:(NSString *)key timestamp:(NSNumber *)timestamp
+{
     if (self._inMemory)
         return nil;
-
+    
     if ([self.memoryQueue isInCurrentQueueStack])
     {
         ErrorLog(@"To avoid deadlocks, %@ should not be called within a transaction. Bailing out.", NSStringFromSelector(_cmd));
@@ -1276,29 +1281,38 @@ NSString *PARDevicesDirectoryName = @"devices";
     
     __block id plist = nil;
     [self.databaseQueue dispatchSynchronously:^
-    {
-        NSError *fetchError = nil;
-        NSFetchRequest *request = [NSFetchRequest fetchRequestWithEntityName:@"Log"];
-        [request setSortDescriptors:@[[NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:NO]]];
-        [request setPredicate:[NSPredicate predicateWithFormat:@"key == %@", key]];
-        [request setFetchLimit:1];
-        [request setReturnsObjectsAsFaults:NO];
-        NSArray *results = [[self managedObjectContext] executeFetchRequest:request error:&fetchError];
-        if (!results)
-        {
-            ErrorLog(@"Error fetching logs for store:\npath: %@\nerror: %@", [self.storeURL path], fetchError);
-            return;
-        }
-
-        if ([results count] > 0)
-        {
-            NSManagedObject *latestLog = [results lastObject];
-            NSError *plistError = nil;
-            plist = [self propertyListFromData:[latestLog valueForKey:@"blob"] error:&plistError];
-            if (!plist)
-                ErrorLog(@"Error deserializing 'layout' data in Logs database:\nrow: %@\nfile: %@\nerror: %@", latestLog.objectID, latestLog.objectID.persistentStore.URL.path, plistError);
-        }
-    }];
+     {
+         NSError *fetchError = nil;
+         NSFetchRequest *request = [NSFetchRequest fetchRequestWithEntityName:@"Log"];
+         request.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:NO]];
+         if (timestamp == nil)
+         {
+             request.predicate = [NSPredicate predicateWithFormat:@"key == %@", key];
+         }
+         else
+         {
+             request.predicate = [NSPredicate predicateWithFormat:@"key == %@ AND timestamp <= %@", key, timestamp];
+         }
+         request.fetchLimit = 1;
+         request.returnsObjectsAsFaults = NO;
+         NSArray *results = [[self managedObjectContext] executeFetchRequest:request error:&fetchError];
+         if (!results)
+         {
+             ErrorLog(@"Error fetching logs for store:\npath: %@\nerror: %@", [self.storeURL path], fetchError);
+             return;
+         }
+         
+         if ([results count] > 0)
+         {
+             NSManagedObject *latestLog = results.lastObject;
+             NSError *plistError = nil;
+             plist = [self propertyListFromData:[latestLog valueForKey:@"blob"] error:&plistError];
+             if (plist == nil)
+             {
+                 ErrorLog(@"Error deserializing 'layout' data in Logs database:\nrow: %@\nfile: %@\nerror: %@", latestLog.objectID, latestLog.objectID.persistentStore.URL.path, plistError);
+             }
+         }
+     }];
     
     return plist;
 }
@@ -1917,4 +1931,3 @@ static void PARStoreLogsDidChange(
 }
 
 @end
-

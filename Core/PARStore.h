@@ -52,7 +52,9 @@ extern NSString *PARStoreDidSyncNotification;
 
 /// @name Syncing
 - (void)sync;
+// These methods should not be called from within a transaction, or they will fail.
 - (id)syncedPropertyListValueForKey:(NSString *)key;
+- (id)syncedPropertyListValueForKey:(NSString *)key timestamp:(NSNumber *)timestamp;
 // for subclassing
 - (NSArray *)relevantKeysForSync;
 - (void)applySyncChangeWithValues:(NSDictionary *)values timestamps:(NSDictionary *)timestamps;
