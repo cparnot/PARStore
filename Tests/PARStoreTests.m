@@ -418,6 +418,57 @@
 
 - (void)testChangesHistory
 {
+    NSString *deviceIdentifier = [[NSUUID UUID] UUIDString];
+    NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
+    NSString *first = @"Jane";
+    NSString *last  = @"Doe";
+    NSString *title = @"The Title";
+    
+    // feed data
+    PARStoreExample *storeExample = [PARStoreExample storeWithURL:url deviceIdentifier:deviceIdentifier];
+    [storeExample loadNow];
+    NSNumber *beginTimestamp = [PARStore timestampNow];
+    storeExample.first = first;
+    storeExample.last  = last;
+    storeExample.title = title;
+    NSNumber *endTimestamp = [PARStore timestampNow];
+    
+    // actual changes
+    NSArray *changes = [storeExample changesSinceTimestamp:nil];
+    
+    // change count
+    XCTAssertTrue(changes.count == 3, @"expected 3 changes but got %@", @(changes.count));
+    if (changes.count != 3)
+    {
+        return;
+    }
+    
+    // timestamp order
+    NSArray *actualTimestamps = [changes valueForKey:@"timestamp"];
+    NSArray *orderedTimestamps = [actualTimestamps sortedArrayUsingSelector:@selector(compare:)];
+    XCTAssertEqualObjects(actualTimestamps, orderedTimestamps, @"timestamps returned by API should already be ordered but are: %@\n instead of ordered timestamps: %@", actualTimestamps, orderedTimestamps);
+    
+    // timestamp range
+    for (NSNumber *timestamp in actualTimestamps)
+    {
+        XCTAssertTrue([timestamp compare:beginTimestamp] != NSOrderedAscending, @"timestamp %@ should be after beginTimestamp %@", timestamp, beginTimestamp);
+        XCTAssertTrue([timestamp compare:endTimestamp] != NSOrderedDescending, @"timestamp %@ should be before endTimestamp %@", timestamp, endTimestamp);
+    }
+    
+    // expected changes
+    PARChange *change0 = changes[0];
+    PARChange *change1 = changes[1];
+    PARChange *change2 = changes[2];
+    NSArray *expectedChanges = @[
+                                 [PARChange changeWithTimestamp:change0.timestamp parentTimestamp:change0.parentTimestamp key:@"first" propertyList:first],
+                                 [PARChange changeWithTimestamp:change1.timestamp parentTimestamp:change1.parentTimestamp key:@"last" propertyList:last],
+                                 [PARChange changeWithTimestamp:change2.timestamp parentTimestamp:change2.parentTimestamp key:@"title" propertyList:title],
+                                 ];
+    XCTAssertEqualObjects(changes, expectedChanges, @"unexpected changes: %@", changes);
+}
+
+- (void)testChangesHistoryWithSync
+{
     NSString *device1 = [[NSUUID UUID] UUIDString];
     NSString *device2 = [[NSUUID UUID] UUIDString];
     NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
@@ -435,10 +486,10 @@
     store1.last  = last;
     store2.title = title;
     NSNumber *endTimestamp = [PARStore timestampNow];
-    [store1 syncNow];
-    [store2 syncNow];
     [store1 saveNow];
     [store2 saveNow];
+    [store1 syncNow];
+    [store2 syncNow];
     
     // actual changes
     NSArray *changes1 = [store1 changesSinceTimestamp:nil];
