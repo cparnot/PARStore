@@ -1472,6 +1472,10 @@ NSString *PARDevicesDirectoryName = @"devices";
     NSMutableArray *changes = [NSMutableArray array];
     [self.databaseQueue dispatchSynchronously:^
     {
+        // From the documentation for `includesPendingChanges`: "A value of YES is not supported in conjunction with the result type NSDictionaryResultType, including calculation of aggregate results (such as max and min). For dictionaries, the array returned from the fetch reflects the current state in the persistent store, and does not take into account any pending changes, insertions, or deletions in the context."
+        // this means we need to save pending changes first to make sure they show up in the query
+        [self save:NULL];
+        
         // fetch Log rows in timestamp order, starting at `timestampLimit`
         NSError *errorLogs = nil;
         NSFetchRequest *logsRequest = [NSFetchRequest fetchRequestWithEntityName:@"Log"];
@@ -1931,3 +1935,4 @@ static void PARStoreLogsDidChange(
 }
 
 @end
+
