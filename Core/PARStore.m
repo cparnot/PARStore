@@ -107,11 +107,26 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
     return store;
 }
 
+
+#pragma mark - Loading
+
+// loading = populating the memory cache with the values from disk
+// loading is only done once, before adding or accessing values
+
+- (BOOL)loaded
+{
+    __block BOOL loaded = NO;
+    [self.memoryQueue dispatchSynchronously:^{ loaded = self._loaded; }];
+    return loaded;
+}
+
 - (void)_load
 {
     NSAssert([self.databaseQueue isInCurrentQueueStack], @"%@:%@ should only be called from within the database queue", [self class], NSStringFromSelector(_cmd));
     if ([self loaded])
+    {
         return;
+    }
     [self _sync];
     if ([self loaded])
     {
@@ -197,7 +212,7 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
 // the database queue should not have any timer set anymore
 - (void)dealloc
 {
-    // do not access '_loaded' via the queue or via the safe [self loaded] accessor, to avoid further waiting for a queue: if closed properly, this will be safe, and otherwise, we are already in trouble
+    // do not access '_loaded' via the queue or via the safe `loaded` accessor, to avoid further waiting for a queue: if closed properly, this will be safe, and otherwise, we are already in trouble
     NSUInteger timerCount = _databaseQueue.timerCount;
     if (timerCount > 0)
         ErrorLog(@"Unexpected timer count of %@ for the database queue of store at path: %@", @(timerCount), [self.storeURL path]);
@@ -591,7 +606,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         ErrorLog(@"To avoid deadlocks, %@ should not be called within a transaction. Bailing out.", NSStringFromSelector(_cmd));
         return;
     }
-    [self.databaseQueue dispatchSynchronously:^{ if ([self loaded]) [self save:NULL]; }];
+    [self.databaseQueue dispatchSynchronously:^{ [self save:NULL]; }];
 }
 
 - (void)saveSoon
@@ -780,13 +795,6 @@ NSString *PARDevicesDirectoryName = @"devices";
 - (void)runTransaction:(PARDispatchBlock)block
 {
     [self.memoryQueue dispatchSynchronously:block];
-}
-
-- (BOOL)loaded
-{
-    __block BOOL loaded = NO;
-    [self.memoryQueue dispatchSynchronously:^{ loaded = self._loaded; }];
-    return loaded;
 }
 
 - (BOOL)deleted
@@ -1329,7 +1337,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         ErrorLog(@"To avoid deadlocks, %@ should not be called within a transaction. Bailing out.", NSStringFromSelector(_cmd));
         return;
     }
-    [self.databaseQueue dispatchSynchronously:^{ if ([self loaded]) [self _sync]; }];
+    [self.databaseQueue dispatchSynchronously:^{ [self _sync]; }];
 }
 
 - (void)syncSoon

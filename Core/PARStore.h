@@ -36,14 +36,14 @@ extern NSString *PARStoreDidSyncNotification;
 @property (readonly) BOOL deleted;
 @property (readonly) BOOL inMemory;
 
-/// @name Accessing Store Content
+/// @name Adding and Accessing Values
 - (id)propertyListValueForKey:(NSString *)key;
 - (void)setPropertyListValue:(id)plist forKey:(NSString *)key;
 - (NSDictionary *)allRelevantValues;
 - (void)setEntriesFromDictionary:(NSDictionary *)dictionary;
 - (void)runTransaction:(PARDispatchBlock)block;
 
-/// @name Managing Data Blobs
+/// @name Adding and Accessing Blobs
 - (BOOL)writeBlobData:(NSData *)data toPath:(NSString *)path error:(NSError **)error;
 - (BOOL)writeBlobFromPath:(NSString *)sourcePath toPath:(NSString *)path error:(NSError **)error;
 - (NSData *)blobDataAtPath:(NSString *)path error:(NSError **)error;
