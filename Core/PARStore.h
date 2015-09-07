@@ -28,6 +28,7 @@ extern NSString *PARStoreDidSyncNotification;
 + (id)inMemoryStore;
 - (void)load;
 - (void)close;
+- (void)closeDatabase;
 
 /// @name Getting Store Information
 @property (readonly, copy) NSURL *storeURL;

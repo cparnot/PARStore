@@ -561,9 +561,20 @@ NSString *PARDevicesDirectoryName = @"devices";
     NSAssert([self.databaseQueue isInCurrentQueueStack], @"%@:%@ should only be called from within the database queue", [self class],NSStringFromSelector(_cmd));
     [self.databaseQueue cancelTimerWithName:@"save_delay"];
     [self.databaseQueue cancelTimerWithName:@"save_coalesce"];
-    if (self._inMemory || [self deleted])
-        return NO;
     
+    if ([self deleted])
+    {
+        NSError *localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:@"Cannot save deleted store" underlyingError:nil];
+        if (error != NULL)
+        {
+            *error = localError;
+        }
+        return NO;
+    }
+
+    // autoclose database
+    [self closeDatabaseSoon];
+
     NSError *localError = nil;
     if (self._managedObjectContext)
     {
@@ -633,14 +644,19 @@ NSString *PARDevicesDirectoryName = @"devices";
 - (void)_closeDatabase
 {
     NSAssert([self.databaseQueue isInCurrentQueueStack], @"%@:%@ should only be called from within the database queue", [self class], NSStringFromSelector(_cmd));
-    [self.databaseQueue cancelAllTimers];
     [self _save:NULL];
+    [self.databaseQueue cancelTimerWithName:@"close_database"];
     self._managedObjectContext = nil;
+}
+
+- (void)closeDatabase
+{
+    [self.databaseQueue dispatchAsynchronously:^{ [self _closeDatabase]; }];
 }
 
 - (void)closeDatabaseSoon
 {
-    [self.databaseQueue scheduleTimerWithName:@"close_database" timeInterval:15.0 behavior:PARTimerBehaviorDelay block:^{ [self _closeDatabase]; }];
+    [self.databaseQueue scheduleTimerWithName:@"close_database" timeInterval:60.0 behavior:PARTimerBehaviorDelay block:^{ [self _closeDatabase]; }];
 }
 
 
@@ -1063,6 +1079,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         NSError *errorReadingData = nil;
         data = [NSData dataWithContentsOfURL:newURL options:NSDataReadingMappedIfSafe error:&errorReadingData];
         if (!data)
+            localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"Could not read data blob at path '%@'", newURL.path] underlyingError:errorReadingData];
     }];
     
     // error handling
@@ -1126,6 +1143,9 @@ NSString *PARDevicesDirectoryName = @"devices";
     // reset timers
     [self.databaseQueue cancelTimerWithName:@"sync_delay"];
     [self.databaseQueue cancelTimerWithName:@"sync_coalesce"];
+    
+    // autoclose database
+    [self closeDatabaseSoon];
 
     // because of the way we use the `databaseQueue` and `memoryQueue`, the returned value is guaranteed to take into account any previous execution of `_sync`
     BOOL loaded = [self loaded];
@@ -1356,6 +1376,8 @@ NSString *PARDevicesDirectoryName = @"devices";
                  ErrorLog(@"Error deserializing 'layout' data in Logs database:\nrow: %@\nfile: %@\nerror: %@", latestLog.objectID, latestLog.objectID.persistentStore.URL.path, plistError);
              }
          }
+         
+         [self closeDatabaseSoon];
      }];
     
     return plist;
@@ -1459,6 +1481,8 @@ NSString *PARDevicesDirectoryName = @"devices";
              NSNumber *timestamp = self.databaseTimestamps[deviceIdentifier] ?: [PARStore timestampForDistantPast];
              timestamps[deviceIdentifier] = timestamp;
          }
+         
+         [self closeDatabaseSoon];
      }];
     return [NSDictionary dictionaryWithDictionary:timestamps];
 }
@@ -1553,6 +1577,8 @@ NSString *PARDevicesDirectoryName = @"devices";
             PARChange *change = [PARChange changeWithTimestamp:timestamp parentTimestamp:parentTimestamp key:key propertyList:propertyList];
             [changes addObject:change];
         }
+        
+        [self closeDatabaseSoon];
     }];
     
     return changes;
@@ -1650,6 +1676,8 @@ NSString *PARDevicesDirectoryName = @"devices";
          if (0 != dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, timeout * NSEC_PER_SEC)))
              ErrorLog(@"TIMEOUT: timeout on device '%@' while waiting for file coordinator to access store with URL: %@", self.deviceIdentifier, self.storeURL);
          semaphore = NULL;
+         
+         [self closeDatabaseSoon];
      }];
 }
 
@@ -1664,9 +1692,10 @@ NSString *PARDevicesDirectoryName = @"devices";
 {
     DebugLog(@"%@", NSStringFromSelector(_cmd));
     //[self blockdatabaseQueueWhileRunningBlock:writer];
-	writer(^{
-        [self syncSoon];
-    });
+    writer(^
+           {
+               [self syncSoon];
+           });
 }
 
 - (void)savePresentedItemChangesWithCompletionHandler:(void (^)(NSError *errorOrNil))completionHandler
@@ -1674,7 +1703,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 	[self.databaseQueue dispatchAsynchronously:^
      {
          NSError *saveError = nil;
-         BOOL success = [self._managedObjectContext save:&saveError];
+         BOOL success = (self._managedObjectContext == nil) || [self._managedObjectContext save:&saveError];
          completionHandler((success) ? nil : saveError);
      }];
 }
