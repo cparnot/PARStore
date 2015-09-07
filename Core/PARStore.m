@@ -31,7 +31,7 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
 @property (retain) NSManagedObjectContext *_managedObjectContext;
 @property (retain) NSPersistentStore *readwriteDatabase;
 @property (copy) NSArray *readonlyDatabases;
-@property (copy) NSMapTable *databaseTimestamps;
+@property (retain) NSMutableDictionary *databaseTimestamps;
 @property (copy) NSDictionary *keyTimestamps;
 
 // memoryQueue serializes access to in-memory storage
@@ -86,7 +86,7 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
     [store createFileSystemEventQueue];
     
     // misc initializations
-    store.databaseTimestamps = [NSMapTable weakToStrongObjectsMapTable];
+    store.databaseTimestamps = [NSMutableDictionary dictionary];
     store.presenterQueue = [[NSOperationQueue alloc] init];
     [store.presenterQueue setMaxConcurrentOperationCount:1];
     store._memory = [NSMutableDictionary dictionary];
@@ -164,10 +164,10 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
              [self closeDatabase];
              [NSFileCoordinator removeFilePresenter:self];
              [self stopFileSystemEventStreams];
+             self.databaseTimestamps = nil;
          }];
     
     // reset in-memory info
-    self.databaseTimestamps = [NSMapTable weakToStrongObjectsMapTable];
     self._memory = [NSMutableDictionary dictionary];
     self._loaded = NO;
     self._deleted = NO;
@@ -720,7 +720,7 @@ NSString *PARDevicesDirectoryName = @"devices";
                   [newLog setValue:oldTimestamp forKey:@"parentTimestamp"];
                   [newLog setValue:key forKey:@"key"];
                   [newLog setValue:blob forKey:@"blob"];
-                  [self.databaseTimestamps setObject:newTimestamp forKey:self.readwriteDatabase];
+                  self.databaseTimestamps[self.deviceIdentifier] = newTimestamp;
                   
                   // schedule database save
                   [self saveSoon];
@@ -784,7 +784,7 @@ NSString *PARDevicesDirectoryName = @"devices";
                   [newLog setValue:key forKey:@"key"];
                   [newLog setValue:blob forKey:@"blob"];
               }];
-              [self.databaseTimestamps setObject:newTimestamp forKey:self.readwriteDatabase];
+              self.databaseTimestamps[self.deviceIdentifier] = newTimestamp;
               
               // schedule database save
               [self saveSoon];
@@ -1165,8 +1165,10 @@ NSString *PARDevicesDirectoryName = @"devices";
         
         // keep track of the last timestamp for each persistent store
         NSPersistentStore *store = [[log objectID] persistentStore];
-        if (![updatedDatabaseTimestamps objectForKey:store])
+        if ([updatedDatabaseTimestamps objectForKey:store] == nil)
+        {
             [updatedDatabaseTimestamps setObject:logTimestamp forKey:store];
+        }
         
         // skip unused logs
         if (![keysToFetch containsObject:key])
@@ -1219,15 +1221,16 @@ NSString *PARDevicesDirectoryName = @"devices";
     self.keyTimestamps = [NSDictionary dictionaryWithDictionary:newKeyTimestamps];
     
     // update the timestamps for the databases
-    NSMapTable *newDatabaseTimestamps = [NSMapTable weakToStrongObjectsMapTable];
+    NSMutableDictionary *newDatabaseTimestamps = [NSMutableDictionary dictionary];
     for (NSPersistentStore *store in [self.readonlyDatabases arrayByAddingObject:self.readwriteDatabase])
     {
-        NSNumber *timestamp = [updatedDatabaseTimestamps objectForKey:store];
-        if (!timestamp)
-            timestamp = [self.databaseTimestamps objectForKey:store];
-        if (!timestamp)
-            timestamp = [PARStore timestampForDistantPast]; // distant past
-        [newDatabaseTimestamps setObject:timestamp forKey:store];
+        NSString *deviceIdentifier = [self deviceIdentifierForDatabasePath:store.URL.path];
+        if (deviceIdentifier == nil)
+        {
+            continue;
+        }
+        NSNumber *timestamp = [updatedDatabaseTimestamps objectForKey:store] ?: self.databaseTimestamps[deviceIdentifier] ?: [PARStore timestampForDistantPast];
+        newDatabaseTimestamps[deviceIdentifier] = timestamp;
     }
     self.databaseTimestamps = newDatabaseTimestamps;
     
@@ -1410,11 +1413,11 @@ NSString *PARDevicesDirectoryName = @"devices";
          for (NSPersistentStore *store in allStores)
          {
              NSString *deviceIdentifier = [self deviceIdentifierForDatabasePath:store.URL.path];
-             if (!deviceIdentifier)
+             if (deviceIdentifier == nil)
+             {
                  continue;
-             NSNumber *timestamp = [self.databaseTimestamps objectForKey:store];
-             if (!timestamp)
-                 timestamp = [PARStore timestampForDistantPast];
+             }
+             NSNumber *timestamp = self.databaseTimestamps[deviceIdentifier] ?: [PARStore timestampForDistantPast];
              timestamps[deviceIdentifier] = timestamp;
          }
      }];
@@ -1435,13 +1438,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     __block NSNumber *timestamp = nil;
     [self.databaseQueue dispatchSynchronously:^
     {
-        // store
-        NSPersistentStore *store = [self._managedObjectContext.persistentStoreCoordinator persistentStoreForURL:[NSURL fileURLWithPath:[self databasePathForDeviceIdentifier:deviceIdentifier]]];
-        if (!store)
-            return;
-        
-        // timestamp
-        timestamp = [self.databaseTimestamps objectForKey:store];
+        timestamp = self.databaseTimestamps[deviceIdentifier];
     }];
     
     return timestamp;

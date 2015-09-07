@@ -291,7 +291,7 @@
     [store2 closeNow];
 }
 
-- (void)testMostRecentTimestampsByDeviceIdentifiers
+- (void)testMostRecentTimestampsByDeviceIdentifier
 {
 	NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"SyncTest.parstore"];
 	
