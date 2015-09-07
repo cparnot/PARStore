@@ -271,7 +271,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 	// URL should be a file
 	if (![self.storeURL isFileURL])
 	{
-        localError = [NSError errorWithObject:self code:1 localizedDescription:[NSString stringWithFormat:@"%@ only supports files and cannot create file package with URL: %@", NSStringFromClass([self class]), self.storeURL] underlyingError:nil];
+        localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"%@ only supports files and cannot create file package with URL: %@", NSStringFromClass([self class]), self.storeURL] underlyingError:nil];
 		success = NO;
 	}
 		
@@ -281,7 +281,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 	BOOL fileExists = [[NSFileManager defaultManager] fileExistsAtPath:storePath isDirectory:&isDir];
 	if (success && fileExists && !isDir)
 	{
-        localError = [NSError errorWithObject:self code:2 localizedDescription:[NSString stringWithFormat:@"The path for a store should be a directory at path: %@", storePath] underlyingError:nil];
+        localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"The path for a store should be a directory at path: %@", storePath] underlyingError:nil];
 		success = NO;
 	}
 		
@@ -291,7 +291,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 	BOOL devicesDirExists = [[NSFileManager defaultManager] fileExistsAtPath:devicesPath isDirectory:&devicesPathIsDir];
 	if (success && devicesDirExists && !devicesPathIsDir)
 	{
-        localError = [NSError errorWithObject:self code:3 localizedDescription:[NSString stringWithFormat:@"The file package for a store should have a 'devices' subdirectory at path: %@", storePath] underlyingError:nil];
+        localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"The file package for a store should have a 'devices' subdirectory at path: %@", storePath] underlyingError:nil];
 		success = NO;
 	}
 
@@ -301,7 +301,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 	BOOL identifierDirExists = [[NSFileManager defaultManager] fileExistsAtPath:identifierPath isDirectory:&identifierPathIsDir];
 	if (success && identifierDirExists && !identifierPathIsDir)
     {
-        localError = [NSError errorWithObject:self code:4 localizedDescription:[NSString stringWithFormat:@"The device identifier subpath '%@' should be a directory in the file package for the store at path: %@", self.deviceIdentifier, storePath] underlyingError:nil];
+        localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"The device identifier subpath '%@' should be a directory in the file package for the store at path: %@", self.deviceIdentifier, storePath] underlyingError:nil];
 		success = NO;
 	}
 
@@ -313,7 +313,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 			NSError *fmError = nil;
 			success = [[NSFileManager defaultManager] createDirectoryAtURL:self.storeURL withIntermediateDirectories:NO attributes:nil error:&fmError] && [[NSFileManager defaultManager] createDirectoryAtPath:devicesPath withIntermediateDirectories:NO attributes:nil error:&fmError];
 			if (!success)
-                localError = [NSError errorWithObject:self code:5 localizedDescription:[NSString stringWithFormat:@"Could not create the root directory for the file package for the store at path: %@", storePath] underlyingError:fmError];
+                localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"Could not create the root directory for the file package for the store at path: %@", storePath] underlyingError:fmError];
 		}];
 	}
 		
@@ -326,7 +326,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 			NSError *fmError = nil;
 			success = [[NSFileManager defaultManager] createDirectoryAtPath:identifierPath withIntermediateDirectories:NO attributes:nil error:&fmError];
 			if (!success)
-                localError = [NSError errorWithObject:self code:6 localizedDescription:[NSString stringWithFormat:@"Could not create a subdirectory for the device identifier '%@' in the file package for the store at path: %@", self.deviceIdentifier, storePath] underlyingError:fmError];
+                localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"Could not create a subdirectory for the device identifier '%@' in the file package for the store at path: %@", self.deviceIdentifier, storePath] underlyingError:fmError];
 		}];
 	}
 
@@ -583,7 +583,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     }
     else
     {
-        localError = [NSError errorWithObject:self code:7 localizedDescription:@"No managed object context" underlyingError:nil];
+        localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:@"No managed object context" underlyingError:nil];
     }
     
     if (localError)
@@ -591,7 +591,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         NSString *storePath = [self.storeURL path];
         ErrorLog(@"Could not save store:\npath: %@\nerror: %@\n", storePath, [localError localizedDescription]);
         if (error != NULL)
-            *error = [NSError errorWithObject:self code:8 localizedDescription:[NSString stringWithFormat:@"Could not save store for device identifier '%@' at path: %@", self.deviceIdentifier, [self.storeURL path]] underlyingError:localError];
+            *error = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"Could not save store for device identifier '%@' at path: %@", self.deviceIdentifier, [self.storeURL path]] underlyingError:localError];
         return NO;
     }
     
@@ -700,7 +700,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         NSString *description = [NSString stringWithFormat:@"Value for key '%@' should be of class '%@', but is instead of class '%@', in store at path '%@': %@", key, NSStringFromClass(class), [value class], self.storeURL.path, value];
         ErrorLog(@"%@", description);
         if (error != NULL)
-            *error = [NSError errorWithObject:self code:9 localizedDescription:description underlyingError:nil];
+            *error = [NSError errorWithObject:self code:__LINE__ localizedDescription:description underlyingError:nil];
         return nil;
     }
     return value;
@@ -851,7 +851,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         NSString *description = [NSString stringWithFormat:@"Blob cannot be saved because method '%@' was called with 'path' parameter nil, in store at path '%@'", NSStringFromSelector(_cmd), self.storeURL.path];
         ErrorLog(@"%@", description);
         if (error != NULL)
-            *error = [NSError errorWithObject:self code:10 localizedDescription:description underlyingError:nil];
+            *error = [NSError errorWithObject:self code:__LINE__ localizedDescription:description underlyingError:nil];
         return NO;
     }
     
@@ -884,7 +884,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         BOOL successCreatingDir = [[NSFileManager defaultManager] createDirectoryAtURL:[newURL URLByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:&errorCreatingDir];
         if (!successCreatingDir)
         {
-            localError = [NSError errorWithObject:self code:11 localizedDescription:[NSString stringWithFormat:@"Could not create parent directories before writing blob at path '%@'", newURL.path] underlyingError:errorCreatingDir];
+            localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"Could not create parent directories before writing blob at path '%@'", newURL.path] underlyingError:errorCreatingDir];
             return;
         }
         
@@ -892,7 +892,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         NSError *errorWritingData = nil;
         BOOL successWritingData = [data writeToURL:newURL options:0 error:&errorWritingData];
         if (!successWritingData)
-            localError = [NSError errorWithObject:self code:12 localizedDescription:[NSString stringWithFormat:@"Could not save data blob at path '%@'", newURL.path] underlyingError:errorWritingData];
+            localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"Could not save data blob at path '%@'", newURL.path] underlyingError:errorWritingData];
     }];
 
     // error handling
@@ -916,7 +916,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         NSString *description = [NSString stringWithFormat:@"Blob cannot be saved because method '%@' was called with a nil value for the local path parameter, in store at path '%@'", NSStringFromSelector(_cmd), self.storeURL.path];
         ErrorLog(@"%@", description);
         if (error != NULL)
-            *error = [NSError errorWithObject:self code:13 localizedDescription:description underlyingError:nil];
+            *error = [NSError errorWithObject:self code:__LINE__ localizedDescription:description underlyingError:nil];
         return NO;
     }
     
@@ -926,7 +926,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         NSString *description = [NSString stringWithFormat:@"Blob cannot be saved because method '%@' was called with a nil value for the source path parameter, in store at path '%@'", NSStringFromSelector(_cmd), self.storeURL.path];
         ErrorLog(@"%@", description);
         if (error != NULL)
-            *error = [NSError errorWithObject:self code:14 localizedDescription:description underlyingError:nil];
+            *error = [NSError errorWithObject:self code:__LINE__ localizedDescription:description underlyingError:nil];
         return NO;
     }
     
@@ -938,11 +938,11 @@ NSString *PARDevicesDirectoryName = @"devices";
         if (sourcePath.length > 0)
             sourceData = [NSData dataWithContentsOfFile:sourcePath options:NSDataReadingMappedIfSafe error:&errorReadingData];
         else
-            errorReadingData = [NSError errorWithObject:self code:15 localizedDescription:@"Cannot read data from empty path to store as blob in memory store" underlyingError:nil];
+            errorReadingData = [NSError errorWithObject:self code:__LINE__ localizedDescription:@"Cannot read data from empty path to store as blob in memory store" underlyingError:nil];
         if (!sourceData)
         {
             if (error != NULL)
-                *error = [NSError errorWithObject:self code:15 localizedDescription:[NSString stringWithFormat:@"Could not read data to store as blob in memory store, from source file at path '%@', ", sourcePath] underlyingError:errorReadingData];
+                *error = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"Could not read data to store as blob in memory store, from source file at path '%@', ", sourcePath] underlyingError:errorReadingData];
             return NO;
         }
         return [self writeBlobData:sourceData toPath:targetSubpath error:error];
@@ -959,7 +959,7 @@ NSString *PARDevicesDirectoryName = @"devices";
          BOOL successCreatingDir = [[NSFileManager defaultManager] createDirectoryAtURL:[newTargetURL URLByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:&errorCreatingDir];
          if (!successCreatingDir)
          {
-             localError = [NSError errorWithObject:self code:16 localizedDescription:[NSString stringWithFormat:@"Could not create parent directories before writing blob at path '%@'", newTargetURL.path] underlyingError:errorCreatingDir];
+             localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"Could not create parent directories before writing blob at path '%@'", newTargetURL.path] underlyingError:errorCreatingDir];
              return;
          }
          
@@ -967,7 +967,7 @@ NSString *PARDevicesDirectoryName = @"devices";
          NSError *errorWritingData = nil;
          BOOL successWritingData = [[NSFileManager defaultManager] copyItemAtURL:[NSURL fileURLWithPath:sourcePath] toURL:newTargetURL error:&errorWritingData];
          if (!successWritingData)
-             localError = [NSError errorWithObject:self code:17 localizedDescription:[NSString stringWithFormat:@"Could not copy file from source path '%@', into blob directory at path '%@'", sourcePath, newTargetURL.path] underlyingError:errorWritingData];
+             localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"Could not copy file from source path '%@', into blob directory at path '%@'", sourcePath, newTargetURL.path] underlyingError:errorWritingData];
      }];
     
     // error handling
@@ -990,7 +990,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         NSString *description = [NSString stringWithFormat:@"Blob cannot be deleted because method '%@' was called with 'path' parameter nil, in store at path '%@'", NSStringFromSelector(_cmd), self.storeURL.path];
         ErrorLog(@"%@", description);
         if (error != NULL)
-            *error = [NSError errorWithObject:self code:10 localizedDescription:description underlyingError:nil];
+            *error = [NSError errorWithObject:self code:__LINE__ localizedDescription:description underlyingError:nil];
         return NO;
     }
     
@@ -1014,7 +1014,7 @@ NSString *PARDevicesDirectoryName = @"devices";
          NSError *error = nil;
          BOOL success = [[NSFileManager defaultManager] removeItemAtURL:fileURL error:&error];
          if (!success)
-             localError = [NSError errorWithObject:self code:12 localizedDescription:[NSString stringWithFormat:@"Could not delete data blob at path '%@'", newURL.path] underlyingError:error];
+             localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"Could not delete data blob at path '%@'", newURL.path] underlyingError:error];
      }];
     
     // error handling
@@ -1038,7 +1038,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         NSString *description = [NSString stringWithFormat:@"Blob data cannot be retrieved because method '%@' was called with 'path' parameter nil, in store at path '%@'", NSStringFromSelector(_cmd), self.storeURL.path];
         ErrorLog(@"%@", description);
         if (error != NULL)
-            *error = [NSError errorWithObject:self code:18 localizedDescription:description underlyingError:nil];
+            *error = [NSError errorWithObject:self code:__LINE__ localizedDescription:description underlyingError:nil];
         return nil;
     }
 
@@ -1063,7 +1063,6 @@ NSString *PARDevicesDirectoryName = @"devices";
         NSError *errorReadingData = nil;
         data = [NSData dataWithContentsOfURL:newURL options:NSDataReadingMappedIfSafe error:&errorReadingData];
         if (!data)
-            localError = [NSError errorWithObject:self code:19 localizedDescription:[NSString stringWithFormat:@"Could not read data blob at path '%@'", newURL.path] underlyingError:errorReadingData];
     }];
     
     // error handling
