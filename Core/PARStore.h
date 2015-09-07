@@ -15,7 +15,7 @@
 /// @name Notifications
 /// Notifications are posted asynchronously. You cannot expect the store to be in the state that it was after the last operation that triggered the notification. The 'Change' and 'Sync' notifications includes a user info dictionary with two entries @"values" and @"timestamps"; each entry contain a dictionary where the keys correspond to the keys changed by the sync, and the values corresponding property list values and timestamps, respectively. In the case of 'Sync' notifications, these are the same dictionaries as the one passed to the method `applySyncChangeWithValues:timestamps:`.
 extern NSString *PARStoreDidLoadNotification;
-extern NSString *PARStoreDidCloseNotification;
+extern NSString *PARStoreDidTearDownNotification;
 extern NSString *PARStoreDidDeleteNotification;
 extern NSString *PARStoreDidChangeNotification;
 extern NSString *PARStoreDidSyncNotification;
@@ -27,8 +27,8 @@ extern NSString *PARStoreDidSyncNotification;
 + (id)storeWithURL:(NSURL *)url deviceIdentifier:(NSString *)identifier;
 + (id)inMemoryStore;
 - (void)load;
-- (void)close;
 - (void)closeDatabase;
+- (void)tearDown;
 
 /// @name Getting Store Information
 @property (readonly, copy) NSURL *storeURL;
@@ -74,9 +74,10 @@ extern NSString *PARStoreDidSyncNotification;
 // Synchronous calls can potentially result in longer wait, and should be avoided in the main thread. These should not be called from within a transaction, or they will fail.
 // In addition, syncing and saving should normally be triggered automatically and asynchronously.
 - (void)loadNow;
-- (void)closeNow;
 - (void)syncNow;
 - (void)saveNow;
+- (void)closeDatabaseNow;
+- (void)tearDownNow;
 - (void)waitUntilFinished;
 
 /// @name History

@@ -32,7 +32,7 @@
     return @"948E9EEE-3398-4DD7-9183-C56866EF2350";
 }
 
-#pragma mark - Testing Store Creation
+#pragma mark - Creating and Loading Document
 
 - (void)testCreateThenLoadDocument
 {
@@ -41,16 +41,16 @@
     PARStoreExample *document1 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
     [document1 loadNow];
     XCTAssertTrue([document1 loaded], @"Document not loaded");
-    [document1 closeNow];
-    XCTAssertFalse([document1 loaded], @"Document should not be loaded after closing it");
+    [document1 tearDownNow];
+    XCTAssertFalse([document1 loaded], @"Document should not be loaded after tearing it down");
     document1 = nil;
     
     // second load = load document
     PARStoreExample *document2 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
     [document2 loadNow];
     XCTAssertTrue([document2 loaded], @"Document not loaded");
-    [document2 closeNow];
-    XCTAssertFalse([document2 loaded], @"Document should not be loaded after closing it");
+    [document2 tearDownNow];
+    XCTAssertFalse([document2 loaded], @"Document should not be loaded after tearing it down");
     document2 = nil;
 }
 
@@ -74,8 +74,25 @@
     XCTAssertTrue(completedWithoutTimeout, @"Timeout while waiting for document deletion");
     
     XCTAssertTrue([document1 deleted], @"Document should be marked as deleted");
-    [document1 closeNow];
-    XCTAssertFalse([document1 deleted], @"Document should not marked as deleted anymore after closing it");
+    [document1 tearDownNow];
+    XCTAssertFalse([document1 deleted], @"Document should not marked as deleted anymore after tearing it down");
+    document1 = nil;
+}
+
+- (void)testCloseDatabase
+{
+    // first load = create and load store
+    NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
+    PARStoreExample *document1 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
+    [document1 loadNow];
+    XCTAssertTrue([document1 loaded], @"Document not loaded");
+    [document1 closeDatabaseNow];
+    XCTAssertTrue([document1 loaded], @"Document not loaded");
+    [document1 loadNow];
+    XCTAssertTrue([document1 loaded], @"Document not loaded");
+
+    [document1 tearDownNow];
+    XCTAssertFalse([document1 loaded], @"Document should not be loaded after tearing it down");
     document1 = nil;
 }
 
@@ -86,7 +103,7 @@
     PARStoreExample *sound1 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
     [sound1 loadNow];
     XCTAssertTrue([sound1 loaded], @"Document not loaded");
-    [sound1 closeNow];
+    [sound1 tearDownNow];
     sound1 = nil;
     
     // mess up the file package
@@ -100,7 +117,7 @@
     PARStoreExample *store2 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
     [store2 loadNow];
     XCTAssertFalse([store2 loaded], @"Corrupted document should not load");
-    [store2 closeNow];
+    [store2 tearDownNow];
     store2 = nil;
 }
 
@@ -118,7 +135,7 @@
     [document1 loadNow];
     document1.title = title;
     [document1 setPropertyListValue:first forKey:@"first"];
-    [document1 closeNow];
+    [document1 tearDownNow];
     document1 = nil;
     
     // second load = load document and compare data
@@ -128,7 +145,7 @@
     NSString *actualFirst = document2.first;
     XCTAssertEqualObjects(actualTitle, title, @"unexpected 'title' value after closing and reopening a document: '%@' instead of '%@'", actualTitle, title);
     XCTAssertEqualObjects(actualFirst, first, @"unexpected 'first' value after closing and reopening a document: '%@' instead of '%@'", actualFirst, first);
-    [document2 closeNow];
+    [document2 tearDownNow];
     document2 = nil;
 }
 
@@ -143,7 +160,7 @@
     PARStoreExample *document1 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
     [document1 loadNow];
     [document1 setEntriesFromDictionary:entries];
-    [document1 closeNow];
+    [document1 tearDownNow];
     document1 = nil;
     
     // second load = load document and compare data
@@ -154,7 +171,51 @@
     NSString *actualFirst = actualEntries[@"first"];
     XCTAssertEqualObjects(actualTitle, title, @"unexpected 'title' value after closing and reopening a document: '%@' instead of '%@'", actualTitle, title);
     XCTAssertEqualObjects(actualFirst, first, @"unexpected 'first' value after closing and reopening a document: '%@' instead of '%@'", actualFirst, first);
-    [document2 closeNow];
+    [document2 tearDownNow];
+    document2 = nil;
+}
+
+- (void)testPropertyAccessAfterClosingDatabase
+{
+    NSString *title   = @"Some title";
+    NSString *summary = @"Awsome must read.";
+    NSString *first   = @"Albert";
+    NSString *last    = @"Einstaine";
+    NSDictionary *entries1 = @{@"title": title, @"first": first};
+    NSDictionary *entries2 = @{@"summary": summary, @"last": last};
+    
+    // first load = create document and save data
+    NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
+    PARStoreExample *document1 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
+    [document1 loadNow];
+    [document1 setEntriesFromDictionary:entries1];
+    
+    // close database --> it should reopen automatically when we query again
+    [document1 closeDatabaseNow];
+    
+    // get properties and compare data
+    [document1 loadNow];
+    NSDictionary *actualEntries1 = document1.allRelevantValues;
+    NSString *actualTitle = actualEntries1[@"title"];
+    NSString *actualFirst = actualEntries1[@"first"];
+    XCTAssertEqualObjects(actualTitle, title, @"unexpected 'title' value after closing database of document: '%@' instead of '%@'", actualTitle, title);
+    XCTAssertEqualObjects(actualFirst, first, @"unexpected 'first' value after closing database of document: '%@' instead of '%@'", actualFirst, first);
+
+    // add more data
+    [document1 setEntriesFromDictionary:entries2];
+    [document1 tearDownNow];
+    document1 = nil;
+
+    // second load = load document and compare data
+    PARStoreExample *document2 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
+    [document2 loadNow];
+    NSDictionary *actualEntries2 = document2.allRelevantValues;
+    NSString *actualSummary = actualEntries2[@"summary"];
+    NSString *actualLast = actualEntries2[@"last"];
+    XCTAssertEqualObjects(actualSummary, summary, @"unexpected 'summary' value after closing database, tearing down and reopening a document: '%@' instead of '%@'", actualSummary, summary);
+    XCTAssertEqualObjects(actualLast, last, @"unexpected 'last' value after closing database, tearing down and reopening a document: '%@' instead of '%@'", actualLast, last);
+
+    [document2 tearDownNow];
     document2 = nil;
 }
 
@@ -195,8 +256,8 @@
 	XCTAssertEqualObjects(store1.title, title, @"Title is '%@' but should be '%@'", store1.title, title);
 	XCTAssertEqualObjects(store2.title, title, @"Title is '%@' but should be '%@'", store2.title, title);
     
-    [store1 closeNow];
-    [store2 closeNow];
+    [store1 tearDownNow];
+    [store2 tearDownNow];
 }
 
 // same as `testStoreSync` but changing store 2
@@ -225,8 +286,8 @@
 	XCTAssertEqualObjects(store1.title, title, @" - title is '%@' but should be '%@'", store1.title, title);
 	XCTAssertEqualObjects(store2.title, title, @" - title is '%@' but should be '%@'", store2.title, title);
     
-    [store1 closeNow];
-    [store2 closeNow];
+    [store1 tearDownNow];
+    [store2 tearDownNow];
 }
 
 
@@ -287,8 +348,8 @@
     XCTAssertEqualObjects(nil, timestamp12, @"no timestamp expected in store 2");
     XCTAssertEqualObjects(timestampForDistantPast, timestamp22, @"no timestamp expected in store 2");
     
-    [store1 closeNow];
-    [store2 closeNow];
+    [store1 tearDownNow];
+    [store2 tearDownNow];
 }
 
 - (void)testMostRecentTimestampsByDeviceIdentifier
@@ -322,8 +383,8 @@
     XCTAssertEqualObjects(nil, timestamp12, @"no timestamp expected in store 2");
     XCTAssertEqualObjects(timestampForDistantPast, timestamp22, @"no timestamp expected in store 2");
     
-    [store1 closeNow];
-    [store2 closeNow];
+    [store1 tearDownNow];
+    [store2 tearDownNow];
 }
 
 - (void)testTimestampOrder
@@ -373,7 +434,7 @@
         XCTAssertTrue(orderIsCorrect, @"incorrect order: expected %@ but %@ is after %@", description, timestampX, timestampY);
     }
     
-    [store closeNow];
+    [store tearDownNow];
 }
 
 - (void)testMostRecentTimestampForKey
@@ -399,7 +460,7 @@
     XCTAssertEqualObjects(timestamp1, timestamp3, @"timestamps should be the same for device and 'title' key but are %@ and %@", timestamp1, timestamp2);
     XCTAssertNotEqualObjects(timestamp1, timestamp2, @"timestamps should be different for device and 'first' key but are %@ and %@", timestamp1, timestamp2);
     
-    [store closeNow];
+    [store tearDownNow];
 }
 
 - (void)testMostRecentTimestampsByKeys
@@ -434,7 +495,7 @@
     XCTAssertEqualObjects(timestamp2a, timestamp2b, @"timestamps should be the same for 'first' key but are %@ and %@", timestamp2a, timestamp2b);
     XCTAssertEqualObjects(timestamp3a, timestamp3b, @"timestamps should be the same for 'title' key but are %@ and %@", timestamp3a, timestamp3b);
 
-    [store closeNow];
+    [store tearDownNow];
 }
 
 
@@ -565,7 +626,7 @@
 	[store1 loadNow];
     NSString *title = @"The Title";
 	store1.title = title;
-	[store1 closeNow];
+	[store1 tearDownNow];
 	
 	// load store at same url again
 	PARStoreExample *store2 = [PARStoreExample storeWithURL:url deviceIdentifier:[deviceUUID UUIDString]];
@@ -631,8 +692,8 @@
     XCTAssertTrue(completedWithoutTimeout2, @"Timeout while waiting for store 2 sync notification");
     
     // done
-    [store1 closeNow];
-    [store2 closeNow];
+    [store1 tearDownNow];
+    [store2 tearDownNow];
 }
 
 

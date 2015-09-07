@@ -15,11 +15,11 @@
 #endif
 
 
-NSString *PARStoreDidLoadNotification   = @"PARStoreDidLoadNotification";
-NSString *PARStoreDidCloseNotification  = @"PARStoreDidCloseNotification";
-NSString *PARStoreDidDeleteNotification = @"PARStoreDidDeleteNotification";
-NSString *PARStoreDidChangeNotification = @"PARStoreDidChangeNotification";
-NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
+NSString *PARStoreDidLoadNotification     = @"PARStoreDidLoadNotification";
+NSString *PARStoreDidTearDownNotification = @"PARStoreDidTearDownNotification";
+NSString *PARStoreDidDeleteNotification   = @"PARStoreDidDeleteNotification";
+NSString *PARStoreDidChangeNotification   = @"PARStoreDidChangeNotification";
+NSString *PARStoreDidSyncNotification     = @"PARStoreDidSyncNotification";
 
 
 @interface PARStore ()
@@ -163,7 +163,7 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
     [self.databaseQueue dispatchSynchronously:^{ [self _load]; }];
 }
 
-- (void)_close
+- (void)_tearDown
 {
     NSAssert([self.memoryQueue isInCurrentQueueStack], @"%@:%@ should only be called from within the memory queue", [self class], NSStringFromSelector(_cmd));
 
@@ -187,23 +187,23 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
     // to make sure the database is saved when the notification is received, the call is scheduled from within the database queue
     [self.databaseQueue dispatchAsynchronously:^
     {
-        [self postNotificationWithName:PARStoreDidCloseNotification userInfo:nil];
+        [self postNotificationWithName:PARStoreDidTearDownNotification userInfo:nil];
     }];
 }
 
-- (void)close
+- (void)tearDown
 {
-    [self.memoryQueue dispatchAsynchronously:^{ [self _close]; }];
+    [self.memoryQueue dispatchAsynchronously:^{ [self _tearDown]; }];
 }
 
-- (void)closeNow
+- (void)tearDownNow
 {
     if ([self.memoryQueue isInCurrentQueueStack])
     {
         ErrorLog(@"To avoid deadlocks, %@ should not be called within a transaction. Bailing out.", NSStringFromSelector(_cmd));
         return;
     }
-    [self.memoryQueue       dispatchSynchronously:^{ [self _close]; }];
+    [self.memoryQueue       dispatchSynchronously:^{ [self _tearDown]; }];
     [self.databaseQueue     dispatchSynchronously:^{ }];
     [self.notificationQueue dispatchSynchronously:^{ }];
 }
@@ -657,6 +657,16 @@ NSString *PARDevicesDirectoryName = @"devices";
 - (void)closeDatabaseSoon
 {
     [self.databaseQueue scheduleTimerWithName:@"close_database" timeInterval:60.0 behavior:PARTimerBehaviorDelay block:^{ [self _closeDatabase]; }];
+}
+
+- (void)closeDatabaseNow
+{
+    if ([self.memoryQueue isInCurrentQueueStack])
+    {
+        ErrorLog(@"To avoid deadlocks, %@ should not be called within a transaction. Bailing out.", NSStringFromSelector(_cmd));
+        return;
+    }
+    [self.databaseQueue dispatchSynchronously:^{ [self _closeDatabase]; }];
 }
 
 
