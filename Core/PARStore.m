@@ -101,14 +101,17 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
 + (id)inMemoryStore
 {
     PARStore *store = [self storeWithURL:nil deviceIdentifier:nil];
-    store._loaded = YES;
     store._inMemory = YES;
+    
+    // no database layer, already loaded
     store.databaseQueue = nil;
+    store._loaded = YES;
+    
     return store;
 }
 
 
-#pragma mark - Loading
+#pragma mark - Loading / Closing Memory Layer
 
 // loading = populating the memory cache with the values from disk
 // loading is only done once, before adding or accessing values
@@ -123,11 +126,20 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
 - (void)_load
 {
     NSAssert([self.databaseQueue isInCurrentQueueStack], @"%@:%@ should only be called from within the database queue", [self class], NSStringFromSelector(_cmd));
+
+    NSManagedObjectContext *moc = [self managedObjectContext];
+    if (moc == nil)
+    {
+        return;
+    }
+
     if ([self loaded])
     {
         return;
     }
+    
     [self _sync];
+    
     if ([self loaded])
     {
         DebugLog(@"%@ added as file presenter", self.deviceIdentifier);
@@ -160,8 +172,8 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
     if (!self._deleted && !self._inMemory)
         [self.databaseQueue dispatchAsynchronously:^
          {
-             [self save:NULL];
-             [self closeDatabase];
+             [self _save:NULL];
+             [self _closeDatabase];
              [NSFileCoordinator removeFilePresenter:self];
              [self stopFileSystemEventStreams];
              self.databaseTimestamps = nil;
@@ -204,7 +216,7 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
         return;
     }
     [self.memoryQueue       dispatchSynchronously:^{ }];
-    [self.databaseQueue     dispatchSynchronously:^{ [self save:NULL]; [self _sync]; }];
+    [self.databaseQueue     dispatchSynchronously:^{ [self _save:NULL]; [self _sync]; }];
     [self.notificationQueue dispatchSynchronously:^{ }];
 }
 
@@ -219,7 +231,7 @@ NSString *PARStoreDidSyncNotification   = @"PARStoreDidSyncNotification";
 }
 
 
-#pragma mark - File Package
+#pragma mark - Paths
 
 NSString *PARDatabaseFileName = @"logs.db";
 NSString *PARDevicesDirectoryName = @"devices";
@@ -389,7 +401,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 }
 
 
-#pragma mark - Core Data
+#pragma mark - Loading / Closing Database Layer
 
 + (NSManagedObjectModel *)managedObjectModel
 {
@@ -468,13 +480,17 @@ NSString *PARDevicesDirectoryName = @"devices";
 
     // lazy creation
     NSManagedObjectContext *managedObjectContext = self._managedObjectContext;
-    if (managedObjectContext || self._inMemory)
+    if (managedObjectContext != nil)
+    {
         return managedObjectContext;
+    }
 
     // model
     NSManagedObjectModel *mom = [PARStore managedObjectModel];
-    if (!mom)
+    if (mom == nil)
+    {
         return nil;
+    }
     
     // prepare file package on disk
     if (![self prepareFilePackageWithError:NULL])
@@ -525,7 +541,6 @@ NSString *PARDevicesDirectoryName = @"devices";
         if ([currentDirs containsObject:storePath])
         {
 			// instead of ignoring this store, reload it to get the synced contents if available
-			// TODO: should only reload when it has actually changed
 			NSPersistentStore *existingStore = [psc persistentStoreForURL:[NSURL fileURLWithPath:storePath]];
             [psc setURL:existingStore.URL forPersistentStore:existingStore];
 		}
@@ -541,7 +556,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     self.readonlyDatabases = [NSArray arrayWithArray:stores];
 }
 
-- (BOOL)save:(NSError **)error
+- (BOOL)_save:(NSError **)error
 {
     NSAssert([self.databaseQueue isInCurrentQueueStack], @"%@:%@ should only be called from within the database queue", [self class],NSStringFromSelector(_cmd));
     [self.databaseQueue cancelTimerWithName:@"save_delay"];
@@ -606,20 +621,26 @@ NSString *PARDevicesDirectoryName = @"devices";
         ErrorLog(@"To avoid deadlocks, %@ should not be called within a transaction. Bailing out.", NSStringFromSelector(_cmd));
         return;
     }
-    [self.databaseQueue dispatchSynchronously:^{ [self save:NULL]; }];
+    [self.databaseQueue dispatchSynchronously:^{ [self _save:NULL]; }];
 }
 
 - (void)saveSoon
 {
-    [self.databaseQueue scheduleTimerWithName:@"save_delay" timeInterval:1.0 behavior:PARTimerBehaviorDelay block:^{ [self save:NULL]; }];
-    [self.databaseQueue scheduleTimerWithName:@"save_coalesce" timeInterval:15.0 behavior:PARTimerBehaviorCoalesce block:^{ [self save:NULL]; }];
+    [self.databaseQueue scheduleTimerWithName:@"save_delay" timeInterval:1.0 behavior:PARTimerBehaviorDelay block:^{ [self _save:NULL]; }];
+    [self.databaseQueue scheduleTimerWithName:@"save_coalesce" timeInterval:15.0 behavior:PARTimerBehaviorCoalesce block:^{ [self _save:NULL]; }];
 }
 
-- (void)closeDatabase
+- (void)_closeDatabase
 {
     NSAssert([self.databaseQueue isInCurrentQueueStack], @"%@:%@ should only be called from within the database queue", [self class], NSStringFromSelector(_cmd));
     [self.databaseQueue cancelAllTimers];
+    [self _save:NULL];
     self._managedObjectContext = nil;
+}
+
+- (void)closeDatabaseSoon
+{
+    [self.databaseQueue scheduleTimerWithName:@"close_database" timeInterval:15.0 behavior:PARTimerBehaviorDelay block:^{ [self _closeDatabase]; }];
 }
 
 
@@ -710,11 +731,15 @@ NSString *PARDevicesDirectoryName = @"devices";
              NSNumber *oldTimestamp = self._memoryKeyTimestamps[key];
              self._memoryKeyTimestamps[key] = newTimestamp;
              [self postNotificationWithName:PARStoreDidChangeNotification userInfo:@{@"values": @{key: plist}, @"timestamps": @{key: newTimestamp}}];
+             
              [self.databaseQueue dispatchAsynchronously:
               ^{
                   NSManagedObjectContext *moc = [self managedObjectContext];
-                  if (!moc)
+                  if (moc == nil)
+                  {
                       return;
+                  }
+                  
                   NSManagedObject *newLog = [NSEntityDescription insertNewObjectForEntityForName:@"Log" inManagedObjectContext:moc];
                   [newLog setValue:newTimestamp forKey:@"timestamp"];
                   [newLog setValue:oldTimestamp forKey:@"parentTimestamp"];
@@ -764,8 +789,10 @@ NSString *PARDevicesDirectoryName = @"devices";
          [self.databaseQueue dispatchAsynchronously: ^
           {
               NSManagedObjectContext *moc = [self managedObjectContext];
-              if (!moc)
+              if (moc == nil)
+              {
                   return;
+              }
               
               // each key/value --> new Log
               [dictionary enumerateKeysAndObjectsUsingBlock:^(id key, id plist, BOOL *stop)
@@ -1090,7 +1117,8 @@ NSString *PARDevicesDirectoryName = @"devices";
         return;
     
     // without a moc, the rest of the code will throw an exception
-    if (![self managedObjectContext])
+    NSManagedObjectContext *moc = [self managedObjectContext];
+    if (moc == nil)
     {
         ErrorLog(@"Could not load managed object context and sync store at path '%@'", [self.storeURL path]);
         return;
@@ -1135,7 +1163,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     [logsRequest setSortDescriptors:@[[NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:NO]]];
     [logsRequest setFetchBatchSize:LOGS_BATCH_SIZE];
     [logsRequest setReturnsObjectsAsFaults:NO];
-    NSArray *allLogs = [[self managedObjectContext] executeFetchRequest:logsRequest error:&errorLogs];
+    NSArray *allLogs = [moc executeFetchRequest:logsRequest error:&errorLogs];
     if (!allLogs)
     {
         ErrorLog(@"Error fetching logs for store at path '%@' because of error: %@", [self.storeURL path], errorLogs);
@@ -1293,6 +1321,12 @@ NSString *PARDevicesDirectoryName = @"devices";
     __block id plist = nil;
     [self.databaseQueue dispatchSynchronously:^
      {
+         NSManagedObjectContext *moc = [self managedObjectContext];
+         if (moc == nil)
+         {
+             return;
+         }
+
          NSError *fetchError = nil;
          NSFetchRequest *request = [NSFetchRequest fetchRequestWithEntityName:@"Log"];
          request.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:NO]];
@@ -1306,7 +1340,7 @@ NSString *PARDevicesDirectoryName = @"devices";
          }
          request.fetchLimit = 1;
          request.returnsObjectsAsFaults = NO;
-         NSArray *results = [[self managedObjectContext] executeFetchRequest:request error:&fetchError];
+         NSArray *results = [moc executeFetchRequest:request error:&fetchError];
          if (!results)
          {
              ErrorLog(@"Error fetching logs for store:\npath: %@\nerror: %@", [self.storeURL path], fetchError);
@@ -1409,7 +1443,13 @@ NSString *PARDevicesDirectoryName = @"devices";
     NSMutableDictionary *timestamps = [NSMutableDictionary dictionary];
     [self.databaseQueue dispatchSynchronously:^
      {
-         NSArray *allStores = [self._managedObjectContext.persistentStoreCoordinator persistentStores];
+         NSManagedObjectContext *moc = [self managedObjectContext];
+         if (moc == nil)
+         {
+             return;
+         }
+
+         NSArray *allStores = [moc.persistentStoreCoordinator persistentStores];
          for (NSPersistentStore *store in allStores)
          {
              NSString *deviceIdentifier = [self deviceIdentifierForDatabasePath:store.URL.path];
@@ -1477,9 +1517,15 @@ NSString *PARDevicesDirectoryName = @"devices";
     NSMutableArray *changes = [NSMutableArray array];
     [self.databaseQueue dispatchSynchronously:^
     {
+        NSManagedObjectContext *moc = [self managedObjectContext];
+        if (moc == nil)
+        {
+            return;
+        }
+        
         // From the documentation for `includesPendingChanges`: "A value of YES is not supported in conjunction with the result type NSDictionaryResultType, including calculation of aggregate results (such as max and min). For dictionaries, the array returned from the fetch reflects the current state in the persistent store, and does not take into account any pending changes, insertions, or deletions in the context."
         // this means we need to save pending changes first to make sure they show up in the query
-        [self save:NULL];
+        [self _save:NULL];
         
         // fetch Log rows in timestamp order, starting at `timestampLimit`
         NSError *errorLogs = nil;
@@ -1490,7 +1536,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         }
         logsRequest.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:YES]];
         logsRequest.resultType = NSDictionaryResultType;
-        NSArray *logs = [[self managedObjectContext] executeFetchRequest:logsRequest error:&errorLogs];
+        NSArray *logs = [moc executeFetchRequest:logsRequest error:&errorLogs];
         if (!logs)
         {
             ErrorLog(@"Error fetching logs for store at path '%@' because of error: %@", [self.storeURL path], errorLogs);
@@ -1583,6 +1629,12 @@ NSString *PARDevicesDirectoryName = @"devices";
     // when a file coordinator wants to read or write to our store, we can block access to our context using the databaseQueue and a semaphore
     [self.databaseQueue dispatchAsynchronously:^
      {
+         NSManagedObjectContext *moc = [self managedObjectContext];
+         if (moc == nil)
+         {
+             return;
+         }
+
          // the semaphore will be used to block the datatase queue until access to the file is done
          dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
          
@@ -1623,7 +1675,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 	[self.databaseQueue dispatchAsynchronously:^
      {
          NSError *saveError = nil;
-         BOOL success = [[self managedObjectContext] save:&saveError];
+         BOOL success = [self._managedObjectContext save:&saveError];
          completionHandler((success) ? nil : saveError);
      }];
 }
@@ -1638,7 +1690,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 	[self.memoryQueue dispatchSynchronously:^ { self._deleted = YES; }];
 	[self.databaseQueue dispatchAsynchronously:^
     {
-        [self closeDatabase];
+        [self _closeDatabase];
         [NSFileCoordinator removeFilePresenter:self];
     }];
 	if (completionHandler)
