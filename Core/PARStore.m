@@ -1524,12 +1524,13 @@ NSString *PARDevicesDirectoryName = @"devices";
                         NSString *virtualDeviceIdentifier = [NSString stringWithFormat:@"%@|%@", self.deviceIdentifier, deviceIdentifier];
                         NSArray *logs11 = [mergedStore _sortedLogRepresentationsFromDeviceIdentifier:virtualDeviceIdentifier];
                         NSArray *logs12 = [self _sortedLogRepresentationsFromDeviceIdentifier:virtualDeviceIdentifier];
-                        NSArray *finalExtraLogs = [self _unionOfLogRepresentations:logs11 andLogRepresentations:logs12];
+                        extraLogs = [self _unionOfLogRepresentations:extraLogs andLogRepresentations:logs11];
+                        extraLogs = [self _unionOfLogRepresentations:extraLogs andLogRepresentations:logs12];
                         
-                        // removing logs that may have made their way into the foreign device
-                        finalExtraLogs = [self _logRepresentationsFromLogRepresentations:finalExtraLogs minusLogRepresentations:logs2];
+                        // removing logs that may have made their way into the foreign device and thus don't need to be in the virtual device anymore
+                        extraLogs = [self _logRepresentationsFromLogRepresentations:extraLogs minusLogRepresentations:logs2];
                         
-                        mergeError = [self _replacePersistentStoreWithDeviceIdentifier:virtualDeviceIdentifier logRepresentations:finalExtraLogs.copy];
+                        mergeError = [self _replacePersistentStoreWithDeviceIdentifier:virtualDeviceIdentifier logRepresentations:extraLogs];
                     }
                 }
                 
@@ -1614,7 +1615,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     NSPersistentStore *ps = [self addPersistentStoreWithCoordinator:psc dirPath:[self directoryPathForDeviceIdentifier:deviceIdentifier] readOnly:YES error:&psError];
     if (ps == nil)
     {
-        return nil;
+        return @[];
     }
     NSManagedObjectContext *moc = [[NSManagedObjectContext alloc] init];
     [moc setPersistentStoreCoordinator:psc];
@@ -1667,6 +1668,10 @@ NSString *PARDevicesDirectoryName = @"devices";
     
     if (logRepresentations.count > 0)
     {
+        // create device directory if needed
+        NSString *deviceDirectory = [self directoryPathForDeviceIdentifier:deviceIdentifier];
+        [[NSFileManager defaultManager] createDirectoryAtPath:deviceDirectory withIntermediateDirectories:NO attributes:nil error:NULL];
+        
         // new moc
         NSManagedObjectModel *mom = [PARStore managedObjectModel];
         if (mom == nil)
