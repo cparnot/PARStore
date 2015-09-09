@@ -140,12 +140,6 @@ NSString *const ParentTimestampAttributeName = @"parentTimestamp";
 {
     NSAssert([self.databaseQueue isInCurrentQueueStack], @"%@:%@ should only be called from within the database queue", [self class], NSStringFromSelector(_cmd));
 
-    NSManagedObjectContext *moc = [self managedObjectContext];
-    if (moc == nil)
-    {
-        return;
-    }
-
     if ([self loaded])
     {
         return;
@@ -176,26 +170,32 @@ NSString *const ParentTimestampAttributeName = @"parentTimestamp";
     [self.databaseQueue dispatchSynchronously:^{ [self _load]; }];
 }
 
+- (void)_tearDownMemory
+{
+    NSAssert([self.memoryQueue isInCurrentQueueStack], @"%@:%@ should only be called from within the memory queue", [self class], NSStringFromSelector(_cmd));
+
+    // reset in-memory info
+    self._memory = [NSMutableDictionary dictionary];
+    self._memoryKeyTimestamps = [NSMutableDictionary dictionary];
+    self._loaded = NO;
+    self._deleted = NO;
+
+}
+
 - (void)_tearDown
 {
     NSAssert([self.memoryQueue isInCurrentQueueStack], @"%@:%@ should only be called from within the memory queue", [self class], NSStringFromSelector(_cmd));
 
-    // reset database
+    // reset database layer
     // to avoid deadlocks, it is **critical** that the call into the database queue be asynchronous
-    if (!self._deleted && !self._inMemory)
+    if (!self._deleted)
         [self.databaseQueue dispatchAsynchronously:^
          {
-             [self _save:NULL];
-             [self _closeDatabase];
-             [NSFileCoordinator removeFilePresenter:self];
-             [self stopFileSystemEventStreams];
-             self.databaseTimestamps = nil;
+             [self _tearDownDatabase];
          }];
     
-    // reset in-memory info
-    self._memory = [NSMutableDictionary dictionary];
-    self._loaded = NO;
-    self._deleted = NO;
+    // reset memory layer
+    [self _tearDownMemory];
 
     // to make sure the database is saved when the notification is received, the call is scheduled from within the database queue
     [self.databaseQueue dispatchAsynchronously:^
@@ -673,6 +673,15 @@ NSString *PARDevicesDirectoryName = @"devices";
     [self.databaseQueue scheduleTimerWithName:@"save_coalesce" timeInterval:15.0 behavior:PARTimerBehaviorCoalesce block:^{ [self _save:NULL]; }];
 }
 
+- (void)_tearDownDatabase
+{
+    [self _save:NULL];
+    [self _closeDatabase];
+    [NSFileCoordinator removeFilePresenter:self];
+    [self stopFileSystemEventStreams];
+    self.databaseTimestamps = [NSMutableDictionary dictionary];
+}
+
 - (void)_closeDatabase
 {
     NSAssert([self.databaseQueue isInCurrentQueueStack], @"%@:%@ should only be called from within the database queue", [self class], NSStringFromSelector(_cmd));
@@ -768,11 +777,11 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (void)setPropertyListValue:(id)plist forKey:(NSString *)key
 {
+    // get the timestamp **now**, so we have the current date, not the date at which the block will run
+    NSNumber *newTimestamp = [PARStore timestampNow];
+
     [self.memoryQueue dispatchSynchronously:^
      {
-         // get the timestamp **now**, so we have the current date, not the date at which the database block will run
-         NSNumber *newTimestamp = [PARStore timestampNow];
-
          self._memory[key] = plist;
          if (self._inMemory)
          {
@@ -814,11 +823,11 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (void)setEntriesFromDictionary:(NSDictionary *)dictionary
 {
+    // get the timestamp **now**, so we have the current date, not the date at which the block will run
+    NSNumber *newTimestamp = [PARStore timestampNow];
+
     [self.memoryQueue dispatchSynchronously:^
      {
-         // get the timestamp **now**, so we have the current date, not the date at which the database block will run
-         NSNumber *newTimestamp = [PARStore timestampNow];
-
          [self._memory addEntriesFromDictionary:dictionary];
          
          if (self._inMemory)
@@ -1479,12 +1488,14 @@ NSString *PARDevicesDirectoryName = @"devices";
         {
             // closing the database while we go through the different stores
             [mergedStore closeDatabaseNow];
-            [self closeDatabaseNow];
+            [self _tearDownDatabase];
             
-            // merge logs
+            // union of all device identifiers to process
             NSMutableSet *allDeviceIdentifiers = [NSMutableSet setWithArray:[mergedStore foreignDeviceIdentifiers]];
             [allDeviceIdentifiers addObjectsFromArray:[self foreignDeviceIdentifiers]];
             [allDeviceIdentifiers addObject:self.deviceIdentifier];
+            
+            // merge logs for each device identifier
             for (NSString *deviceIdentifier in allDeviceIdentifiers)
             {
                 NSArray *logs1 = [mergedStore _sortedLogRepresentationsFromDeviceIdentifier:deviceIdentifier];
@@ -1521,6 +1532,35 @@ NSString *PARDevicesDirectoryName = @"devices";
                     }
                 }
             }
+        }];
+        
+        // reset the memory cache
+        // Changes may have been submitted on the memory queue while we were running on the above, with the corresponding changes applied asynchronously to the database queue yet to come. The database changes will eventually happen after we are done with the current block, but the changes that are only in memory need to stay in memory.
+        [self.memoryQueue dispatchSynchronously:^
+        {
+            NSDictionary *currentMemory = self._memory.copy;
+            NSDictionary *currentMemoryKeyTimestamps = self._memoryKeyTimestamps.copy;
+            
+            // this resets all the memory layer, and sets 'loaded' to NO, which means
+            [self _tearDownMemory];
+            
+            // we can safely call `_load` because (1) we are within the database queue, and (2) we are not using a dispatch_sync from the memory queue into the database queue (this would lead to deadlock, though in fact it is prevented at runtime, see safety check in `loadNow`)
+            [self _load];
+            
+            // adjust the memory cache
+            [currentMemoryKeyTimestamps enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSNumber *memoryTimestamp, BOOL *stop)
+             {
+                 NSNumber *syncTimestamp = self._memoryKeyTimestamps[key];
+                 if (syncTimestamp == nil || [memoryTimestamp compare:syncTimestamp] == NSOrderedDescending)
+                 {
+                     id value = currentMemory[key];
+                     if (value != nil)
+                     {
+                         self._memory[key] = value;
+                         self._memoryKeyTimestamps[key] = memoryTimestamp;
+                     }
+                 }
+             }];
         }];
         
         // done --> callback
