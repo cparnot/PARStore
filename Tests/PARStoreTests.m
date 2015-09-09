@@ -291,6 +291,50 @@
 }
 
 
+#pragma mark - Testing Merge
+
+- (void)testMerge
+{
+    NSURL *urlA = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"MergeTestA.parstore"];
+    PARStoreExample *storeA1 = [PARStoreExample storeWithURL:urlA deviceIdentifier:@"1"];
+    [storeA1 loadNow];
+    PARStoreExample *storeA2 = [PARStoreExample storeWithURL:urlA deviceIdentifier:@"2"];
+    [storeA2 loadNow];
+    storeA1.title = @"titleA1";
+    storeA2.title = @"titleA2";
+    [storeA1 saveNow];
+    [storeA2 saveNow];
+    
+    NSURL *urlB = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"MergeTestB.parstore"];
+    PARStoreExample *storeB1 = [PARStoreExample storeWithURL:urlB deviceIdentifier:@"1"];
+    [storeB1 loadNow];
+    PARStoreExample *storeB2 = [PARStoreExample storeWithURL:urlB deviceIdentifier:@"2"];
+    [storeB2 loadNow];
+    storeB1.title = @"titleB1";
+    storeB2.title = @"titleB2";
+    [storeB1 saveNow];
+    [storeB2 saveNow];
+    
+    // change second store --> should trigger a change in the first store
+    PARNotificationSemaphore *semaphore = [PARNotificationSemaphore semaphoreForNotificationName:PARStoreDidLoadNotification object:storeA1];
+    [storeA1 mergeStore:storeB1 unsafeDeviceIdentifiers:@[] completionHandler:^(NSError *error) {
+        XCTAssertNil(error, @"error merging: %@", error);
+        NSLog(@"done merging");
+    }];
+    BOOL completedWithoutTimeout = [semaphore waitUntilNotificationWithTimeout:100.0];
+    XCTAssertTrue(completedWithoutTimeout, @"Timeout while waiting for PARStore merge");
+    
+    NSString *expectedTitle = @"titleB2";
+    [storeA1 loadNow];
+    XCTAssertEqualObjects(storeA1.title, expectedTitle, @" - title is '%@' but should be '%@'", storeA1.title, expectedTitle);
+    
+    [storeA1 tearDownNow];
+    [storeA2 tearDownNow];
+    [storeB1 tearDownNow];
+    [storeB2 tearDownNow];
+}
+
+
 #pragma mark - Testing Timestamps
 
 - (void)testTimestampNow
