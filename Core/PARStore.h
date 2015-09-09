@@ -60,6 +60,9 @@ extern NSString *PARStoreDidSyncNotification;
 - (NSArray *)relevantKeysForSync;
 - (void)applySyncChangeWithValues:(NSDictionary *)values timestamps:(NSDictionary *)timestamps;
 
+/// @name Merging
+- (void)mergeStore:(PARStore *)store unsafeDeviceIdentifiers:(NSArray *)activeDeviceIdentifiers completionHandler:(void(^)(NSError*))completionHandler;
+
 /// @name Getting Timestamps
 + (NSNumber *)timestampNow;
 + (NSNumber *)timestampForDistantPast;

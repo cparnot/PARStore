@@ -15,11 +15,20 @@
 #endif
 
 
+// string constants for the notifications
 NSString *PARStoreDidLoadNotification     = @"PARStoreDidLoadNotification";
 NSString *PARStoreDidTearDownNotification = @"PARStoreDidTearDownNotification";
 NSString *PARStoreDidDeleteNotification   = @"PARStoreDidDeleteNotification";
 NSString *PARStoreDidChangeNotification   = @"PARStoreDidChangeNotification";
 NSString *PARStoreDidSyncNotification     = @"PARStoreDidSyncNotification";
+
+
+// string constants for the managed object model
+NSString *const LogEntityName                = @"Log";
+NSString *const BlobAttributeName            = @"blob";
+NSString *const KeyAttributeName             = @"key";
+NSString *const TimestampAttributeName       = @"timestamp";
+NSString *const ParentTimestampAttributeName = @"parentTimestamp";
 
 
 @interface PARStore ()
@@ -110,6 +119,10 @@ NSString *PARStoreDidSyncNotification     = @"PARStoreDidSyncNotification";
     return store;
 }
 
+- (NSString *)description
+{
+    return [NSString stringWithFormat:@"<%@:%p> (device identifier: %@, url path: %@)", self.class, self, self.deviceIdentifier, self.storeURL.path];
+}
 
 #pragma mark - Loading / Closing Memory Layer
 
@@ -243,9 +256,14 @@ NSString *PARDevicesDirectoryName = @"devices";
     return [[self.storeURL path] stringByAppendingPathComponent:PARDevicesDirectoryName];
 }
 
+- (NSString *)directoryPathForDeviceIdentifier:(NSString *)deviceIdentifier
+{
+    return [[self deviceRootPath] stringByAppendingPathComponent:deviceIdentifier];
+}
+
 - (NSString *)databasePathForDeviceIdentifier:(NSString *)deviceIdentifier
 {
-    return [[[self deviceRootPath] stringByAppendingPathComponent:deviceIdentifier] stringByAppendingPathComponent:PARDatabaseFileName];
+    return [[self directoryPathForDeviceIdentifier:deviceIdentifier] stringByAppendingPathComponent:PARDatabaseFileName];
 }
 
 - (NSString *)deviceIdentifierForDatabasePath:(NSString *)path
@@ -257,7 +275,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 {
     if (self._inMemory || ![self.storeURL isFileURL])
         return nil;
-    return [[self deviceRootPath] stringByAppendingPathComponent:self.deviceIdentifier];
+    return [self directoryPathForDeviceIdentifier:self.deviceIdentifier];
 }
 
 - (BOOL)prepareFilePackageWithError:(NSError **)error
@@ -378,6 +396,20 @@ NSString *PARDevicesDirectoryName = @"devices";
     return [NSArray arrayWithArray:paths];
 }
 
+- (NSArray *)foreignDeviceIdentifiers
+{
+    NSMutableArray *devices = [NSMutableArray array];
+    for (NSString *path in [self readonlyDirectoryPaths])
+    {
+        NSString *device = path.lastPathComponent;
+        if (device != nil)
+        {
+            [devices addObject:device];
+        }
+    }
+    return devices.copy;
+}
+
 - (NSString *)subpathInPackageForPath:(NSString *)path
 {
 	NSArray *components = [path pathComponents];
@@ -410,26 +442,26 @@ NSString *PARDevicesDirectoryName = @"devices";
     dispatch_once(&pred,
       ^{
           NSAttributeDescription *blobAttribute = [[NSAttributeDescription alloc] init];
-          blobAttribute.name = @"blob";
+          blobAttribute.name = BlobAttributeName;
           blobAttribute.attributeType = NSBinaryDataAttributeType;
           
           NSAttributeDescription *keyAttribute = [[NSAttributeDescription alloc] init];
-          keyAttribute.name = @"key";
+          keyAttribute.name = KeyAttributeName;
           keyAttribute.indexed = YES;
           keyAttribute.attributeType = NSStringAttributeType;
           
           NSAttributeDescription *timestampAttribute = [[NSAttributeDescription alloc] init];
-          timestampAttribute.name = @"timestamp";
+          timestampAttribute.name = TimestampAttributeName;
           timestampAttribute.indexed = YES;
           timestampAttribute.attributeType = NSInteger64AttributeType;
           
           NSAttributeDescription *parentTimestampAttribute = [[NSAttributeDescription alloc] init];
-          parentTimestampAttribute.name = @"parentTimestamp";
+          parentTimestampAttribute.name = ParentTimestampAttributeName;
           parentTimestampAttribute.indexed = YES;
           parentTimestampAttribute.attributeType = NSInteger64AttributeType;
           
           NSEntityDescription *entity = [[NSEntityDescription alloc] init];
-          entity.name = @"Log";
+          entity.name = LogEntityName;
           entity.properties = @[blobAttribute, keyAttribute, timestampAttribute, parentTimestampAttribute];
           
           mom = [[NSManagedObjectModel alloc] init];
@@ -766,11 +798,11 @@ NSString *PARDevicesDirectoryName = @"devices";
                       return;
                   }
                   
-                  NSManagedObject *newLog = [NSEntityDescription insertNewObjectForEntityForName:@"Log" inManagedObjectContext:moc];
-                  [newLog setValue:newTimestamp forKey:@"timestamp"];
-                  [newLog setValue:oldTimestamp forKey:@"parentTimestamp"];
-                  [newLog setValue:key forKey:@"key"];
-                  [newLog setValue:blob forKey:@"blob"];
+                  NSManagedObject *newLog = [NSEntityDescription insertNewObjectForEntityForName:LogEntityName inManagedObjectContext:moc];
+                  [newLog setValue:newTimestamp forKey:TimestampAttributeName];
+                  [newLog setValue:oldTimestamp forKey:ParentTimestampAttributeName];
+                  [newLog setValue:key forKey:KeyAttributeName];
+                  [newLog setValue:blob forKey:BlobAttributeName];
                   self.databaseTimestamps[self.deviceIdentifier] = newTimestamp;
                   
                   // schedule database save
@@ -831,11 +863,11 @@ NSString *PARDevicesDirectoryName = @"devices";
                       return;
                   }
 
-                  NSManagedObject *newLog = [NSEntityDescription insertNewObjectForEntityForName:@"Log" inManagedObjectContext:moc];
-                  [newLog setValue:newTimestamp forKey:@"timestamp"];
-                  [newLog setValue:oldTimestamps[key] forKey:@"parentTimestamp"];
-                  [newLog setValue:key forKey:@"key"];
-                  [newLog setValue:blob forKey:@"blob"];
+                  NSManagedObject *newLog = [NSEntityDescription insertNewObjectForEntityForName:LogEntityName inManagedObjectContext:moc];
+                  [newLog setValue:newTimestamp forKey:TimestampAttributeName];
+                  [newLog setValue:oldTimestamps[key] forKey:ParentTimestampAttributeName];
+                  [newLog setValue:key forKey:KeyAttributeName];
+                  [newLog setValue:blob forKey:BlobAttributeName];
               }];
               self.databaseTimestamps[self.deviceIdentifier] = newTimestamp;
               
@@ -1112,7 +1144,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 }
 
 
-#pragma mark - Sync
+#pragma mark - Syncing
 
 - (NSArray *)relevantKeysForSync
 {
@@ -1186,10 +1218,10 @@ NSString *PARDevicesDirectoryName = @"devices";
     
     // fetch Log rows in reverse timestamp order, starting at `timestampLimit`
     NSError *errorLogs = nil;
-    NSFetchRequest *logsRequest = [NSFetchRequest fetchRequestWithEntityName:@"Log"];
+    NSFetchRequest *logsRequest = [NSFetchRequest fetchRequestWithEntityName:LogEntityName];
     if (timestampLimit)
-        [logsRequest setPredicate:[NSPredicate predicateWithFormat:@"timestamp > %@", timestampLimit]];
-    [logsRequest setSortDescriptors:@[[NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:NO]]];
+        [logsRequest setPredicate:[NSPredicate predicateWithFormat:@"%K > %@", TimestampAttributeName, timestampLimit]];
+    [logsRequest setSortDescriptors:@[[NSSortDescriptor sortDescriptorWithKey:TimestampAttributeName ascending:NO]]];
     [logsRequest setFetchBatchSize:LOGS_BATCH_SIZE];
     [logsRequest setReturnsObjectsAsFaults:NO];
     NSArray *allLogs = [moc executeFetchRequest:logsRequest error:&errorLogs];
@@ -1210,7 +1242,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     for (NSManagedObject *log in allLogs)
     {
         // key
-        NSString *key = [log valueForKey:@"key"];
+        NSString *key = [log valueForKey:KeyAttributeName];
         if (!key)
         {
             ErrorLog(@"Unexpected nil value for 'key' column:\nrow: %@\ndatabase: %@", log.objectID, log.objectID.persistentStore.URL.path);
@@ -1218,7 +1250,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         }
         
         // timestamp
-        NSNumber *logTimestamp = [log valueForKey:@"timestamp"];
+        NSNumber *logTimestamp = [log valueForKey:TimestampAttributeName];
         
         // keep track of the last timestamp for each persistent store
         NSPersistentStore *store = [[log objectID] persistentStore];
@@ -1233,7 +1265,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         
         // blob --> object
         NSError *blobError = nil;
-        NSData *blob = [log valueForKey:@"blob"];
+        NSData *blob = [log valueForKey:BlobAttributeName];
         if (!blob)
         {
             ErrorLog(@"Unexpected nil value for 'blob' column:\nrow: %@\ndatabase: %@", log.objectID, log.objectID.persistentStore.URL.path);
@@ -1357,15 +1389,15 @@ NSString *PARDevicesDirectoryName = @"devices";
          }
 
          NSError *fetchError = nil;
-         NSFetchRequest *request = [NSFetchRequest fetchRequestWithEntityName:@"Log"];
-         request.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:NO]];
+         NSFetchRequest *request = [NSFetchRequest fetchRequestWithEntityName:LogEntityName];
+         request.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:TimestampAttributeName ascending:NO]];
          if (timestamp == nil)
          {
-             request.predicate = [NSPredicate predicateWithFormat:@"key == %@", key];
+             request.predicate = [NSPredicate predicateWithFormat:@"%K == %@", KeyAttributeName, key];
          }
          else
          {
-             request.predicate = [NSPredicate predicateWithFormat:@"key == %@ AND timestamp <= %@", key, timestamp];
+             request.predicate = [NSPredicate predicateWithFormat:@"%K == %@ AND %K <= %@", KeyAttributeName, key, TimestampAttributeName, timestamp];
          }
          request.fetchLimit = 1;
          request.returnsObjectsAsFaults = NO;
@@ -1380,7 +1412,7 @@ NSString *PARDevicesDirectoryName = @"devices";
          {
              NSManagedObject *latestLog = results.lastObject;
              NSError *plistError = nil;
-             plist = [self propertyListFromData:[latestLog valueForKey:@"blob"] error:&plistError];
+             plist = [self propertyListFromData:[latestLog valueForKey:BlobAttributeName] error:&plistError];
              if (plist == nil)
              {
                  ErrorLog(@"Error deserializing 'layout' data in Logs database:\nrow: %@\nfile: %@\nerror: %@", latestLog.objectID, latestLog.objectID.persistentStore.URL.path, plistError);
@@ -1412,6 +1444,379 @@ NSString *PARDevicesDirectoryName = @"devices";
 {
     [self.databaseQueue scheduleTimerWithName:@"sync_delay" timeInterval:1.0 behavior:PARTimerBehaviorDelay block:^{ [self _sync]; }];
     [self.databaseQueue scheduleTimerWithName:@"sync_coalesce" timeInterval:15.0 behavior:PARTimerBehaviorCoalesce block:^{ [self _sync]; }];
+}
+
+
+#pragma mark - Merging
+
+- (void)mergeStore:(PARStore *)mergedStore unsafeDeviceIdentifiers:(NSArray *)unsafeDeviceIdentifiers completionHandler:(void(^)(NSError*))completionHandler
+{
+    if (![self.deviceIdentifier isEqualToString:mergedStore.deviceIdentifier])
+    {
+        NSError *error = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"merging is only valid for stores with the same device identifier:\nmerged store: %@\ndestination store: %@", mergedStore, self] underlyingError:nil];
+        [[PARDispatchQueue globalDispatchQueue] dispatchAsynchronously:^
+        {
+            completionHandler(error);
+        }];
+        return;
+    }
+    
+    if ([unsafeDeviceIdentifiers containsObject:self.deviceIdentifier])
+    {
+        NSError *error = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"merging is only valid if the unsafe device identifiers do not include the local device identifier:\nunsafe devices: %@\nmerged store: %@\ndestination store: %@", unsafeDeviceIdentifiers, mergedStore, self] underlyingError:nil];
+        [[PARDispatchQueue globalDispatchQueue] dispatchAsynchronously:^
+         {
+             completionHandler(error);
+         }];
+        return;
+    }
+    
+    // during the merge, we block both database queues
+    [self.databaseQueue dispatchAsynchronously:^
+    {
+        __block NSError *mergeError = nil;
+        [mergedStore.databaseQueue dispatchSynchronously:^
+        {
+            // closing the database while we go through the different stores
+            [mergedStore closeDatabaseNow];
+            [self closeDatabaseNow];
+            
+            // merge logs
+            NSMutableSet *allDeviceIdentifiers = [NSMutableSet setWithArray:[mergedStore foreignDeviceIdentifiers]];
+            [allDeviceIdentifiers addObjectsFromArray:[self foreignDeviceIdentifiers]];
+            [allDeviceIdentifiers addObject:self.deviceIdentifier];
+            for (NSString *deviceIdentifier in allDeviceIdentifiers)
+            {
+                NSArray *logs1 = [mergedStore _sortedLogRepresentationsFromDeviceIdentifier:deviceIdentifier];
+                NSArray *logs2 = [self _sortedLogRepresentationsFromDeviceIdentifier:deviceIdentifier];
+
+                // unsafe
+                if ([unsafeDeviceIdentifiers containsObject:deviceIdentifier])
+                {
+                    NSArray *extraLogs = [self _logRepresentationsFromLogRepresentations:logs1 minusLogRepresentations:logs2];
+                    if (extraLogs.count > 0)
+                    {
+                        NSString *virtualDeviceIdentifier = [NSString stringWithFormat:@"%@|%@", self.deviceIdentifier, deviceIdentifier];
+                        NSArray *logs11 = [mergedStore _sortedLogRepresentationsFromDeviceIdentifier:virtualDeviceIdentifier];
+                        NSArray *logs12 = [self _sortedLogRepresentationsFromDeviceIdentifier:virtualDeviceIdentifier];
+                        NSArray *finalExtraLogs = [self _unionOfLogRepresentations:logs11 andLogRepresentations:logs12];
+                        
+                        // removing logs that may have made their way into the foreign device
+                        finalExtraLogs = [self _logRepresentationsFromLogRepresentations:finalExtraLogs minusLogRepresentations:logs2];
+                        
+                        mergeError = [self _replacePersistentStoreWithDeviceIdentifier:virtualDeviceIdentifier logRepresentations:finalExtraLogs.copy];
+                    }
+                }
+                
+                // safe
+                else
+                {
+                    
+                    NSArray *finalLogs = [self _unionOfLogRepresentations:logs1 andLogRepresentations:logs2];
+                    BOOL shouldReallyMerge = (finalLogs.count > logs2.count);
+                    if (shouldReallyMerge)
+                    {
+                        // create a completely new database file with the merged logs
+                        mergeError = [self _replacePersistentStoreWithDeviceIdentifier:deviceIdentifier logRepresentations:finalLogs.copy];
+                    }
+                }
+            }
+        }];
+        
+        // done --> callback
+        mergeError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"merging not implemented:\nmerged store: %@\ndestination store: %@", mergedStore, self] underlyingError:nil];
+        completionHandler(mergeError);
+    }];
+}
+
+- (NSError *)_mergeLogsForDeviceIdentifier:(NSString *)deviceIdentifier mergedStore:(PARStore *)mergedStore
+{
+    // logs --> union
+    NSArray *logs1 = [mergedStore _sortedLogRepresentationsFromDeviceIdentifier:deviceIdentifier];
+    NSArray *logs2 = [self _sortedLogRepresentationsFromDeviceIdentifier:deviceIdentifier];
+    NSArray *finalLogs = [self _unionOfLogRepresentations:logs1 andLogRepresentations:logs2];
+    
+    // easy way out: logs1 are a subset of logs2, no need to merge
+    BOOL shouldReallyMerge = (finalLogs.count > logs2.count);
+    if (shouldReallyMerge == NO)
+    {
+        return nil;
+    }
+    
+    // create a completely new database file with the merged logs
+    return [self _replacePersistentStoreWithDeviceIdentifier:deviceIdentifier logRepresentations:finalLogs.copy];
+}
+
+- (NSArray *)_sortedLogRepresentationsFromDeviceIdentifier:(NSString *)deviceIdentifier
+{
+    // moc
+    NSManagedObjectModel *mom = [PARStore managedObjectModel];
+    if (mom == nil)
+    {
+        return nil;
+    }
+    NSPersistentStoreCoordinator *psc = [[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:mom];
+    NSError *psError = nil;
+    NSPersistentStore *ps = [self addPersistentStoreWithCoordinator:psc dirPath:[self directoryPathForDeviceIdentifier:deviceIdentifier] readOnly:YES error:&psError];
+    if (ps == nil)
+    {
+        return nil;
+    }
+    NSManagedObjectContext *moc = [[NSManagedObjectContext alloc] init];
+    [moc setPersistentStoreCoordinator:psc];
+
+    // sorted logs
+    // multiple sort keys are used so the order is reproducible even for multiple logs with same timestamps
+    NSError *errorLogs = nil;
+    NSFetchRequest *logsRequest = [NSFetchRequest fetchRequestWithEntityName:LogEntityName];
+    logsRequest.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:TimestampAttributeName ascending:YES], [NSSortDescriptor sortDescriptorWithKey:KeyAttributeName ascending:YES], [NSSortDescriptor sortDescriptorWithKey:ParentTimestampAttributeName ascending:YES]];
+    logsRequest.resultType = NSDictionaryResultType;
+    NSArray *logRepresentations = [moc executeFetchRequest:logsRequest error:&errorLogs];
+    if (logRepresentations == nil)
+    {
+        return nil;
+    }
+    
+    moc = nil;
+    return logRepresentations;
+}
+
+- (NSError *)_replacePersistentStoreWithDeviceIdentifier:(NSString *)deviceIdentifier logRepresentations:(NSArray *)logRepresentations
+{
+    // base path
+    NSString *dbPath = [self databasePathForDeviceIdentifier:deviceIdentifier];
+    if (dbPath == nil)
+    {
+        return [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"no valid path for database with device '%@' for store <%@:%p> at path: %@", deviceIdentifier, NSStringFromClass([self class]), self, self.storeURL] underlyingError:nil];
+    }
+
+    // delete journal file
+    NSString *journalPath1 = [dbPath stringByAppendingString:@"-journal"];
+    [[NSFileManager defaultManager] removeItemAtPath:journalPath1 error:NULL];
+    
+    // rename old file
+    NSString *tempPath = [dbPath stringByAppendingString:@"-old"];
+    if ([[NSFileManager defaultManager] fileExistsAtPath:dbPath])
+    {
+        [[NSFileManager defaultManager] removeItemAtPath:tempPath error:NULL];
+        NSError *moveError = nil;
+        BOOL moveSuccess = [[NSFileManager defaultManager] moveItemAtPath:dbPath toPath:tempPath error:&moveError];
+        if (moveSuccess == NO)
+        {
+            if (moveError == nil)
+            {
+                moveError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"error moving file from '%@' to '%@'", dbPath, tempPath] underlyingError:nil];
+            }
+            return moveError;
+        }
+    }
+    
+    if (logRepresentations.count > 0)
+    {
+        // new moc
+        NSManagedObjectModel *mom = [PARStore managedObjectModel];
+        if (mom == nil)
+        {
+            return nil;
+        }
+        NSPersistentStoreCoordinator *psc = [[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:mom];
+        NSError *psError = nil;
+        NSPersistentStore *ps = [self addPersistentStoreWithCoordinator:psc dirPath:[self directoryPathForDeviceIdentifier:deviceIdentifier] readOnly:YES error:&psError];
+        if (ps == nil)
+        {
+            return nil;
+        }
+        NSManagedObjectContext *moc = [[NSManagedObjectContext alloc] init];
+        [moc setPersistentStoreCoordinator:psc];
+        
+        // populate new moc
+        for (NSDictionary *rep in logRepresentations)
+        {
+            NSManagedObject *newLog = [NSEntityDescription insertNewObjectForEntityForName:LogEntityName inManagedObjectContext:moc];
+            [newLog setValuesForKeysWithDictionary:rep];
+        }
+        
+        // save new moc
+        NSError *saveError = nil;
+        BOOL saveSuccess = [moc save:&saveError];
+        if (saveSuccess == NO)
+        {
+            if (saveError == nil)
+            {
+                saveError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"error saving moc at path: %@", dbPath] underlyingError:nil];
+            }
+            [[NSFileManager defaultManager] moveItemAtPath:tempPath toPath:dbPath error:NULL];
+            return saveError;
+        }
+        moc = nil;
+    }
+    
+    // delete old db
+    [[NSFileManager defaultManager] removeItemAtPath:tempPath error:NULL];
+    
+    // success
+    return nil;
+}
+
+// optimized implementation relying on the fact that the logs are already sorted
+- (NSArray *)_unionOfLogRepresentations:(NSArray *)logs1 andLogRepresentations:(NSArray *)logs2
+{
+    NSUInteger max1 = logs1.count;
+    if (max1 == 0)
+    {
+        return logs2;
+    }
+    NSUInteger max2 = logs2.count;
+    if (max2 == 0)
+    {
+        return logs1;
+    }
+    
+    NSUInteger pos1 = 0;
+    NSUInteger pos2 = 0;
+    NSMutableArray *finalLogs = [NSMutableArray array];
+    while (pos1 < max1 && pos2 < max2)
+    {
+        NSDictionary *rep1 = logs1[pos1];
+        NSDictionary *rep2 = logs2[pos2];
+        NSComparisonResult comparison = NSOrderedDescending;
+        
+        NSNumber *timestamp1 = rep1[TimestampAttributeName];
+        NSNumber *timestamp2 = rep2[TimestampAttributeName];
+        comparison = [timestamp1 compare:timestamp2];
+        if (comparison == NSOrderedSame)
+        {
+            NSString *key1 = rep1[KeyAttributeName];
+            NSString *key2 = rep2[KeyAttributeName];
+            comparison = [key1 compare:key2];
+            if (comparison == NSOrderedSame)
+            {
+                NSString *parentTimestamp1 = rep1[ParentTimestampAttributeName];
+                NSString *parentTimestamp2 = rep2[ParentTimestampAttributeName];
+                comparison = [parentTimestamp1 compare:parentTimestamp2];
+            }
+            if (comparison == NSOrderedSame)
+            {
+                NSData *blob1 = rep1[BlobAttributeName];
+                NSData *blob2 = rep2[BlobAttributeName];
+                if (![blob1 isEqual:blob2])
+                {
+                    comparison = NSOrderedDescending;
+                }
+            }
+        }
+        
+        // rep1 == rep2
+        if (comparison == NSOrderedSame)
+        {
+            [finalLogs addObject:rep1];
+            pos1 ++;
+            pos2 ++;
+        }
+        
+        // rep1 > rep2
+        else if (comparison == NSOrderedDescending)
+        {
+            [finalLogs addObject:rep2];
+            pos2 ++;
+        }
+        
+        // rep1 < rep2
+        else
+        {
+            [finalLogs addObject:rep1];
+            pos1 ++;
+        }
+    }
+    // we ran out of logs in logs2 --> add every remaining log in logs1
+    if (pos1 < max1)
+    {
+        [finalLogs addObjectsFromArray:[logs1 subarrayWithRange:NSMakeRange(pos1, max1 - pos1)]];
+    }
+    // we ran out of logs in logs1 --> add every remaining log in logs2
+    if (pos2 < max2)
+    {
+        [finalLogs addObjectsFromArray:[logs2 subarrayWithRange:NSMakeRange(pos2, max2 - pos2)]];
+    }
+    
+    return finalLogs.copy;
+}
+
+// optimized implementation relying on the fact that the logs are already sorted
+- (NSArray *)_logRepresentationsFromLogRepresentations:(NSArray *)logs1 minusLogRepresentations:(NSArray *)logs2
+{
+    NSUInteger max1 = logs1.count;
+    if (max1 == 0)
+    {
+        return @[];
+    }
+    NSUInteger max2 = logs2.count;
+    if (max2 == 0)
+    {
+        return logs1;
+    }
+    
+    NSUInteger pos1 = 0;
+    NSUInteger pos2 = 0;
+    NSMutableArray *finalLogs = [NSMutableArray array];
+    while (pos1 < max1 && pos2 < max2)
+    {
+        NSDictionary *rep1 = logs1[pos1];
+        NSDictionary *rep2 = logs2[pos2];
+        NSComparisonResult comparison = NSOrderedDescending;
+        
+        NSNumber *timestamp1 = rep1[TimestampAttributeName];
+        NSNumber *timestamp2 = rep2[TimestampAttributeName];
+        comparison = [timestamp1 compare:timestamp2];
+        if (comparison == NSOrderedSame)
+        {
+            NSString *key1 = rep1[KeyAttributeName];
+            NSString *key2 = rep2[KeyAttributeName];
+            comparison = [key1 compare:key2];
+            if (comparison == NSOrderedSame)
+            {
+                NSString *parentTimestamp1 = rep1[ParentTimestampAttributeName];
+                NSString *parentTimestamp2 = rep2[ParentTimestampAttributeName];
+                comparison = [parentTimestamp1 compare:parentTimestamp2];
+            }
+            if (comparison == NSOrderedSame)
+            {
+                NSData *blob1 = rep1[BlobAttributeName];
+                NSData *blob2 = rep2[BlobAttributeName];
+                if (![blob1 isEqual:blob2])
+                {
+                    comparison = NSOrderedDescending;
+                }
+            }
+        }
+        
+        // rep1 == rep2
+        if (comparison == NSOrderedSame)
+        {
+            pos1 ++;
+            pos2 ++;
+        }
+        
+        // rep1 > rep2
+        else if (comparison == NSOrderedDescending)
+        {
+            pos2 ++;
+        }
+        
+        // rep1 < rep2
+        else
+        {
+            [finalLogs addObject:rep1];
+            pos1 ++;
+        }
+    }
+    // we ran out of logs in logs2 --> add every remaining log in logs1
+    if (pos1 < max1)
+    {
+        [finalLogs addObjectsFromArray:[logs1 subarrayWithRange:NSMakeRange(pos1, max1 - pos1)]];
+    }
+    
+    return finalLogs.copy;
 }
 
 
@@ -1562,12 +1967,12 @@ NSString *PARDevicesDirectoryName = @"devices";
         
         // fetch Log rows in timestamp order, starting at `timestampLimit`
         NSError *errorLogs = nil;
-        NSFetchRequest *logsRequest = [NSFetchRequest fetchRequestWithEntityName:@"Log"];
+        NSFetchRequest *logsRequest = [NSFetchRequest fetchRequestWithEntityName:LogEntityName];
         if (timestampLimit != nil)
         {
-            logsRequest.predicate = [NSPredicate predicateWithFormat:@"timestamp > %@", timestampLimit];
+            logsRequest.predicate = [NSPredicate predicateWithFormat:@"%K > %@", TimestampAttributeName, timestampLimit];
         }
-        logsRequest.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:@"timestamp" ascending:YES]];
+        logsRequest.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:TimestampAttributeName ascending:YES]];
         logsRequest.resultType = NSDictionaryResultType;
         NSArray *logs = [moc executeFetchRequest:logsRequest error:&errorLogs];
         if (!logs)
@@ -1579,10 +1984,10 @@ NSString *PARDevicesDirectoryName = @"devices";
         // logs --> changes
         for (NSDictionary *logDictionary in logs)
         {
-            NSNumber *timestamp = logDictionary[@"timestamp"];
-            NSNumber *parentTimestamp = logDictionary[@"parentTimestamp"];
-            NSString *key = logDictionary[@"key"];
-            NSData *blob = logDictionary[@"blob"];
+            NSNumber *timestamp = logDictionary[TimestampAttributeName];
+            NSNumber *parentTimestamp = logDictionary[ParentTimestampAttributeName];
+            NSString *key = logDictionary[KeyAttributeName];
+            NSData *blob = logDictionary[BlobAttributeName];
             id propertyList = [self propertyListFromData:blob error:NULL];
             PARChange *change = [PARChange changeWithTimestamp:timestamp parentTimestamp:parentTimestamp key:key propertyList:propertyList];
             [changes addObject:change];
