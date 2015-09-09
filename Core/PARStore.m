@@ -478,7 +478,13 @@ NSString *PARDevicesDirectoryName = @"devices";
     if (readOnly && (![[NSFileManager defaultManager] fileExistsAtPath:storePath isDirectory:&isDir] || isDir))
     {
         if (isDir)
+        {
             ErrorLog(@"Cannot create persistent store for database at path '%@', because there is already a directory at this path", storePath);
+        }
+        else
+        {
+            ErrorLog(@"Cannot create persistent store for database at path '%@' in read-only mode, because there is no file at this path", storePath);
+        }
         return nil;
     }
 	
@@ -1460,6 +1466,11 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (void)mergeStore:(PARStore *)mergedStore unsafeDeviceIdentifiers:(NSArray *)unsafeDeviceIdentifiers completionHandler:(void(^)(NSError*))completionHandler
 {
+    if (completionHandler == nil)
+    {
+        completionHandler = ^(NSError *error){ };
+    }
+    
     if (![self.deviceIdentifier isEqualToString:mergedStore.deviceIdentifier])
     {
         NSError *error = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"merging is only valid for stores with the same device identifier:\nmerged store: %@\ndestination store: %@", mergedStore, self] underlyingError:nil];
@@ -1524,6 +1535,7 @@ NSString *PARDevicesDirectoryName = @"devices";
                 {
                     
                     NSArray *finalLogs = [self _unionOfLogRepresentations:logs1 andLogRepresentations:logs2];
+                    // DebugLog(@"final logs for %@ = %@", deviceIdentifier, finalLogs);
                     BOOL shouldReallyMerge = (finalLogs.count > logs2.count);
                     if (shouldReallyMerge)
                     {
@@ -1564,7 +1576,6 @@ NSString *PARDevicesDirectoryName = @"devices";
         }];
         
         // done --> callback
-        mergeError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"merging not implemented:\nmerged store: %@\ndestination store: %@", mergedStore, self] underlyingError:nil];
         completionHandler(mergeError);
     }];
 }
@@ -1661,7 +1672,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         }
         NSPersistentStoreCoordinator *psc = [[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:mom];
         NSError *psError = nil;
-        NSPersistentStore *ps = [self addPersistentStoreWithCoordinator:psc dirPath:[self directoryPathForDeviceIdentifier:deviceIdentifier] readOnly:YES error:&psError];
+        NSPersistentStore *ps = [self addPersistentStoreWithCoordinator:psc dirPath:[self directoryPathForDeviceIdentifier:deviceIdentifier] readOnly:NO error:&psError];
         if (ps == nil)
         {
             return nil;
@@ -2340,7 +2351,7 @@ static void PARStoreLogsDidChange(
 // one of the device directory changed --> one of the 'logs' db changed --> time to sync
 - (void)respondToFileSystemEventWithPath:(NSString *)path
 {
-    DebugLog(@"%@ %@", NSStringFromSelector(_cmd), path);
+    // DebugLog(@"%@ %@", NSStringFromSelector(_cmd), path);
     [self syncSoon];
 }
 
