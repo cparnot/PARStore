@@ -681,8 +681,11 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (void)_tearDownDatabase
 {
-    [self _save:NULL];
-    [self _closeDatabase];
+    if (self._managedObjectContext)
+    {
+        [self _save:NULL];
+        [self _closeDatabase];
+    }
     [NSFileCoordinator removeFilePresenter:self];
     [self stopFileSystemEventStreams];
     self.databaseTimestamps = [NSMutableDictionary dictionary];
