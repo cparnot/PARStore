@@ -315,13 +315,13 @@
     [storeB1 saveNow];
     [storeB2 saveNow];
     
-    // change second store --> should trigger a change in the first store
+    // merge --> should trigger a 'did load'
     PARNotificationSemaphore *semaphore = [PARNotificationSemaphore semaphoreForNotificationName:PARStoreDidLoadNotification object:storeA1];
     [storeA1 mergeStore:storeB1 unsafeDeviceIdentifiers:@[] completionHandler:^(NSError *error) {
         XCTAssertNil(error, @"error merging: %@", error);
         NSLog(@"done merging");
     }];
-    BOOL completedWithoutTimeout = [semaphore waitUntilNotificationWithTimeout:100.0];
+    BOOL completedWithoutTimeout = [semaphore waitUntilNotificationWithTimeout:1.0];
     XCTAssertTrue(completedWithoutTimeout, @"Timeout while waiting for PARStore merge");
     
     NSString *expectedTitle = @"titleB2";
