@@ -17,4 +17,6 @@
 
 @property BOOL shouldThrottleNotifications;
 
+- (NSArray *)sortedLogRepresentationsFromDeviceIdentifier:(NSString *)deviceIdentifier;
+
 @end

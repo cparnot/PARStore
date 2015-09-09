@@ -356,6 +356,9 @@
     [storeB1 saveNow];
     [storeB2 saveNow];
     
+    // logs of unsafe device identifier should remain intact
+    NSArray *logsBefore = [storeA1 sortedLogRepresentationsFromDeviceIdentifier:@"2"];
+    
     // merge --> should trigger a 'did load'
     PARNotificationSemaphore *semaphore = [PARNotificationSemaphore semaphoreForNotificationName:PARStoreDidLoadNotification object:storeA1];
     [storeA1 mergeStore:storeB1 unsafeDeviceIdentifiers:@[@"2"] completionHandler:^(NSError *error) {
@@ -365,9 +368,13 @@
     BOOL completedWithoutTimeout = [semaphore waitUntilNotificationWithTimeout:1.0];
     XCTAssertTrue(completedWithoutTimeout, @"Timeout while waiting for PARStore merge");
     
+    // logs of unsafe device identifier should remain intact
+    NSArray *logsAfter = [storeA1 sortedLogRepresentationsFromDeviceIdentifier:@"2"];
+
     NSString *expectedTitle = @"titleB2";
     [storeA1 loadNow];
     XCTAssertEqualObjects(storeA1.title, expectedTitle, @" - title is '%@' but should be '%@'", storeA1.title, expectedTitle);
+    XCTAssertEqualObjects(logsBefore, logsAfter, @" - after merge, logs should still be '%@' but are '%@'", logsBefore, logsAfter);
     
     [storeA1 tearDownNow];
     [storeA2 tearDownNow];

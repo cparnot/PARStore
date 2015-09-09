@@ -9,9 +9,15 @@
 @interface PARStore (PARStorePrivate)
 @property (retain) PARDispatchQueue *notificationQueue;
 - (void)postNotificationWithName:(NSString *)notificationName;
+- (NSArray *)_sortedLogRepresentationsFromDeviceIdentifier:(NSString *)deviceIdentifier;
 @end
 
 @implementation PARStoreExample
+
+- (NSArray *)sortedLogRepresentationsFromDeviceIdentifier:(NSString *)deviceIdentifier
+{
+    return [super _sortedLogRepresentationsFromDeviceIdentifier:deviceIdentifier];
+}
 
 
 + (NSArray *)relevantKeysForSync
