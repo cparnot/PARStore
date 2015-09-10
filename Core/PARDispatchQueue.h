@@ -4,6 +4,10 @@
 
 #import <Foundation/Foundation.h>
 
+
+#ifndef FDDISPATCHQUEUE_HEADER
+#define FDDISPATCHQUEUE_HEADER
+
 typedef void (^PARDispatchBlock)(void);
 
 // Timer Behaviors
@@ -82,3 +86,6 @@ typedef NS_ENUM(NSInteger, PARDeadlockBehavior)
 + (PARBlockOperation *)dispatchedOperationWithQueue:(PARDispatchQueue *)queue block:(PARDispatchBlock)block;
 - (void)waitUntilFinished;
 @end
+
+
+#endif
