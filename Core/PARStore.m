@@ -1500,6 +1500,64 @@ NSString *PARDevicesDirectoryName = @"devices";
         __block NSError *mergeError = nil;
         [mergedStore.databaseQueue dispatchSynchronously:^
         {
+            // merge blob files
+            NSError *error = nil;
+            NSString *mergedBlobsPath = mergedStore.blobDirectoryURL.path;
+            NSString *targetBlobsPath = self.blobDirectoryURL.path;
+            NSArray *mergedSubpaths = [[NSFileManager defaultManager] subpathsOfDirectoryAtPath:mergedBlobsPath error:&error];
+            if (mergedSubpaths == nil)
+            {
+                mergeError = error;
+            }
+            NSArray *targetSubpaths = [[NSFileManager defaultManager] subpathsOfDirectoryAtPath:targetBlobsPath error:&error];
+            if (targetSubpaths == nil)
+            {
+                mergeError = error;
+            }
+            for (NSString *subpath in mergedSubpaths)
+            {
+                NSString *mergedPath = [mergedBlobsPath stringByAppendingPathComponent:subpath];
+                NSString *targetPath = [targetBlobsPath stringByAppendingPathComponent:subpath];
+                
+                // newer or equal modification date prevails in case of conflict
+                if ([targetSubpaths containsObject:subpath])
+                {
+                    NSDate *mergedModificationDate = [[NSFileManager defaultManager] attributesOfItemAtPath:mergedPath error:&error][NSFileModificationDate];
+                    if (mergedModificationDate == nil)
+                    {
+                        mergeError = error;
+                        continue;
+                    }
+                    NSDate *targetModificationDate = [[NSFileManager defaultManager] attributesOfItemAtPath:targetPath error:&error][NSFileModificationDate];
+                    if (targetModificationDate == nil)
+                    {
+                        mergeError = error;
+                        continue;
+                    }
+                    if ([targetModificationDate compare:mergedModificationDate] != NSOrderedAscending)
+                    {
+                        continue;
+                    }
+                }
+                
+                // for merging, simply copy the file into the target blobs
+                [[NSFileManager defaultManager] removeItemAtPath:targetPath error:NULL];
+                if (![[NSFileManager defaultManager] createDirectoryAtPath:[targetPath stringByDeletingLastPathComponent] withIntermediateDirectories:YES attributes:nil error:&error])
+                {
+                    mergeError = error;
+                    continue;
+                }
+                NSString *tempTargetPath = [targetPath stringByAppendingString:[[NSUUID UUID] UUIDString]];
+                [[NSFileManager defaultManager] moveItemAtPath:targetPath toPath:tempTargetPath error:NULL];
+                if (![[NSFileManager defaultManager] copyItemAtPath:mergedPath toPath:targetPath error:&error])
+                {
+                    mergeError = error;
+                    [[NSFileManager defaultManager] moveItemAtPath:tempTargetPath toPath:targetPath error:NULL];
+                    continue;
+                }
+                [[NSFileManager defaultManager] removeItemAtPath:tempTargetPath error:NULL];
+            }
+
             // closing the database while we go through the different stores
             [mergedStore closeDatabaseNow];
             [self _tearDownDatabase];
@@ -1582,24 +1640,6 @@ NSString *PARDevicesDirectoryName = @"devices";
         // done --> callback
         completionHandler(mergeError);
     }];
-}
-
-- (NSError *)_mergeLogsForDeviceIdentifier:(NSString *)deviceIdentifier mergedStore:(PARStore *)mergedStore
-{
-    // logs --> union
-    NSArray *logs1 = [mergedStore _sortedLogRepresentationsFromDeviceIdentifier:deviceIdentifier];
-    NSArray *logs2 = [self _sortedLogRepresentationsFromDeviceIdentifier:deviceIdentifier];
-    NSArray *finalLogs = [self _unionOfLogRepresentations:logs1 andLogRepresentations:logs2];
-    
-    // easy way out: logs1 are a subset of logs2, no need to merge
-    BOOL shouldReallyMerge = (finalLogs.count > logs2.count);
-    if (shouldReallyMerge == NO)
-    {
-        return nil;
-    }
-    
-    // create a completely new database file with the merged logs
-    return [self _replacePersistentStoreWithDeviceIdentifier:deviceIdentifier logRepresentations:finalLogs.copy];
 }
 
 - (NSArray *)_sortedLogRepresentationsFromDeviceIdentifier:(NSString *)deviceIdentifier
