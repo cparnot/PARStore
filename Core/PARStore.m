@@ -2122,7 +2122,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     // detect deletion of the file package
     if (![self deleted] && ![[NSFileManager defaultManager] fileExistsAtPath:[self.storeURL path]])
     {
-        [self accommodatePresentedItemDeletionWithCompletionHandler:nil];
+        [self accommodatePresentedItemDeletionWithCompletionHandler:^(NSError *errorOrNil) { }];
         return;
     }
     
