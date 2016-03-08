@@ -2305,12 +2305,13 @@ static void PARStoreLogsDidChange(
         callbackContext.release			= NULL;
         callbackContext.copyDescription	= NULL;
         self.eventStreamDevices = FSEventStreamCreate(kCFAllocatorDefault,
-                                               &PARStoreDevicesDidChange,
-                                               &callbackContext,
-                                               (__bridge CFArrayRef)@[[self deviceRootPath]],
-                                               kFSEventStreamEventIdSinceNow,
-                                               3.0,
-                                               kFSEventStreamCreateFlagUseCFTypes | kFSEventStreamCreateFlagWatchRoot);
+                                                      &PARStoreDevicesDidChange,
+                                                      &callbackContext,
+                                                      (__bridge CFArrayRef)@[[self deviceRootPath]],
+                                                      kFSEventStreamEventIdSinceNow,
+                                                      3.0,
+                                                      kFSEventStreamCreateFlagUseCFTypes
+                                                      );
         // schedule and start the stream
         FSEventStreamSetDispatchQueue(_eventStreamDevices, [self.fileSystemEventQueue valueForKey:@"queue"]);
         
@@ -2357,12 +2358,13 @@ static void PARStoreLogsDidChange(
          callbackContext.release			= NULL;
          callbackContext.copyDescription	= NULL;
          self.eventStreamLogs = FSEventStreamCreate(kCFAllocatorDefault,
-                                                       &PARStoreLogsDidChange,
-                                                       &callbackContext,
-                                                       (__bridge CFArrayRef)directoriesToObserve,
-                                                       kFSEventStreamEventIdSinceNow,
-                                                       3.0,
-                                                       kFSEventStreamCreateFlagUseCFTypes | kFSEventStreamCreateFlagWatchRoot);
+                                                    &PARStoreLogsDidChange,
+                                                    &callbackContext,
+                                                    (__bridge CFArrayRef)directoriesToObserve,
+                                                    kFSEventStreamEventIdSinceNow,
+                                                    3.0,
+                                                    kFSEventStreamCreateFlagUseCFTypes
+                                                    );
          // schedule and start the stream
          FSEventStreamSetDispatchQueue(_eventStreamLogs, [self.fileSystemEventQueue valueForKey:@"queue"]);
          if (FSEventStreamStart(_eventStreamLogs) == false)
