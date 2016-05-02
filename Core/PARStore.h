@@ -64,14 +64,16 @@ extern NSString *PARStoreDidSyncNotification;
 - (void)mergeStore:(PARStore *)store unsafeDeviceIdentifiers:(NSArray *)activeDeviceIdentifiers completionHandler:(void(^)(NSError*))completionHandler;
 
 /// @name Getting Timestamps
+NS_ASSUME_NONNULL_BEGIN
 + (NSNumber *)timestampNow;
 + (NSNumber *)timestampForDistantPast;
 + (NSNumber *)timestampForDistantFuture;
-- (NSDictionary *)mostRecentTimestampsByKey;
-- (NSNumber *)mostRecentTimestampForKey:(NSString *)key;
+
+- (nullable NSDictionary *)mostRecentTimestampsByKey;
+- (nullable NSNumber *)mostRecentTimestampForKey:(nullable NSString *)key;
 // These methods should not be called from within a transaction, or they will fail.
 - (NSDictionary *)mostRecentTimestampsByDeviceIdentifier;
-- (NSNumber *)mostRecentTimestampForDeviceIdentifier:(NSString *)deviceIdentifier;
+- (nullable NSNumber *)mostRecentTimestampForDeviceIdentifier:(nullable NSString *)deviceIdentifier;
 
 /// @name Synchronous Method Calls
 // Synchronous calls can potentially result in longer wait, and should be avoided in the main thread. These should not be called from within a transaction, or they will fail.
@@ -85,9 +87,10 @@ extern NSString *PARStoreDidSyncNotification;
 
 /// @name History
 // This method returns an array of PARChange instances. It should not be called from within a transaction, or it will fail.
-- (NSArray *)changesSinceTimestamp:(NSNumber *)timestamp;
+- (NSArray *)changesSinceTimestamp:(nullable NSNumber *)timestamp;
 
 // TODO: error handling
+NS_ASSUME_NONNULL_END
 
 @end
 
