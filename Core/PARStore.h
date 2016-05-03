@@ -4,6 +4,7 @@
 
 #import "PARDispatchQueue.h"
 
+
 /// Key-value store for local storage of app data, with the following characteristics:
 ///  - persistent storage in a file package
 ///  - transparent syncing between multiple devices sharing the file via Dropbox, iCloud, or other file-based syncing system
@@ -14,12 +15,13 @@
 
 /// @name Notifications
 /// Notifications are posted asynchronously. You cannot expect the store to be in the state that it was after the last operation that triggered the notification. The 'Change' and 'Sync' notifications includes a user info dictionary with two entries @"values" and @"timestamps"; each entry contain a dictionary where the keys correspond to the keys changed by the sync, and the values corresponding property list values and timestamps, respectively. In the case of 'Sync' notifications, these are the same dictionaries as the one passed to the method `applySyncChangeWithValues:timestamps:`.
+NS_ASSUME_NONNULL_BEGIN
 extern NSString *PARStoreDidLoadNotification;
 extern NSString *PARStoreDidTearDownNotification;
 extern NSString *PARStoreDidDeleteNotification;
 extern NSString *PARStoreDidChangeNotification;
 extern NSString *PARStoreDidSyncNotification;
-
+NS_ASSUME_NONNULL_END
 
 @interface PARStore : NSObject <NSFilePresenter>
 
