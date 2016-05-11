@@ -1942,7 +1942,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 {
     // timestamp is cast to a signed 64-bit integer (we can't use NSInteger on iOS for that)
     NSTimeInterval timestampInSeconds = [[NSDate date] timeIntervalSinceReferenceDate];
-    return @((uint64_t)(timestampInSeconds * MICROSECONDS_PER_SECOND));
+    return @((int64_t)(timestampInSeconds * MICROSECONDS_PER_SECOND));
 }
 
 + (NSNumber *)timestampForDistantPast
@@ -1951,7 +1951,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
       {
-          timestampForDistantPath = @(NSIntegerMin);
+          timestampForDistantPath = @(INT64_MIN);
       });
     return timestampForDistantPath;
 }
@@ -1962,7 +1962,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
       {
-          timestampForDistantFuture = @(NSIntegerMax);
+          timestampForDistantFuture = @(INT64_MAX);
       });
     return timestampForDistantFuture;
 }
