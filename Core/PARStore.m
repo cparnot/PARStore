@@ -53,6 +53,10 @@ NSString *const ParentTimestampAttributeName = @"parentTimestamp";
 @property (retain, nonatomic) NSMutableDictionary *_memoryFileData;
 @property (retain) NSMutableDictionary *_memoryKeyTimestamps;
 
+// handling transactions
+@property BOOL inTransaction;
+@property NSMutableDictionary *didChangeNotificationUserInfoInTransaction;
+
 // queue for the notifications
 @property (retain) PARDispatchQueue *notificationQueue;
 
@@ -794,7 +798,7 @@ NSString *PARDevicesDirectoryName = @"devices";
          self._memory[key] = plist;
          if (self._inMemory)
          {
-             [self postNotificationWithName:PARStoreDidChangeNotification userInfo:@{@"values": @{key: plist}, @"timestamps": @{key: newTimestamp}}];
+             [self postDidChangeNotificationWithUserInfo:@{@"values": @{key: plist}, @"timestamps": @{key: newTimestamp}}];
              return;
          }
          
@@ -806,7 +810,7 @@ NSString *PARDevicesDirectoryName = @"devices";
          {
              NSNumber *oldTimestamp = self._memoryKeyTimestamps[key];
              self._memoryKeyTimestamps[key] = newTimestamp;
-             [self postNotificationWithName:PARStoreDidChangeNotification userInfo:@{@"values": @{key: plist}, @"timestamps": @{key: newTimestamp}}];
+             [self postDidChangeNotificationWithUserInfo:@{@"values": @{key: plist}, @"timestamps": @{key: newTimestamp}}];
              
              [self.databaseQueue dispatchAsynchronously:
               ^{
@@ -844,7 +848,7 @@ NSString *PARDevicesDirectoryName = @"devices";
              NSMutableDictionary *newTimestamps = [NSMutableDictionary dictionaryWithCapacity:dictionary.count];
              for (NSString *key in dictionary.keyEnumerator)
                  newTimestamps[key] = newTimestamp;
-            [self postNotificationWithName:PARStoreDidChangeNotification userInfo:@{@"values": dictionary, @"timestamps": newTimestamps}];
+             [self postDidChangeNotificationWithUserInfo:@{@"values": dictionary, @"timestamps": newTimestamps}];
              return;
          }
          
@@ -860,7 +864,7 @@ NSString *PARDevicesDirectoryName = @"devices";
              newTimestamps[key] = newTimestamp;
          }
 
-         [self postNotificationWithName:PARStoreDidChangeNotification userInfo:@{@"values": dictionary, @"timestamps": newTimestamps}];
+         [self postDidChangeNotificationWithUserInfo:@{@"values": dictionary, @"timestamps": newTimestamps}];
 
          [self.databaseQueue dispatchAsynchronously: ^
           {
@@ -897,7 +901,27 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (void)runTransaction:(PARDispatchBlock)block
 {
-    [self.memoryQueue dispatchSynchronously:block];
+    [self.memoryQueue dispatchSynchronously:^
+    {
+        BOOL rootTransaction = self.inTransaction == NO;
+        if (rootTransaction)
+        {
+            self.inTransaction = YES;
+            self.didChangeNotificationUserInfoInTransaction = @{@"values": [NSMutableDictionary dictionary], @"timestamps": [NSMutableDictionary dictionary]}.mutableCopy;
+        }
+        block();
+        if (rootTransaction)
+        {
+            self.inTransaction = NO;
+            NSDictionary *values = self.didChangeNotificationUserInfoInTransaction[@"values"];
+            NSDictionary *timestamps = self.didChangeNotificationUserInfoInTransaction[@"timestamps"];
+            if (values.count > 0 || timestamps.count > 0)
+            {
+                [self postNotificationWithName:PARStoreDidChangeNotification userInfo:self.didChangeNotificationUserInfoInTransaction];
+            }
+            self.didChangeNotificationUserInfoInTransaction = nil;
+        }
+    }];
 }
 
 - (BOOL)deleted
@@ -1932,6 +1956,29 @@ NSString *PARDevicesDirectoryName = @"devices";
         [[NSNotificationCenter defaultCenter] postNotificationName:notificationName object:self userInfo:userInfo];
     }];
     
+}
+
+
+// didChange notifications are coalesced within transactions
+- (void)postDidChangeNotificationWithUserInfo:(NSDictionary *)userInfo
+{
+    if ([self.memoryQueue isInCurrentQueueStack] == NO || self.inTransaction == NO)
+    {
+        [self postNotificationWithName:PARStoreDidChangeNotification userInfo:userInfo];
+    }
+    else
+    {
+        // coalesce @"values" and @"timestamps"
+        
+        NSMutableDictionary *currentValues     = self.didChangeNotificationUserInfoInTransaction[@"values"];
+        NSMutableDictionary *currentTimestamps = self.didChangeNotificationUserInfoInTransaction[@"timestamps"];
+        
+        NSDictionary *newValues     = userInfo[@"values"]     ?: @{};
+        NSDictionary *newTimestamps = userInfo[@"timestamps"] ?: @{};
+        
+        [currentValues setValuesForKeysWithDictionary:newValues];
+        [currentTimestamps setValuesForKeysWithDictionary:newTimestamps];
+    }
 }
 
 
