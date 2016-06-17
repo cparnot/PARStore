@@ -74,7 +74,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable NSDictionary *)mostRecentTimestampsByKey;
 - (nullable NSNumber *)mostRecentTimestampForKey:(nullable NSString *)key;
 // These methods should not be called from within a transaction, or they will fail.
-- (NSDictionary *)mostRecentTimestampsByDeviceIdentifier;
+- (nullable NSDictionary *)mostRecentTimestampsByDeviceIdentifier;
 - (nullable NSNumber *)mostRecentTimestampForDeviceIdentifier:(nullable NSString *)deviceIdentifier;
 
 /// @name Synchronous Method Calls
