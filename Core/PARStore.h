@@ -25,8 +25,8 @@ extern NSString *PARStoreDidSyncNotification;
 @interface PARStore : NSObject <NSFilePresenter>
 
 /// @name Creating and Loading
-+ (id)storeWithURL:(nullable NSURL *)url deviceIdentifier:(nullable NSString *)identifier;
-+ (id)inMemoryStore;
++ (instancetype)storeWithURL:(nullable NSURL *)url deviceIdentifier:(nullable NSString *)identifier;
++ (instancetype)inMemoryStore;
 - (instancetype)initWithURL:(nullable NSURL *)url deviceIdentifier:(nullable NSString *)identifier;
 - (void)load;
 - (void)closeDatabase;

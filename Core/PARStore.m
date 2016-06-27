@@ -84,7 +84,7 @@ NSString *const ParentTimestampAttributeName = @"parentTimestamp";
 
 + (id)storeWithURL:(NSURL *)url deviceIdentifier:(NSString *)identifier
 {
-    return [[self alloc] initWithURL:url deviceIdentifier: identifier];
+    return [[PARStore alloc] initWithURL:url deviceIdentifier: identifier];
 }
 
 - (instancetype)initWithURL:(NSURL *)url deviceIdentifier:(NSString *)identifier
@@ -112,20 +112,22 @@ NSString *const ParentTimestampAttributeName = @"parentTimestamp";
         self._memoryKeyTimestamps = [NSMutableDictionary dictionary];
         self._loaded = NO;
         self._deleted = NO;
+        
+        // in memory store?
+        if (url == nil)
+        {
+            self._inMemory = YES;
+            self._loaded = YES;
+            // no database layer, already loaded
+            self.databaseQueue = nil;
+        }
     }
     return self;
 }
 
-+ (id)inMemoryStore
++ (instancetype)inMemoryStore
 {
-    PARStore *store = [self storeWithURL:nil deviceIdentifier:nil];
-    store._inMemory = YES;
-    
-    // no database layer, already loaded
-    store.databaseQueue = nil;
-    store._loaded = YES;
-    
-    return store;
+    return [self storeWithURL:nil deviceIdentifier:nil];
 }
 
 - (NSString *)description
