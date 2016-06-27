@@ -21,20 +21,21 @@ extern NSString *PARStoreDidTearDownNotification;
 extern NSString *PARStoreDidDeleteNotification;
 extern NSString *PARStoreDidChangeNotification;
 extern NSString *PARStoreDidSyncNotification;
-NS_ASSUME_NONNULL_END
 
 @interface PARStore : NSObject <NSFilePresenter>
 
 /// @name Creating and Loading
-+ (id)storeWithURL:(NSURL *)url deviceIdentifier:(NSString *)identifier;
++ (id)storeWithURL:(nullable NSURL *)url deviceIdentifier:(nullable NSString *)identifier;
 + (id)inMemoryStore;
+- (instancetype)initWithURL:(nullable NSURL *)url deviceIdentifier:(nullable NSString *)identifier;
 - (void)load;
 - (void)closeDatabase;
 - (void)tearDown;
+NS_ASSUME_NONNULL_END
 
 /// @name Getting Store Information
-@property (readonly, copy) NSURL *storeURL;
-@property (readonly, copy) NSString *deviceIdentifier;
+@property (readonly, copy, nullable) NSURL *storeURL;
+@property (readonly, copy, nullable) NSString *deviceIdentifier;
 @property (readonly) BOOL loaded;
 @property (readonly) BOOL deleted;
 @property (readonly) BOOL inMemory;
