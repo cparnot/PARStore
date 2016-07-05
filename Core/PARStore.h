@@ -75,7 +75,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable NSDictionary *)mostRecentTimestampsByKey;
 - (nullable NSNumber *)mostRecentTimestampForKey:(nullable NSString *)key;
 // These methods should not be called from within a transaction, or they will fail.
-- (NSDictionary *)mostRecentTimestampsByDeviceIdentifier;
+- (nullable NSDictionary *)mostRecentTimestampsByDeviceIdentifier;
 - (nullable NSNumber *)mostRecentTimestampForDeviceIdentifier:(nullable NSString *)deviceIdentifier;
 
 /// @name Synchronous Method Calls
@@ -90,7 +90,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// @name History
 // This method returns an array of PARChange instances. It should not be called from within a transaction, or it will fail.
-- (NSArray *)changesSinceTimestamp:(nullable NSNumber *)timestamp;
+- (nullable NSArray *)changesSinceTimestamp:(nullable NSNumber *)timestamp;
 
 // TODO: error handling
 NS_ASSUME_NONNULL_END
