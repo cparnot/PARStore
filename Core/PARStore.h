@@ -43,6 +43,7 @@ NS_ASSUME_NONNULL_END
 /// @name Adding and Accessing Values
 - (id)propertyListValueForKey:(NSString *)key;
 - (void)setPropertyListValue:(id)plist forKey:(NSString *)key;
+- (NSArray *)allUniqueKeys;
 - (NSDictionary *)allRelevantValues;
 - (void)setEntriesFromDictionary:(NSDictionary *)dictionary;
 - (void)runTransaction:(PARDispatchBlock)block;

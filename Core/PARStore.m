@@ -82,9 +82,9 @@ NSString *const ParentTimestampAttributeName = @"parentTimestamp";
 
 @implementation PARStore
 
-+ (id)storeWithURL:(NSURL *)url deviceIdentifier:(NSString *)identifier
++ (instancetype)storeWithURL:(NSURL *)url deviceIdentifier:(NSString *)identifier
 {
-    return [[PARStore alloc] initWithURL:url deviceIdentifier: identifier];
+    return [[self alloc] initWithURL:url deviceIdentifier: identifier];
 }
 
 - (instancetype)initWithURL:(NSURL *)url deviceIdentifier:(NSString *)identifier
@@ -765,6 +765,46 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 #pragma mark - Content Manipulation
 
+- (NSArray *)allUniqueKeys
+{
+    if (self._inMemory)
+    {
+        // TODO: does this need to be done synchronously in the memoryQueue?
+        return self._memory.allKeys;
+    }
+    
+    __block NSArray *keys = @[];
+    [self.databaseQueue dispatchSynchronously:^
+     {
+         NSManagedObjectContext *moc = [self managedObjectContext];
+         if (moc == nil)
+         {
+             return;
+         }
+         
+         NSError *fetchError = nil;
+         NSFetchRequest *request = [NSFetchRequest fetchRequestWithEntityName:LogEntityName];
+         request.propertiesToFetch = @[KeyAttributeName];
+         request.propertiesToGroupBy = @[KeyAttributeName];
+         request.resultType = NSDictionaryResultType;
+         NSArray *results = [moc executeFetchRequest:request error:&fetchError];
+         if (!results)
+         {
+             ErrorLog(@"Error fetching unique keys for store:\npath: %@\nerror: %@", [self.storeURL path], fetchError);
+             return;
+         }
+         
+         if ([results count] > 0)
+         {
+             keys = [results valueForKey:KeyAttributeName];
+         }
+         
+         [self closeDatabaseSoon];
+     }];
+    
+    return keys;
+}
+
 - (NSDictionary *)allRelevantValues
 {
     __block NSDictionary *allValues = nil;
@@ -1197,7 +1237,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (NSArray *)relevantKeysForSync
 {
-    return [NSArray array];
+    return [self allUniqueKeys];
 }
 
 - (void)applySyncChangeWithValues:(NSDictionary *)values timestamps:(NSDictionary *)timestamps
