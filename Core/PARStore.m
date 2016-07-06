@@ -84,43 +84,50 @@ NSString *const ParentTimestampAttributeName = @"parentTimestamp";
 
 + (id)storeWithURL:(NSURL *)url deviceIdentifier:(NSString *)identifier
 {
-    PARStore *store = [[self alloc] init];
-    store.storeURL = url;
-    store.deviceIdentifier = identifier;
-    
-    // queue labels appear in crash reports and other debugging info
-    NSString *urlLabel = [[url lastPathComponent] stringByReplacingOccurrencesOfString:@"." withString:@"_"];
-    NSString *databaseQueueLabel = [PARDispatchQueue labelByPrependingBundleIdentifierToString:[NSString stringWithFormat:@"database.%@", urlLabel]];
-    NSString *memoryQueueLabel = [PARDispatchQueue labelByPrependingBundleIdentifierToString:[NSString stringWithFormat:@"memory.%@", urlLabel]];
-    NSString *notificationQueueLabel = [PARDispatchQueue labelByPrependingBundleIdentifierToString:[NSString stringWithFormat:@"notifications.%@", urlLabel]];
-    store.databaseQueue     = [PARDispatchQueue dispatchQueueWithLabel:databaseQueueLabel];
-    store.memoryQueue       = [PARDispatchQueue dispatchQueueWithLabel:memoryQueueLabel];
-    store.notificationQueue = [PARDispatchQueue dispatchQueueWithLabel:notificationQueueLabel];
-    [store createFileSystemEventQueue];
-    
-    // misc initializations
-    store.databaseTimestamps = [NSMutableDictionary dictionary];
-    store.presenterQueue = [[NSOperationQueue alloc] init];
-    [store.presenterQueue setMaxConcurrentOperationCount:1];
-    store._memory = [NSMutableDictionary dictionary];
-    store._memoryFileData = [NSMutableDictionary dictionary];
-    store._memoryKeyTimestamps = [NSMutableDictionary dictionary];
-    store._loaded = NO;
-    store._deleted = NO;
-	
-    return store;
+    return [[PARStore alloc] initWithURL:url deviceIdentifier: identifier];
 }
 
-+ (id)inMemoryStore
+- (instancetype)initWithURL:(NSURL *)url deviceIdentifier:(NSString *)identifier
 {
-    PARStore *store = [self storeWithURL:nil deviceIdentifier:nil];
-    store._inMemory = YES;
-    
-    // no database layer, already loaded
-    store.databaseQueue = nil;
-    store._loaded = YES;
-    
-    return store;
+    if (self = [super init]) {
+        self.storeURL = url;
+        self.deviceIdentifier = identifier;
+        
+        // queue labels appear in crash reports and other debugging info
+        NSString *urlLabel = [[url lastPathComponent] stringByReplacingOccurrencesOfString:@"." withString:@"_"];
+        NSString *databaseQueueLabel = [PARDispatchQueue labelByPrependingBundleIdentifierToString:[NSString stringWithFormat:@"database.%@", urlLabel]];
+        NSString *memoryQueueLabel = [PARDispatchQueue labelByPrependingBundleIdentifierToString:[NSString stringWithFormat:@"memory.%@", urlLabel]];
+        NSString *notificationQueueLabel = [PARDispatchQueue labelByPrependingBundleIdentifierToString:[NSString stringWithFormat:@"notifications.%@", urlLabel]];
+        self.databaseQueue     = [PARDispatchQueue dispatchQueueWithLabel:databaseQueueLabel];
+        self.memoryQueue       = [PARDispatchQueue dispatchQueueWithLabel:memoryQueueLabel];
+        self.notificationQueue = [PARDispatchQueue dispatchQueueWithLabel:notificationQueueLabel];
+        [self createFileSystemEventQueue];
+        
+        // misc initializations
+        self.databaseTimestamps = [NSMutableDictionary dictionary];
+        self.presenterQueue = [[NSOperationQueue alloc] init];
+        [self.presenterQueue setMaxConcurrentOperationCount:1];
+        self._memory = [NSMutableDictionary dictionary];
+        self._memoryFileData = [NSMutableDictionary dictionary];
+        self._memoryKeyTimestamps = [NSMutableDictionary dictionary];
+        self._loaded = NO;
+        self._deleted = NO;
+        
+        // in memory store?
+        if (url == nil)
+        {
+            self._inMemory = YES;
+            self._loaded = YES;
+            // no database layer, already loaded
+            self.databaseQueue = nil;
+        }
+    }
+    return self;
+}
+
++ (instancetype)inMemoryStore
+{
+    return [self storeWithURL:nil deviceIdentifier:nil];
 }
 
 - (NSString *)description
