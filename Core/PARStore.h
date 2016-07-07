@@ -15,6 +15,9 @@
 
 /// @name Notifications
 /// Notifications are posted asynchronously. You cannot expect the store to be in the state that it was after the last operation that triggered the notification. The 'Change' and 'Sync' notifications includes a user info dictionary with two entries @"values" and @"timestamps"; each entry contain a dictionary where the keys correspond to the keys changed by the sync, and the values corresponding property list values and timestamps, respectively. In the case of 'Sync' notifications, these are the same dictionaries as the one passed to the method `applySyncChangeWithValues:timestamps:`.
+
+// TODO: add documentation to methods, also include whether the method will hit the db or not
+
 NS_ASSUME_NONNULL_BEGIN
 extern NSString *PARStoreDidLoadNotification;
 extern NSString *PARStoreDidTearDownNotification;
@@ -62,7 +65,7 @@ NS_ASSUME_NONNULL_END
 - (id)syncedPropertyListValueForKey:(NSString *)key timestamp:(NSNumber *)timestamp;
 // for subclassing
 - (NSArray *)relevantKeysForSync;
-- (void)applySyncChangeWithValues:(NSDictionary *)values timestamps:(NSDictionary *)timestamps;
+- (void)applySyncChangeWithValues:(NSDictionary *)values timestamps:(NSDictionary *)timestamps; 
 
 /// @name Merging
 - (void)mergeStore:(PARStore *)store unsafeDeviceIdentifiers:(NSArray *)activeDeviceIdentifiers completionHandler:(void(^)(NSError*))completionHandler;

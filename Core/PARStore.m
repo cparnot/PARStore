@@ -1055,6 +1055,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     return YES;
 }
 
+// TODO: rename to copyBlobFromPath:toPath:error:, the current name is ambiguous
 - (BOOL)writeBlobFromPath:(NSString *)sourcePath toPath:(NSString *)targetSubpath error:(NSError **)error
 {
     // nil local path = error
@@ -1290,6 +1291,8 @@ NSString *PARDevicesDirectoryName = @"devices";
     {
         // there are 2 ways to determine `timestampLimit`, which depends on wether a new database was added since the last sync
         [self refreshStoreList];
+        
+        // we can count databases because the count would always go up (db's are not deleted)
         NSUInteger countAllDatabasesBefore   = [self.databaseTimestamps count];
         NSUInteger countReadonlyDatabasesNow = [self.readonlyDatabases count];
         NSAssert(countReadonlyDatabasesNow + 1 >= countAllDatabasesBefore, @"Inconsistent tracking of persistent stores");
@@ -1305,7 +1308,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         }
     }
     
-    // fetch Log rows in reverse timestamp order, starting at `timestampLimit`
+    // fetch Log rows created after the `timestampLimit` in reverse timestamp order (newest first) 
     NSError *errorLogs = nil;
     NSFetchRequest *logsRequest = [NSFetchRequest fetchRequestWithEntityName:LogEntityName];
     if (timestampLimit)
@@ -1504,7 +1507,7 @@ NSString *PARDevicesDirectoryName = @"devices";
              plist = [self propertyListFromData:[latestLog valueForKey:BlobAttributeName] error:&plistError];
              if (plist == nil)
              {
-                 ErrorLog(@"Error deserializing 'layout' data in Logs database:\nrow: %@\nfile: %@\nerror: %@", latestLog.objectID, latestLog.objectID.persistentStore.URL.path, plistError);
+                 ErrorLog(@"Error deserializing 'blob' data in Logs database:\nrow: %@\nfile: %@\nerror: %@", latestLog.objectID, latestLog.objectID.persistentStore.URL.path, plistError);
              }
          }
          
@@ -2136,6 +2139,10 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 
 #pragma mark - History
+
+// TODO: in swift port add:
+// changes(since timestamp: Timestamp?, forKey key: String? = nil, from device: Device? = nil) -> [Change] where a nil timestamp means distantpast and a nil key means all keys, and a nil device means all devices
+// changes(forKey key: String? = nil, from device: Device? = nil) -> [Change]  that calls changes(since:nil, forKey: key, from:nil), and where changes() gives you all changes
 
 - (NSArray *)changesSinceTimestamp:(NSNumber *)timestampLimit
 {
