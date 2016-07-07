@@ -13,9 +13,10 @@
 /// Note on memory management: before releasing a store object, it is recommended to call `saveNow` or `waitUntilFinished`, but not necessary. Any change will schedule a save operation that will still be performed and the object will still be retained until that happens. It is not necessary to explicitely `close` a store.
 
 
+NS_ASSUME_NONNULL_BEGIN
+
 /// @name Notifications
 /// Notifications are posted asynchronously. You cannot expect the store to be in the state that it was after the last operation that triggered the notification. The 'Change' and 'Sync' notifications includes a user info dictionary with two entries @"values" and @"timestamps"; each entry contain a dictionary where the keys correspond to the keys changed by the sync, and the values corresponding property list values and timestamps, respectively. In the case of 'Sync' notifications, these are the same dictionaries as the one passed to the method `applySyncChangeWithValues:timestamps:`.
-NS_ASSUME_NONNULL_BEGIN
 extern NSString *PARStoreDidLoadNotification;
 extern NSString *PARStoreDidTearDownNotification;
 extern NSString *PARStoreDidDeleteNotification;
@@ -31,7 +32,6 @@ extern NSString *PARStoreDidSyncNotification;
 - (void)load;
 - (void)closeDatabase;
 - (void)tearDown;
-NS_ASSUME_NONNULL_END
 
 /// @name Getting Store Information
 @property (readonly, copy, nullable) NSURL *storeURL;
@@ -41,7 +41,7 @@ NS_ASSUME_NONNULL_END
 @property (readonly) BOOL inMemory;
 
 /// @name Adding and Accessing Values
-- (id)propertyListValueForKey:(NSString *)key;
+- (nullable id)propertyListValueForKey:(NSString *)key;
 - (void)setPropertyListValue:(id)plist forKey:(NSString *)key;
 - (NSArray *)allUniqueKeys;
 - (NSDictionary *)allRelevantValues;
@@ -49,26 +49,26 @@ NS_ASSUME_NONNULL_END
 - (void)runTransaction:(PARDispatchBlock)block;
 
 /// @name Adding and Accessing Blobs
-- (BOOL)writeBlobData:(NSData *)data toPath:(NSString *)path error:(NSError **)error;
-- (BOOL)writeBlobFromPath:(NSString *)sourcePath toPath:(NSString *)path error:(NSError **)error;
-- (NSData *)blobDataAtPath:(NSString *)path error:(NSError **)error;
-- (BOOL)deleteBlobAtPath:(NSString *)path error:(NSError **)error;
-- (NSString *)absolutePathForBlobPath:(NSString *)path;
+- (BOOL)writeBlobData:(nullable NSData *)data toPath:(nullable NSString *)path error:(NSError **)error;
+- (BOOL)writeBlobFromPath:(nullable NSString *)sourcePath toPath:(nullable NSString *)path error:(NSError **)error;
+- (nullable NSData *)blobDataAtPath:(nullable NSString *)path error:(NSError **)error;
+- (BOOL)deleteBlobAtPath:(nullable NSString *)path error:(NSError **)error;
+- (nullable NSString *)absolutePathForBlobPath:(NSString *)path;
 
 /// @name Syncing
 - (void)sync;
+
 // These methods should not be called from within a transaction, or they will fail.
-- (id)syncedPropertyListValueForKey:(NSString *)key;
-- (id)syncedPropertyListValueForKey:(NSString *)key timestamp:(NSNumber *)timestamp;
+- (nullable id)syncedPropertyListValueForKey:(NSString *)key;
+- (nullable id)syncedPropertyListValueForKey:(NSString *)key timestamp:(nullable NSNumber *)timestamp;
 // for subclassing
 - (NSArray *)relevantKeysForSync;
-- (void)applySyncChangeWithValues:(NSDictionary *)values timestamps:(NSDictionary *)timestamps;
+- (void)applySyncChangeWithValues:(NSDictionary *)values timestamps:(NSDictionary *)timestamps NS_REQUIRES_SUPER;
 
 /// @name Merging
-- (void)mergeStore:(PARStore *)store unsafeDeviceIdentifiers:(NSArray *)activeDeviceIdentifiers completionHandler:(void(^)(NSError*))completionHandler;
+- (void)mergeStore:(PARStore *)store unsafeDeviceIdentifiers:(NSArray *)activeDeviceIdentifiers completionHandler:(nullable void(^)(NSError*))completionHandler;
 
 /// @name Getting Timestamps
-NS_ASSUME_NONNULL_BEGIN
 + (NSNumber *)timestampNow;
 + (NSNumber *)timestampForDistantPast;
 + (NSNumber *)timestampForDistantFuture;
@@ -94,20 +94,20 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable NSArray *)changesSinceTimestamp:(nullable NSNumber *)timestamp;
 
 // TODO: error handling
-NS_ASSUME_NONNULL_END
 
 @end
 
 
 @interface PARChange : NSObject
-+ (PARChange *)changeWithTimestamp:(NSNumber *)timestamp parentTimestamp:(NSNumber *)parentTimestamp key:(NSString *)key propertyList:(id)propertyList;
-@property (readonly, copy) NSNumber *timestamp;
-@property (readonly, copy) NSNumber *parentTimestamp;
-@property (readonly, copy) NSString *key;
-@property (readonly, copy) id propertyList;
-- (BOOL)isEqual:(id)object;
++ (PARChange *)changeWithTimestamp:(nullable NSNumber *)timestamp parentTimestamp:(nullable NSNumber *)parentTimestamp key:(nullable NSString *)key propertyList:(nullable id)propertyList;
+@property (readonly, copy, nullable) NSNumber *timestamp;
+@property (readonly, copy, nullable) NSNumber *parentTimestamp;
+@property (readonly, copy, nullable) NSString *key;
+@property (readonly, copy, nullable) id propertyList;
+- (BOOL)isEqual:(nullable id)object;
 @end
 
+NS_ASSUME_NONNULL_END
 
 /** Subclassing notes:
 
