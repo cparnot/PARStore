@@ -767,41 +767,43 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (NSArray *)allUniqueKeys
 {
+    __block NSArray *keys = @[];
     if (self._inMemory)
     {
-        // TODO: does this need to be done synchronously in the memoryQueue?
-        return self._memory.allKeys;
+        [self.memoryQueue dispatchSynchronously:^{
+            keys = self._memory.allKeys;
+        }];
     }
-    
-    __block NSArray *keys = @[];
-    [self.databaseQueue dispatchSynchronously:^
-     {
-         NSManagedObjectContext *moc = [self managedObjectContext];
-         if (moc == nil)
+    else
+    {
+        [self.databaseQueue dispatchSynchronously:^
          {
-             return;
-         }
-         
-         NSError *fetchError = nil;
-         NSFetchRequest *request = [NSFetchRequest fetchRequestWithEntityName:LogEntityName];
-         request.propertiesToFetch = @[KeyAttributeName];
-         request.propertiesToGroupBy = @[KeyAttributeName];
-         request.resultType = NSDictionaryResultType;
-         NSArray *results = [moc executeFetchRequest:request error:&fetchError];
-         if (!results)
-         {
-             ErrorLog(@"Error fetching unique keys for store:\npath: %@\nerror: %@", [self.storeURL path], fetchError);
-             return;
-         }
-         
-         if ([results count] > 0)
-         {
-             keys = [results valueForKey:KeyAttributeName];
-         }
-         
-         [self closeDatabaseSoon];
-     }];
-    
+             NSManagedObjectContext *moc = [self managedObjectContext];
+             if (moc == nil)
+             {
+                 return;
+             }
+             
+             NSError *fetchError = nil;
+             NSFetchRequest *request = [NSFetchRequest fetchRequestWithEntityName:LogEntityName];
+             request.propertiesToFetch = @[KeyAttributeName];
+             request.propertiesToGroupBy = @[KeyAttributeName];
+             request.resultType = NSDictionaryResultType;
+             NSArray *results = [moc executeFetchRequest:request error:&fetchError];
+             if (!results)
+             {
+                 ErrorLog(@"Error fetching unique keys for store:\npath: %@\nerror: %@", [self.storeURL path], fetchError);
+                 return;
+             }
+             
+             if ([results count] > 0)
+             {
+                 keys = [results valueForKey:KeyAttributeName];
+             }
+             
+             [self closeDatabaseSoon];
+         }];
+    }
     return keys;
 }
 
