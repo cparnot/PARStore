@@ -38,6 +38,10 @@ typedef NS_ENUM(NSInteger, PARDeadlockBehavior)
 };
 
 
+// The APIs were audited. None of the method return values, method parameters or properties are nullable.
+NS_ASSUME_NONNULL_BEGIN
+
+
 @interface PARDispatchQueue : NSObject
 
 
@@ -87,5 +91,7 @@ typedef NS_ENUM(NSInteger, PARDeadlockBehavior)
 - (void)waitUntilFinished;
 @end
 
+
+NS_ASSUME_NONNULL_END
 
 #endif
