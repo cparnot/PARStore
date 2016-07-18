@@ -2,7 +2,7 @@
 //  Created by Charles Parnot on 3/13/13.
 //  Licensed under the terms of the BSD License, as specified in the file 'LICENSE-BSD.txt' included with this distribution
 
-@import Cocoa;
+@import Foundation;
 
 NS_ASSUME_NONNULL_BEGIN
 
