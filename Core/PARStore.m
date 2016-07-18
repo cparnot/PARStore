@@ -84,12 +84,13 @@ NSString *const ParentTimestampAttributeName = @"parentTimestamp";
 
 + (instancetype)storeWithURL:(NSURL *)url deviceIdentifier:(NSString *)identifier
 {
-    return [[self alloc] initWithURL:url deviceIdentifier: identifier];
+    return [[self alloc] initWithURL:url deviceIdentifier:identifier];
 }
 
 - (instancetype)initWithURL:(NSURL *)url deviceIdentifier:(NSString *)identifier
 {
-    if (self = [super init]) {
+    if (self = [super init])
+    {
         self.storeURL = url;
         self.deviceIdentifier = identifier;
         
@@ -127,7 +128,7 @@ NSString *const ParentTimestampAttributeName = @"parentTimestamp";
 
 + (instancetype)inMemoryStore
 {
-    return [self storeWithURL:nil deviceIdentifier:nil];
+    return [self storeWithURL:nil deviceIdentifier:@""];
 }
 
 - (NSString *)description
@@ -2103,7 +2104,9 @@ NSString *PARDevicesDirectoryName = @"devices";
 - (NSNumber *)mostRecentTimestampForDeviceIdentifier:(NSString *)deviceIdentifier
 {
     if (deviceIdentifier == nil)
+    {
         return nil;
+    }
 
     if ([self.memoryQueue isInCurrentQueueStack])
     {
@@ -2133,7 +2136,9 @@ NSString *PARDevicesDirectoryName = @"devices";
 - (NSNumber *)mostRecentTimestampForKey:(NSString *)key
 {
     if (key == nil)
+    {
         return nil;
+    }
     __block NSNumber *timestamp = nil;
     [self.memoryQueue dispatchSynchronously:^ { timestamp = self._memoryKeyTimestamps[key]; }];
     return timestamp;
@@ -2191,8 +2196,11 @@ NSString *PARDevicesDirectoryName = @"devices";
             NSString *key = logDictionary[KeyAttributeName];
             NSData *blob = logDictionary[BlobAttributeName];
             id propertyList = [self propertyListFromData:blob error:NULL];
-            PARChange *change = [PARChange changeWithTimestamp:timestamp parentTimestamp:parentTimestamp key:key propertyList:propertyList];
-            [changes addObject:change];
+            if (timestamp != nil && key != nil && blob != nil)
+            {
+                PARChange *change = [PARChange changeWithTimestamp:timestamp parentTimestamp:parentTimestamp key:key propertyList:propertyList];
+                [changes addObject:change];
+            }
         }
         
         [self closeDatabaseSoon];

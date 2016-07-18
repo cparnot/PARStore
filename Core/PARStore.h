@@ -28,16 +28,15 @@ extern NSString *PARStoreDidSyncNotification;
 @interface PARStore : NSObject <NSFilePresenter>
 
 /// @name Creating and Loading
-+ (instancetype)storeWithURL:(nullable NSURL *)url deviceIdentifier:(nullable NSString *)identifier;
++ (instancetype)storeWithURL:(nullable NSURL *)url deviceIdentifier:(NSString *)identifier;
 + (instancetype)inMemoryStore;
-- (instancetype)initWithURL:(nullable NSURL *)url deviceIdentifier:(nullable NSString *)identifier;
 - (void)load;
 - (void)closeDatabase;
 - (void)tearDown;
 
 /// @name Getting Store Information
 @property (readonly, copy, nullable) NSURL *storeURL;
-@property (readonly, copy, nullable) NSString *deviceIdentifier;
+@property (readonly, copy) NSString *deviceIdentifier;
 @property (readonly) BOOL loaded;
 @property (readonly) BOOL deleted;
 @property (readonly) BOOL inMemory;
@@ -51,10 +50,10 @@ extern NSString *PARStoreDidSyncNotification;
 - (void)runTransaction:(PARDispatchBlock)block;
 
 /// @name Adding and Accessing Blobs
-- (BOOL)writeBlobData:(nullable NSData *)data toPath:(nullable NSString *)path error:(NSError **)error;
-- (BOOL)writeBlobFromPath:(nullable NSString *)sourcePath toPath:(nullable NSString *)path error:(NSError **)error;
-- (nullable NSData *)blobDataAtPath:(nullable NSString *)path error:(NSError **)error;
-- (BOOL)deleteBlobAtPath:(nullable NSString *)path error:(NSError **)error;
+- (BOOL)writeBlobData:(NSData *)data toPath:(NSString *)path error:(NSError **)error;
+- (BOOL)writeBlobFromPath:(NSString *)sourcePath toPath:(NSString *)path error:(NSError **)error;
+- (nullable NSData *)blobDataAtPath:(NSString *)path error:(NSError **)error;
+- (BOOL)deleteBlobAtPath:(NSString *)path error:(NSError **)error;
 - (nullable NSString *)absolutePathForBlobPath:(NSString *)path;
 
 /// @name Syncing
@@ -75,10 +74,10 @@ extern NSString *PARStoreDidSyncNotification;
 + (NSNumber *)timestampForDistantPast;
 + (NSNumber *)timestampForDistantFuture;
 
-- (nullable NSDictionary *)mostRecentTimestampsByKey;
-- (nullable NSNumber *)mostRecentTimestampForKey:(nullable NSString *)key;
+- (NSDictionary *)mostRecentTimestampsByKey;
+- (nullable NSNumber *)mostRecentTimestampForKey:(NSString *)key;
 // These methods should not be called from within a transaction, or they will fail.
-- (nullable NSDictionary *)mostRecentTimestampsByDeviceIdentifier;
+- (NSDictionary *)mostRecentTimestampsByDeviceIdentifier;
 - (nullable NSNumber *)mostRecentTimestampForDeviceIdentifier:(nullable NSString *)deviceIdentifier;
 
 /// @name Synchronous Method Calls
@@ -93,7 +92,7 @@ extern NSString *PARStoreDidSyncNotification;
 
 /// @name History
 // This method returns an array of PARChange instances. It should not be called from within a transaction, or it will fail.
-- (nullable NSArray *)changesSinceTimestamp:(nullable NSNumber *)timestamp;
+- (NSArray *)changesSinceTimestamp:(nullable NSNumber *)timestamp;
 
 // TODO: error handling
 
@@ -101,13 +100,14 @@ extern NSString *PARStoreDidSyncNotification;
 
 
 @interface PARChange : NSObject
-+ (PARChange *)changeWithTimestamp:(nullable NSNumber *)timestamp parentTimestamp:(nullable NSNumber *)parentTimestamp key:(nullable NSString *)key propertyList:(nullable id)propertyList;
-@property (readonly, copy, nullable) NSNumber *timestamp;
++ (PARChange *)changeWithTimestamp:(NSNumber *)timestamp parentTimestamp:(nullable NSNumber *)parentTimestamp key:(NSString *)key propertyList:(id)propertyList;
+@property (readonly, copy) NSNumber *timestamp;
 @property (readonly, copy, nullable) NSNumber *parentTimestamp;
-@property (readonly, copy, nullable) NSString *key;
-@property (readonly, copy, nullable) id propertyList;
+@property (readonly, copy) NSString *key;
+@property (readonly, copy) id propertyList;
 - (BOOL)isEqual:(nullable id)object;
 @end
+
 
 NS_ASSUME_NONNULL_END
 
