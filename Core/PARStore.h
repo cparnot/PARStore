@@ -29,6 +29,7 @@ extern NSString *PARStoreDidSyncNotification;
 
 /// @name Creating and Loading
 + (instancetype)storeWithURL:(nullable NSURL *)url deviceIdentifier:(NSString *)identifier;
+- (instancetype)initWithURL:(nullable NSURL *)url deviceIdentifier:(NSString *)identifier;
 + (instancetype)inMemoryStore;
 - (void)load;
 - (void)closeDatabase;
