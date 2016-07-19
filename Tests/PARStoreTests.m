@@ -166,7 +166,7 @@
     // second load = load document and compare data
     PARStoreExample *document2 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
     [document2 loadNow];
-    NSDictionary *actualEntries = document2.allRelevantValues;
+    NSDictionary *actualEntries = document2.allEntries;
     NSString *actualTitle = actualEntries[@"title"];
     NSString *actualFirst = actualEntries[@"first"];
     XCTAssertEqualObjects(actualTitle, title, @"unexpected 'title' value after closing and reopening a document: '%@' instead of '%@'", actualTitle, title);
@@ -195,7 +195,7 @@
     
     // get properties and compare data
     [document1 loadNow];
-    NSDictionary *actualEntries1 = document1.allRelevantValues;
+    NSDictionary *actualEntries1 = document1.allEntries;
     NSString *actualTitle = actualEntries1[@"title"];
     NSString *actualFirst = actualEntries1[@"first"];
     XCTAssertEqualObjects(actualTitle, title, @"unexpected 'title' value after closing database of document: '%@' instead of '%@'", actualTitle, title);
@@ -209,7 +209,7 @@
     // second load = load document and compare data
     PARStoreExample *document2 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
     [document2 loadNow];
-    NSDictionary *actualEntries2 = document2.allRelevantValues;
+    NSDictionary *actualEntries2 = document2.allEntries;
     NSString *actualSummary = actualEntries2[@"summary"];
     NSString *actualLast = actualEntries2[@"last"];
     XCTAssertEqualObjects(actualSummary, summary, @"unexpected 'summary' value after closing database, tearing down and reopening a document: '%@' instead of '%@'", actualSummary, summary);
@@ -611,7 +611,7 @@
     NSNumber *endTimestamp = [PARStore timestampNow];
     
     // actual changes
-    NSArray *changes = [storeExample changesSinceTimestamp:nil];
+    NSArray *changes = [storeExample fetchChangesSinceTimestamp:nil];
     
     // change count
     XCTAssertTrue(changes.count == 3, @"expected 3 changes but got %@", @(changes.count));
@@ -669,8 +669,8 @@
     [store2 syncNow];
     
     // actual changes
-    NSArray *changes1 = [store1 changesSinceTimestamp:nil];
-    NSArray *changes2 = [store2 changesSinceTimestamp:nil];
+    NSArray *changes1 = [store1 fetchChangesSinceTimestamp:nil];
+    NSArray *changes2 = [store2 fetchChangesSinceTimestamp:nil];
     XCTAssertEqualObjects(changes1, changes2, @"changes should be consistent in store1 and store2 because they come from the same URL");
     
     // change count
