@@ -82,45 +82,53 @@ NSString *const ParentTimestampAttributeName = @"parentTimestamp";
 
 @implementation PARStore
 
-+ (id)storeWithURL:(NSURL *)url deviceIdentifier:(NSString *)identifier
++ (instancetype)storeWithURL:(NSURL *)url deviceIdentifier:(NSString *)identifier
 {
-    PARStore *store = [[self alloc] init];
-    store.storeURL = url;
-    store.deviceIdentifier = identifier;
-    
-    // queue labels appear in crash reports and other debugging info
-    NSString *urlLabel = [[url lastPathComponent] stringByReplacingOccurrencesOfString:@"." withString:@"_"];
-    NSString *databaseQueueLabel = [PARDispatchQueue labelByPrependingBundleIdentifierToString:[NSString stringWithFormat:@"database.%@", urlLabel]];
-    NSString *memoryQueueLabel = [PARDispatchQueue labelByPrependingBundleIdentifierToString:[NSString stringWithFormat:@"memory.%@", urlLabel]];
-    NSString *notificationQueueLabel = [PARDispatchQueue labelByPrependingBundleIdentifierToString:[NSString stringWithFormat:@"notifications.%@", urlLabel]];
-    store.databaseQueue     = [PARDispatchQueue dispatchQueueWithLabel:databaseQueueLabel];
-    store.memoryQueue       = [PARDispatchQueue dispatchQueueWithLabel:memoryQueueLabel];
-    store.notificationQueue = [PARDispatchQueue dispatchQueueWithLabel:notificationQueueLabel];
-    [store createFileSystemEventQueue];
-    
-    // misc initializations
-    store.databaseTimestamps = [NSMutableDictionary dictionary];
-    store.presenterQueue = [[NSOperationQueue alloc] init];
-    [store.presenterQueue setMaxConcurrentOperationCount:1];
-    store._memory = [NSMutableDictionary dictionary];
-    store._memoryFileData = [NSMutableDictionary dictionary];
-    store._memoryKeyTimestamps = [NSMutableDictionary dictionary];
-    store._loaded = NO;
-    store._deleted = NO;
-	
-    return store;
+    return [[self alloc] initWithURL:url deviceIdentifier:identifier];
 }
 
-+ (id)inMemoryStore
+- (instancetype)initWithURL:(NSURL *)url deviceIdentifier:(NSString *)identifier
 {
-    PARStore *store = [self storeWithURL:nil deviceIdentifier:nil];
-    store._inMemory = YES;
-    
-    // no database layer, already loaded
-    store.databaseQueue = nil;
-    store._loaded = YES;
-    
-    return store;
+    if (self = [super init])
+    {
+        self.storeURL = url;
+        self.deviceIdentifier = identifier;
+        
+        // queue labels appear in crash reports and other debugging info
+        NSString *urlLabel = [[url lastPathComponent] stringByReplacingOccurrencesOfString:@"." withString:@"_"];
+        NSString *databaseQueueLabel = [PARDispatchQueue labelByPrependingBundleIdentifierToString:[NSString stringWithFormat:@"database.%@", urlLabel]];
+        NSString *memoryQueueLabel = [PARDispatchQueue labelByPrependingBundleIdentifierToString:[NSString stringWithFormat:@"memory.%@", urlLabel]];
+        NSString *notificationQueueLabel = [PARDispatchQueue labelByPrependingBundleIdentifierToString:[NSString stringWithFormat:@"notifications.%@", urlLabel]];
+        self.databaseQueue     = [PARDispatchQueue dispatchQueueWithLabel:databaseQueueLabel];
+        self.memoryQueue       = [PARDispatchQueue dispatchQueueWithLabel:memoryQueueLabel];
+        self.notificationQueue = [PARDispatchQueue dispatchQueueWithLabel:notificationQueueLabel];
+        [self createFileSystemEventQueue];
+        
+        // misc initializations
+        self.databaseTimestamps = [NSMutableDictionary dictionary];
+        self.presenterQueue = [[NSOperationQueue alloc] init];
+        [self.presenterQueue setMaxConcurrentOperationCount:1];
+        self._memory = [NSMutableDictionary dictionary];
+        self._memoryFileData = [NSMutableDictionary dictionary];
+        self._memoryKeyTimestamps = [NSMutableDictionary dictionary];
+        self._loaded = NO;
+        self._deleted = NO;
+        
+        // in memory store?
+        if (url == nil)
+        {
+            self._inMemory = YES;
+            self._loaded = YES;
+            // no database layer, already loaded
+            self.databaseQueue = nil;
+        }
+    }
+    return self;
+}
+
++ (instancetype)inMemoryStore
+{
+    return [self storeWithURL:nil deviceIdentifier:@""];
 }
 
 - (NSString *)description
@@ -758,6 +766,48 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 #pragma mark - Content Manipulation
 
+- (NSArray *)allUniqueKeys
+{
+    __block NSArray *keys = @[];
+    if (self._inMemory)
+    {
+        [self.memoryQueue dispatchSynchronously:^{
+            keys = self._memory.allKeys;
+        }];
+    }
+    else
+    {
+        [self.databaseQueue dispatchSynchronously:^
+         {
+             NSManagedObjectContext *moc = [self managedObjectContext];
+             if (moc == nil)
+             {
+                 return;
+             }
+             
+             NSError *fetchError = nil;
+             NSFetchRequest *request = [NSFetchRequest fetchRequestWithEntityName:LogEntityName];
+             request.propertiesToFetch = @[KeyAttributeName];
+             request.propertiesToGroupBy = @[KeyAttributeName];
+             request.resultType = NSDictionaryResultType;
+             NSArray *results = [moc executeFetchRequest:request error:&fetchError];
+             if (!results)
+             {
+                 ErrorLog(@"Error fetching unique keys for store:\npath: %@\nerror: %@", [self.storeURL path], fetchError);
+                 return;
+             }
+             
+             if ([results count] > 0)
+             {
+                 keys = [results valueForKey:KeyAttributeName];
+             }
+             
+             [self closeDatabaseSoon];
+         }];
+    }
+    return keys;
+}
+
 - (NSDictionary *)allRelevantValues
 {
     __block NSDictionary *allValues = nil;
@@ -1008,6 +1058,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     return YES;
 }
 
+// TODO: rename to copyBlobFromPath:toPath:error:, the current name is ambiguous
 - (BOOL)writeBlobFromPath:(NSString *)sourcePath toPath:(NSString *)targetSubpath error:(NSError **)error
 {
     // nil local path = error
@@ -1190,7 +1241,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (NSArray *)relevantKeysForSync
 {
-    return [NSArray array];
+    return [self allUniqueKeys];
 }
 
 - (void)applySyncChangeWithValues:(NSDictionary *)values timestamps:(NSDictionary *)timestamps
@@ -1243,6 +1294,8 @@ NSString *PARDevicesDirectoryName = @"devices";
     {
         // there are 2 ways to determine `timestampLimit`, which depends on wether a new database was added since the last sync
         [self refreshStoreList];
+        
+        // we can count databases because the count would always go up (db's are not deleted)
         NSUInteger countAllDatabasesBefore   = [self.databaseTimestamps count];
         NSUInteger countReadonlyDatabasesNow = [self.readonlyDatabases count];
         NSAssert(countReadonlyDatabasesNow + 1 >= countAllDatabasesBefore, @"Inconsistent tracking of persistent stores");
@@ -1258,7 +1311,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         }
     }
     
-    // fetch Log rows in reverse timestamp order, starting at `timestampLimit`
+    // fetch Log rows created after the `timestampLimit` in reverse timestamp order (newest first) 
     NSError *errorLogs = nil;
     NSFetchRequest *logsRequest = [NSFetchRequest fetchRequestWithEntityName:LogEntityName];
     if (timestampLimit)
@@ -1457,7 +1510,7 @@ NSString *PARDevicesDirectoryName = @"devices";
              plist = [self propertyListFromData:[latestLog valueForKey:BlobAttributeName] error:&plistError];
              if (plist == nil)
              {
-                 ErrorLog(@"Error deserializing 'layout' data in Logs database:\nrow: %@\nfile: %@\nerror: %@", latestLog.objectID, latestLog.objectID.persistentStore.URL.path, plistError);
+                 ErrorLog(@"Error deserializing 'blob' data in Logs database:\nrow: %@\nfile: %@\nerror: %@", latestLog.objectID, latestLog.objectID.persistentStore.URL.path, plistError);
              }
          }
          
@@ -2051,7 +2104,9 @@ NSString *PARDevicesDirectoryName = @"devices";
 - (NSNumber *)mostRecentTimestampForDeviceIdentifier:(NSString *)deviceIdentifier
 {
     if (deviceIdentifier == nil)
+    {
         return nil;
+    }
 
     if ([self.memoryQueue isInCurrentQueueStack])
     {
@@ -2081,7 +2136,9 @@ NSString *PARDevicesDirectoryName = @"devices";
 - (NSNumber *)mostRecentTimestampForKey:(NSString *)key
 {
     if (key == nil)
+    {
         return nil;
+    }
     __block NSNumber *timestamp = nil;
     [self.memoryQueue dispatchSynchronously:^ { timestamp = self._memoryKeyTimestamps[key]; }];
     return timestamp;
@@ -2089,6 +2146,10 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 
 #pragma mark - History
+
+// TODO: in swift port add:
+// changes(since timestamp: Timestamp?, forKey key: String? = nil, from device: Device? = nil) -> [Change] where a nil timestamp means distantpast and a nil key means all keys, and a nil device means all devices
+// changes(forKey key: String? = nil, from device: Device? = nil) -> [Change]  that calls changes(since:nil, forKey: key, from:nil), and where changes() gives you all changes
 
 - (NSArray *)changesSinceTimestamp:(NSNumber *)timestampLimit
 {
@@ -2135,8 +2196,11 @@ NSString *PARDevicesDirectoryName = @"devices";
             NSString *key = logDictionary[KeyAttributeName];
             NSData *blob = logDictionary[BlobAttributeName];
             id propertyList = [self propertyListFromData:blob error:NULL];
-            PARChange *change = [PARChange changeWithTimestamp:timestamp parentTimestamp:parentTimestamp key:key propertyList:propertyList];
-            [changes addObject:change];
+            if (timestamp != nil && key != nil && blob != nil)
+            {
+                PARChange *change = [PARChange changeWithTimestamp:timestamp parentTimestamp:parentTimestamp key:key propertyList:propertyList];
+                [changes addObject:change];
+            }
         }
         
         [self closeDatabaseSoon];

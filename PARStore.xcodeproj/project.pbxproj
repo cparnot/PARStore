@@ -320,7 +320,6 @@
 				56C7EDDC16E260EB00FFBBF2 /* Sources */,
 				56C7EDDD16E260EB00FFBBF2 /* Frameworks */,
 				56C7EDDE16E260EB00FFBBF2 /* Resources */,
-				56C7EDDF16E260EB00FFBBF2 /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -356,7 +355,6 @@
 				56EAE18216E24C7500A7F31F /* Sources */,
 				56EAE18316E24C7500A7F31F /* Frameworks */,
 				56EAE18416E24C7500A7F31F /* Resources */,
-				56EAE18516E24C7500A7F31F /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -437,35 +435,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		56C7EDDF16E260EB00FFBBF2 /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# Run the unit tests in this test bundle.\n\"${SYSTEM_DEVELOPER_DIR}/Tools/RunUnitTests\"\n";
-		};
-		56EAE18516E24C7500A7F31F /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# Run the unit tests in this test bundle.\n\"${SYSTEM_DEVELOPER_DIR}/Tools/RunUnitTests\"\n";
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		56C7EDBE16E260EA00FFBBF2 /* Sources */ = {
@@ -699,6 +668,7 @@
 		56EAE19916E24C7500A7F31F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Mac/PARStore-Prefix.pch";
@@ -712,6 +682,7 @@
 		56EAE19A16E24C7500A7F31F /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Mac/PARStore-Prefix.pch";

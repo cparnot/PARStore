@@ -4,6 +4,7 @@
 
 #import "PARDispatchQueue.h"
 
+
 /// Key-value store for local storage of app data, with the following characteristics:
 ///  - persistent storage in a file package
 ///  - transparent syncing between multiple devices sharing the file via Dropbox, iCloud, or other file-based syncing system
@@ -11,35 +12,39 @@
 
 /// Note on memory management: before releasing a store object, it is recommended to call `saveNow` or `waitUntilFinished`, but not necessary. Any change will schedule a save operation that will still be performed and the object will still be retained until that happens. It is not necessary to explicitely `close` a store.
 
+// TODO: add documentation to methods, also include whether the method will hit the db or not
+
+NS_ASSUME_NONNULL_BEGIN
 
 /// @name Notifications
 /// Notifications are posted asynchronously. You cannot expect the store to be in the state that it was after the last operation that triggered the notification. The 'Change' and 'Sync' notifications includes a user info dictionary with two entries @"values" and @"timestamps"; each entry contain a dictionary where the keys correspond to the keys changed by the sync, and the values corresponding property list values and timestamps, respectively. In the case of 'Sync' notifications, these are the same dictionaries as the one passed to the method `applySyncChangeWithValues:timestamps:`.
+
 extern NSString *PARStoreDidLoadNotification;
 extern NSString *PARStoreDidTearDownNotification;
 extern NSString *PARStoreDidDeleteNotification;
 extern NSString *PARStoreDidChangeNotification;
 extern NSString *PARStoreDidSyncNotification;
 
-
 @interface PARStore : NSObject <NSFilePresenter>
 
 /// @name Creating and Loading
-+ (id)storeWithURL:(NSURL *)url deviceIdentifier:(NSString *)identifier;
-+ (id)inMemoryStore;
++ (instancetype)storeWithURL:(nullable NSURL *)url deviceIdentifier:(NSString *)identifier;
++ (instancetype)inMemoryStore;
 - (void)load;
 - (void)closeDatabase;
 - (void)tearDown;
 
 /// @name Getting Store Information
-@property (readonly, copy) NSURL *storeURL;
+@property (readonly, copy, nullable) NSURL *storeURL;
 @property (readonly, copy) NSString *deviceIdentifier;
 @property (readonly) BOOL loaded;
 @property (readonly) BOOL deleted;
 @property (readonly) BOOL inMemory;
 
 /// @name Adding and Accessing Values
-- (id)propertyListValueForKey:(NSString *)key;
+- (nullable id)propertyListValueForKey:(NSString *)key;
 - (void)setPropertyListValue:(id)plist forKey:(NSString *)key;
+- (NSArray *)allUniqueKeys;
 - (NSDictionary *)allRelevantValues;
 - (void)setEntriesFromDictionary:(NSDictionary *)dictionary;
 - (void)runTransaction:(PARDispatchBlock)block;
@@ -47,31 +52,33 @@ extern NSString *PARStoreDidSyncNotification;
 /// @name Adding and Accessing Blobs
 - (BOOL)writeBlobData:(NSData *)data toPath:(NSString *)path error:(NSError **)error;
 - (BOOL)writeBlobFromPath:(NSString *)sourcePath toPath:(NSString *)path error:(NSError **)error;
-- (NSData *)blobDataAtPath:(NSString *)path error:(NSError **)error;
+- (nullable NSData *)blobDataAtPath:(NSString *)path error:(NSError **)error;
 - (BOOL)deleteBlobAtPath:(NSString *)path error:(NSError **)error;
-- (NSString *)absolutePathForBlobPath:(NSString *)path;
+- (nullable NSString *)absolutePathForBlobPath:(NSString *)path;
 
 /// @name Syncing
 - (void)sync;
+
 // These methods should not be called from within a transaction, or they will fail.
-- (id)syncedPropertyListValueForKey:(NSString *)key;
-- (id)syncedPropertyListValueForKey:(NSString *)key timestamp:(NSNumber *)timestamp;
+- (nullable id)syncedPropertyListValueForKey:(NSString *)key;
+- (nullable id)syncedPropertyListValueForKey:(NSString *)key timestamp:(nullable NSNumber *)timestamp;
 // for subclassing
 - (NSArray *)relevantKeysForSync;
-- (void)applySyncChangeWithValues:(NSDictionary *)values timestamps:(NSDictionary *)timestamps;
+- (void)applySyncChangeWithValues:(NSDictionary *)values timestamps:(NSDictionary *)timestamps NS_REQUIRES_SUPER;
 
 /// @name Merging
-- (void)mergeStore:(PARStore *)store unsafeDeviceIdentifiers:(NSArray *)activeDeviceIdentifiers completionHandler:(void(^)(NSError*))completionHandler;
+- (void)mergeStore:(PARStore *)store unsafeDeviceIdentifiers:(NSArray *)activeDeviceIdentifiers completionHandler:(nullable void(^)(NSError*))completionHandler;
 
 /// @name Getting Timestamps
 + (NSNumber *)timestampNow;
 + (NSNumber *)timestampForDistantPast;
 + (NSNumber *)timestampForDistantFuture;
+
 - (NSDictionary *)mostRecentTimestampsByKey;
-- (NSNumber *)mostRecentTimestampForKey:(NSString *)key;
+- (nullable NSNumber *)mostRecentTimestampForKey:(NSString *)key;
 // These methods should not be called from within a transaction, or they will fail.
 - (NSDictionary *)mostRecentTimestampsByDeviceIdentifier;
-- (NSNumber *)mostRecentTimestampForDeviceIdentifier:(NSString *)deviceIdentifier;
+- (nullable NSNumber *)mostRecentTimestampForDeviceIdentifier:(nullable NSString *)deviceIdentifier;
 
 /// @name Synchronous Method Calls
 // Synchronous calls can potentially result in longer wait, and should be avoided in the main thread. These should not be called from within a transaction, or they will fail.
@@ -85,7 +92,7 @@ extern NSString *PARStoreDidSyncNotification;
 
 /// @name History
 // This method returns an array of PARChange instances. It should not be called from within a transaction, or it will fail.
-- (NSArray *)changesSinceTimestamp:(NSNumber *)timestamp;
+- (NSArray *)changesSinceTimestamp:(nullable NSNumber *)timestamp;
 
 // TODO: error handling
 
@@ -93,14 +100,16 @@ extern NSString *PARStoreDidSyncNotification;
 
 
 @interface PARChange : NSObject
-+ (PARChange *)changeWithTimestamp:(NSNumber *)timestamp parentTimestamp:(NSNumber *)parentTimestamp key:(NSString *)key propertyList:(id)propertyList;
++ (PARChange *)changeWithTimestamp:(NSNumber *)timestamp parentTimestamp:(nullable NSNumber *)parentTimestamp key:(NSString *)key propertyList:(id)propertyList;
 @property (readonly, copy) NSNumber *timestamp;
-@property (readonly, copy) NSNumber *parentTimestamp;
+@property (readonly, copy, nullable) NSNumber *parentTimestamp;
 @property (readonly, copy) NSString *key;
 @property (readonly, copy) id propertyList;
-- (BOOL)isEqual:(id)object;
+- (BOOL)isEqual:(nullable id)object;
 @end
 
+
+NS_ASSUME_NONNULL_END
 
 /** Subclassing notes:
 

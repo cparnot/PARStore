@@ -4,6 +4,10 @@
 
 #import <Foundation/Foundation.h>
 
+
+// The APIs were audited. None of the method return values, method parameters or properties are nullable.
+NS_ASSUME_NONNULL_BEGIN
+
 @interface PARNotificationSemaphore : NSObject
 
 + (PARNotificationSemaphore *)semaphoreForNotificationName:(NSString *)name object:(id)obj;
@@ -12,3 +16,5 @@
 @property (readonly) BOOL notificationWasPosted;
 
 @end
+
+NS_ASSUME_NONNULL_END

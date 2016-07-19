@@ -36,7 +36,7 @@ static int PARIsCurrentKey   = 1;
 + (PARDispatchQueue *)dispatchQueueWithLabel:(NSString *)label behavior:(PARDeadlockBehavior)behavior
 {
     PARDispatchQueue *newQueue = [self dispatchQueueWithGCDQueue:dispatch_queue_create([label UTF8String], DISPATCH_QUEUE_SERIAL) behavior:behavior];
-    newQueue._label = label;
+    newQueue._label = label ?: @"PARDispatchQueue";
     return newQueue;
 }
 
