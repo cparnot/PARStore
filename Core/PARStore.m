@@ -587,10 +587,9 @@ NSString *PARDevicesDirectoryName = @"devices";
 		NSString *storePath = [path stringByAppendingPathComponent:PARDatabaseFileName];
         
         // store is already known
-        // refresh the URL to force a cache flush and reload the synced contents if available
         if ([currentDirs containsObject:storePath])
         {
-			// instead of ignoring this store, reload it to get the synced contents if available
+            // refresh the URL to force a cache flush and reload the synced contents if available
 			NSPersistentStore *existingStore = [psc persistentStoreForURL:[NSURL fileURLWithPath:storePath]];
             [psc setURL:existingStore.URL forPersistentStore:existingStore];
 		}
@@ -766,7 +765,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 #pragma mark - Content Manipulation
 
-- (NSArray *)allUniqueKeys
+- (NSArray *)fetchAllKeys
 {
     __block NSArray *keys = @[];
     if (self._inMemory)
@@ -808,11 +807,16 @@ NSString *PARDevicesDirectoryName = @"devices";
     return keys;
 }
 
-- (NSDictionary *)allRelevantValues
+- (NSArray *)allKeys
 {
-    __block NSDictionary *allValues = nil;
-    [self.memoryQueue dispatchSynchronously:^{ allValues = [NSDictionary dictionaryWithDictionary:self._memory]; }];
-    return allValues;
+    return [self allEntries].allKeys;
+}
+
+- (NSDictionary *)allEntries
+{
+    __block NSDictionary *allEntries = nil;
+    [self.memoryQueue dispatchSynchronously:^{ allEntries = self._memory.copy; }];
+    return allEntries;
 }
 
 - (id)propertyListValueForKey:(NSString *)key
@@ -1239,11 +1243,6 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 #pragma mark - Syncing
 
-- (NSArray *)relevantKeysForSync
-{
-    return [self allUniqueKeys];
-}
-
 - (void)applySyncChangeWithValues:(NSDictionary *)values timestamps:(NSDictionary *)timestamps
 {
     NSAssert([self.memoryQueue isInCurrentQueueStack], @"%@:%@ should only be called from within the memory queue", [self class],NSStringFromSelector(_cmd));
@@ -1326,13 +1325,11 @@ NSString *PARDevicesDirectoryName = @"devices";
         return;
     }
     
-    // keep track of relevant timestamps that will be used to calculate the new logTimestamps and databaseTimestamps at the end
+    // keep track of updated timestamps that will be used to calculate the new logTimestamps and databaseTimestamps at the end
     NSMapTable *updatedDatabaseTimestamps = [NSMapTable weakToStrongObjectsMapTable];
     NSMutableDictionary *updatedKeyTimestamps = [NSMutableDictionary dictionary];
     
-    // just go through each row (back in time) until all needed keys are found
-    NSArray *relevantKeys = [self relevantKeysForSync];
-    NSMutableSet *keysToFetch = [NSMutableSet setWithArray:relevantKeys];
+    // just go through each row (back in time) until all entries are loaded
     NSMutableDictionary *updatedValues = [NSMutableDictionary dictionary];
     for (NSManagedObject *log in allLogs)
     {
@@ -1354,10 +1351,6 @@ NSString *PARDevicesDirectoryName = @"devices";
             [updatedDatabaseTimestamps setObject:logTimestamp forKey:store];
         }
         
-        // skip unused logs
-        if (![keysToFetch containsObject:key])
-            continue;
-        
         // blob --> object
         NSError *blobError = nil;
         NSData *blob = [log valueForKey:BlobAttributeName];
@@ -1375,34 +1368,18 @@ NSString *PARDevicesDirectoryName = @"devices";
         
         // store object and keep track of used keys
         [updatedValues setObject:plistValue forKey:key];
-        [keysToFetch removeObject:key];
         
         // keep track of the oldest of the values actually used
         [updatedKeyTimestamps setValue:logTimestamp forKey:key];
         
         if ([[log objectID] persistentStore] != self.readwriteDatabase)
             hasForeignChanges = YES;
-        
-        // stop when all expected data has been fetched
-        if ([keysToFetch count] == 0)
-            break;
     }
     
     // update the timestamps for the keys
-    //  - unused keys should be gone from keyTimestamps
-    //  - keys without a timestamp get a `distant past` value, because it means we need to go all the way back if a new store is later added
-    NSMutableDictionary *newKeyTimestamps = [NSMutableDictionary dictionaryWithCapacity:[relevantKeys count]];
-    NSMutableSet *allKeys = [NSMutableSet setWithArray:relevantKeys];
-    for (NSString *key in allKeys)
-    {
-        NSNumber *timestamp = updatedKeyTimestamps[key];
-        if (!timestamp)
-            timestamp = self.keyTimestamps[key];
-        if (!timestamp)
-            timestamp = [PARStore timestampForDistantPast]; // distant past
-        newKeyTimestamps[key] = timestamp;
-    }
-    self.keyTimestamps = [NSDictionary dictionaryWithDictionary:newKeyTimestamps];
+    NSMutableDictionary *newKeyTimestamps = self.keyTimestamps.mutableCopy ?: [NSMutableDictionary dictionary];
+    [newKeyTimestamps addEntriesFromDictionary:updatedKeyTimestamps];
+    self.keyTimestamps = newKeyTimestamps.copy;
     
     // update the timestamps for the databases
     NSMutableDictionary *newDatabaseTimestamps = [NSMutableDictionary dictionary];
@@ -1458,12 +1435,12 @@ NSString *PARDevicesDirectoryName = @"devices";
     }
 }
 
-- (id)syncedPropertyListValueForKey:(NSString *)key
+- (id)fetchPropertyListValueForKey:(NSString *)key
 {
-    return [self syncedPropertyListValueForKey:key timestamp:nil];
+    return [self fetchPropertyListValueForKey:key timestamp:nil];
 }
 
-- (id)syncedPropertyListValueForKey:(NSString *)key timestamp:(NSNumber *)timestamp
+- (id)fetchPropertyListValueForKey:(NSString *)key timestamp:(NSNumber *)timestamp
 {
     if (self._inMemory)
         return nil;
@@ -2151,7 +2128,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 // changes(since timestamp: Timestamp?, forKey key: String? = nil, from device: Device? = nil) -> [Change] where a nil timestamp means distantpast and a nil key means all keys, and a nil device means all devices
 // changes(forKey key: String? = nil, from device: Device? = nil) -> [Change]  that calls changes(since:nil, forKey: key, from:nil), and where changes() gives you all changes
 
-- (NSArray *)changesSinceTimestamp:(NSNumber *)timestampLimit
+- (NSArray *)fetchChangesSinceTimestamp:(NSNumber *)timestampLimit
 {
     if ([self.memoryQueue isInCurrentQueueStack])
     {

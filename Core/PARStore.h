@@ -44,8 +44,8 @@ extern NSString *PARStoreDidSyncNotification;
 /// @name Adding and Accessing Values
 - (nullable id)propertyListValueForKey:(NSString *)key;
 - (void)setPropertyListValue:(id)plist forKey:(NSString *)key;
-- (NSArray *)allUniqueKeys;
-- (NSDictionary *)allRelevantValues;
+- (NSArray *)allKeys;
+- (NSDictionary *)allEntries;
 - (void)setEntriesFromDictionary:(NSDictionary *)dictionary;
 - (void)runTransaction:(PARDispatchBlock)block;
 
@@ -60,10 +60,10 @@ extern NSString *PARStoreDidSyncNotification;
 - (void)sync;
 
 // These methods should not be called from within a transaction, or they will fail.
-- (nullable id)syncedPropertyListValueForKey:(NSString *)key;
-- (nullable id)syncedPropertyListValueForKey:(NSString *)key timestamp:(nullable NSNumber *)timestamp;
+- (NSArray *)fetchAllKeys;
+- (nullable id)fetchPropertyListValueForKey:(NSString *)key;
+- (nullable id)fetchPropertyListValueForKey:(NSString *)key timestamp:(nullable NSNumber *)timestamp;
 // for subclassing
-- (NSArray *)relevantKeysForSync;
 - (void)applySyncChangeWithValues:(NSDictionary *)values timestamps:(NSDictionary *)timestamps NS_REQUIRES_SUPER;
 
 /// @name Merging
@@ -92,7 +92,7 @@ extern NSString *PARStoreDidSyncNotification;
 
 /// @name History
 // This method returns an array of PARChange instances. It should not be called from within a transaction, or it will fail.
-- (NSArray *)changesSinceTimestamp:(nullable NSNumber *)timestamp;
+- (NSArray *)fetchChangesSinceTimestamp:(nullable NSNumber *)timestamp;
 
 // TODO: error handling
 
