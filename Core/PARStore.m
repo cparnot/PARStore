@@ -1350,7 +1350,13 @@ NSString *PARDevicesDirectoryName = @"devices";
         {
             [updatedDatabaseTimestamps setObject:logTimestamp forKey:store];
         }
-        
+
+        // we already have the latest value from that key
+        if (updatedValues[key] != nil)
+        {
+            continue;
+        }
+
         // blob --> object
         NSError *blobError = nil;
         NSData *blob = [log valueForKey:BlobAttributeName];
