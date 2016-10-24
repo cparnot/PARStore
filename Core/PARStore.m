@@ -624,28 +624,27 @@ NSString *PARDevicesDirectoryName = @"devices";
     // autoclose database
     [self closeDatabaseSoon];
 
-    NSError *localError = nil;
-    if (self._managedObjectContext)
+    // skip save if already closes
+    if (self._managedObjectContext == nil)
     {
-        NSFileCoordinator *coordinator = [[NSFileCoordinator alloc] initWithFilePresenter:self];
-        NSURL *databaseURL = [NSURL fileURLWithPath:[[self readwriteDirectoryPath] stringByAppendingPathComponent:PARDatabaseFileName]];
-        NSError *coordinatorError = nil;
-        __block NSError *saveError = nil;
-        [coordinator coordinateWritingItemAtURL:databaseURL options:NSFileCoordinatorWritingForReplacing error:&coordinatorError byAccessor:^(NSURL *newURL)
-         {
-             NSError *blockError = nil;
-             if (![self._managedObjectContext save:&blockError])
-                 saveError = blockError;
-         }];
-        localError =coordinatorError;
-        if (!localError)
-            localError = saveError;
-    }
-    else
-    {
-        localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:@"No managed object context" underlyingError:nil];
+        return YES;
     }
     
+    // save
+    NSError *localError = nil;
+    NSFileCoordinator *coordinator = [[NSFileCoordinator alloc] initWithFilePresenter:self];
+    NSURL *databaseURL = [NSURL fileURLWithPath:[[self readwriteDirectoryPath] stringByAppendingPathComponent:PARDatabaseFileName]];
+    NSError *coordinatorError = nil;
+    __block NSError *saveError = nil;
+    [coordinator coordinateWritingItemAtURL:databaseURL options:NSFileCoordinatorWritingForReplacing error:&coordinatorError byAccessor:^(NSURL *newURL)
+     {
+         NSError *blockError = nil;
+         if (![self._managedObjectContext save:&blockError])
+             saveError = blockError;
+     }];
+
+    // handle error
+    localError = coordinatorError ?: saveError;
     if (localError)
     {
         NSString *storePath = [self.storeURL path];
@@ -660,14 +659,11 @@ NSString *PARDevicesDirectoryName = @"devices";
     #elif TARGET_OS_MAC
     // save was successful: "blink" the database which relinquishes the lock on the file just enough for a service like Dropbox to upload the new version on the server
     // not needed on iOS where the files are all under the control of the app and would need to be manually uploaded to online file services
-    else
+    NSPersistentStore *store = self.readwriteDatabase;
+    if (store !=  nil)
     {
-        NSPersistentStore *store = self.readwriteDatabase;
-        if (store !=  nil)
-        {
-            // "blinking" can be done by simply setting again the URL of the persistent store
-            [[self._managedObjectContext persistentStoreCoordinator] setURL:store.URL forPersistentStore:store];
-        }
+        // "blinking" can be done by simply setting again the URL of the persistent store
+        [[self._managedObjectContext persistentStoreCoordinator] setURL:store.URL forPersistentStore:store];
     }
     #endif
 
