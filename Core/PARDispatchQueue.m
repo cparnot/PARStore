@@ -323,6 +323,7 @@ static PARDispatchQueue *PARSharedConcurrentQueue = nil;
     
     // update timer info
     self.timers[name] = @{ @"DateValue" : @(newFireTime), @"TimerValue" : timerValue };
+    [self _updateTimerCountPrivate];
     
     return YES;
 }
@@ -342,6 +343,20 @@ static PARDispatchQueue *PARSharedConcurrentQueue = nil;
     
     // for 'throttle' behavior, we need to keep track of last firing date, but still remove the timer value itself
     self.timers[name] = @{ @"DateValue" : dateValue };
+    [self _updateTimerCountPrivate];
+}
+
+- (void)_updateTimerCountPrivate
+{
+    NSUInteger count = 0;
+    for (NSDictionary *timerDescription in self.timers.allValues)
+    {
+        if (timerDescription[@"TimerValue"] != nil)
+        {
+            count ++;
+        }
+    }
+    self.timerCountPrivate = count;
 }
 
 - (void)scheduleTimerWithName:(NSString *)name timeInterval:(NSTimeInterval)delay behavior:(PARTimerBehavior)behavior block:(PARDispatchBlock)block
@@ -350,7 +365,6 @@ static PARDispatchQueue *PARSharedConcurrentQueue = nil;
     [self dispatchAsynchronously:^
     {
         [self _scheduleTimerWithName:name referenceTime:time timeInterval:delay behavior:behavior block:block];
-        self.timerCountPrivate = self.timers.count;
     }];
 }
 
@@ -359,7 +373,6 @@ static PARDispatchQueue *PARSharedConcurrentQueue = nil;
     [self dispatchAsynchronously:^
     {
         [self _cancelTimerWithName:name];
-        self.timerCountPrivate = self.timers.count;
     }];
 }
 
