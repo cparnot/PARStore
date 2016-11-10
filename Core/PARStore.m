@@ -2130,11 +2130,15 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 #pragma mark - History
 
+- (NSArray *)fetchChangesSinceTimestamp:(NSNumber *)timestampLimit
+{
+    return [self fetchChangesSinceTimestamp:timestampLimit includeOnlyLocalChanges:NO];
+}
+
 // TODO: in swift port add:
 // changes(since timestamp: Timestamp?, forKey key: String? = nil, from device: Device? = nil) -> [Change] where a nil timestamp means distantpast and a nil key means all keys, and a nil device means all devices
 // changes(forKey key: String? = nil, from device: Device? = nil) -> [Change]  that calls changes(since:nil, forKey: key, from:nil), and where changes() gives you all changes
-
-- (NSArray *)fetchChangesSinceTimestamp:(NSNumber *)timestampLimit
+- (NSArray *)fetchChangesSinceTimestamp:(NSNumber *)timestampLimit includeOnlyLocalChanges:(BOOL)onlyLocalChanges
 {
     if ([self.memoryQueue isInCurrentQueueStack])
     {
@@ -2158,6 +2162,10 @@ NSString *PARDevicesDirectoryName = @"devices";
         // fetch Log rows in timestamp order, starting at `timestampLimit`
         NSError *errorLogs = nil;
         NSFetchRequest *logsRequest = [NSFetchRequest fetchRequestWithEntityName:LogEntityName];
+        if (onlyLocalChanges)
+        {
+            logsRequest.affectedStores = @[self.readwriteDatabase];
+        }
         if (timestampLimit != nil)
         {
             logsRequest.predicate = [NSPredicate predicateWithFormat:@"%K > %@", TimestampAttributeName, timestampLimit];
@@ -2565,6 +2573,26 @@ static void PARStoreLogsDidChange(
     change.key = key;
     change.propertyList = propertyList;
     return change;
+}
+
++ (PARChange *)changeWithPropertyListRepresentation:(id)propertyListRepresentation
+{
+    PARChange *change = [[PARChange alloc] init];
+    change.timestamp = propertyListRepresentation[@"timestamp"];
+    change.parentTimestamp = propertyListRepresentation[@"parentTimestamp"];
+    change.key = propertyListRepresentation[@"key"];
+    change.propertyList = propertyListRepresentation[@"propertyList"];
+    return change;
+}
+
+- (id)changePropertyListRepresentation
+{
+    NSMutableDictionary *dictionary = [[NSMutableDictionary alloc] init];
+    dictionary[@"timestamp"] = self.timestamp;
+    dictionary[@"key"] = self.key;
+    dictionary[@"propertyList"] = self.propertyList;
+    if (self.parentTimestamp) dictionary[@"parentTimestamp"] = self.parentTimestamp;
+    return [dictionary copy];
 }
 
 - (BOOL)isEqual:(id)object

@@ -94,6 +94,7 @@ extern NSString *PARStoreDidSyncNotification;
 /// @name History
 // This method returns an array of PARChange instances. It should not be called from within a transaction, or it will fail.
 - (NSArray *)fetchChangesSinceTimestamp:(nullable NSNumber *)timestamp;
+- (NSArray *)fetchChangesSinceTimestamp:(nullable NSNumber *)timestampLimit includeOnlyLocalChanges:(BOOL)onlyLocalChanges;
 
 // TODO: error handling
 
@@ -102,10 +103,12 @@ extern NSString *PARStoreDidSyncNotification;
 
 @interface PARChange : NSObject
 + (PARChange *)changeWithTimestamp:(NSNumber *)timestamp parentTimestamp:(nullable NSNumber *)parentTimestamp key:(NSString *)key propertyList:(id)propertyList;
++ (PARChange *)changeWithPropertyListRepresentation:(id)propertyListRepresentation;
 @property (readonly, copy) NSNumber *timestamp;
 @property (readonly, copy, nullable) NSNumber *parentTimestamp;
 @property (readonly, copy) NSString *key;
 @property (readonly, copy) id propertyList;
+@property (readonly, copy) id changePropertyListRepresentation;
 - (BOOL)isEqual:(nullable id)object;
 @end
 
