@@ -960,6 +960,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     // Persistent Store
     NSError *error = nil;
     NSString *dirPath = [self directoryPathForDeviceIdentifier:deviceIdentifier];
+    [[NSFileManager defaultManager] createDirectoryAtPath:dirPath withIntermediateDirectories:NO attributes:nil error:NULL];
     [self addPersistentStoreWithCoordinator:psc dirPath:dirPath readOnly:NO error:&error];
     
     // Context
