@@ -568,6 +568,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     // context
     NSManagedObjectContext *moc = [[NSManagedObjectContext alloc] init];
     [moc setPersistentStoreCoordinator:psc];
+    [moc setUndoManager:nil];
     self._managedObjectContext = moc;
     return moc;
 }
@@ -947,6 +948,50 @@ NSString *PARDevicesDirectoryName = @"devices";
               [self saveSoon];
           }];
      }];
+}
+
+// This method is used by remote services that need to insert data for other devices.
+- (void)addChanges:(NSArray *)changes forDeviceIdentifier:(NSString *)deviceIdentifier
+{
+    // Model and PSC
+    NSManagedObjectModel *mom = [PARStore managedObjectModel];
+    NSPersistentStoreCoordinator *psc = [[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:mom];
+    
+    // Persistent Store
+    NSError *error = nil;
+    NSString *dirPath = [self directoryPathForDeviceIdentifier:deviceIdentifier];
+    [self addPersistentStoreWithCoordinator:psc dirPath:dirPath readOnly:NO error:&error];
+    
+    // Context
+    NSManagedObjectContext *moc = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSPrivateQueueConcurrencyType];
+    [moc setPersistentStoreCoordinator:psc];
+    [moc setUndoManager:nil];
+    
+    // Add changes
+    [moc performBlockAndWait:^{
+        NSError *error = nil;
+        for (PARChange *change in changes)
+        {
+            NSData *blob = [self dataFromPropertyList:change.propertyList error:&error];
+            if (!blob)
+            {
+                ErrorLog(@"Error creating data from plist:\nkey: %@:\nplist: %@\nerror: %@", change.key, change.propertyList, [error localizedDescription]);
+                continue;
+            }
+            
+            NSManagedObject *newLog = [NSEntityDescription insertNewObjectForEntityForName:LogEntityName inManagedObjectContext:moc];
+            [newLog setValue:change.timestamp forKey:TimestampAttributeName];
+            [newLog setValue:change.parentTimestamp forKey:ParentTimestampAttributeName];
+            [newLog setValue:change.key forKey:KeyAttributeName];
+            [newLog setValue:blob forKey:BlobAttributeName];
+        }
+        
+        // Save
+        if (![moc save:&error]) {
+            ErrorLog(@"Failed to save context in addChanges: %@", error);
+        }
+        [moc reset];
+    }];
 }
 
 - (void)runTransaction:(PARDispatchBlock)block
@@ -1715,6 +1760,7 @@ NSString *PARDevicesDirectoryName = @"devices";
     }
     NSManagedObjectContext *moc = [[NSManagedObjectContext alloc] init];
     [moc setPersistentStoreCoordinator:psc];
+    [moc setUndoManager:nil];
 
     // sorted logs
     // multiple sort keys are used so the order is reproducible even for multiple logs with same timestamps
@@ -1783,6 +1829,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         }
         NSManagedObjectContext *moc = [[NSManagedObjectContext alloc] init];
         [moc setPersistentStoreCoordinator:psc];
+        [moc setUndoManager:nil];
         
         // populate new moc
         for (NSDictionary *rep in logRepresentations)

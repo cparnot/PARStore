@@ -101,6 +101,14 @@ extern NSString *PARStoreDidSyncNotification;
 @end
 
 
+// Accesss for backends that need to import data from other devices via cloud services.
+@interface PARStore (RemoteUpdates)
+
+- (void)addChanges:(NSArray *)changes forDeviceIdentifier:(NSString *)deviceIdentifier;
+
+@end
+
+
 @interface PARChange : NSObject
 + (PARChange *)changeWithTimestamp:(NSNumber *)timestamp parentTimestamp:(nullable NSNumber *)parentTimestamp key:(NSString *)key propertyList:(id)propertyList;
 + (PARChange *)changeWithPropertyListRepresentation:(id)propertyListRepresentation;
