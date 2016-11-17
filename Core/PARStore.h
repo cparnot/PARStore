@@ -104,7 +104,10 @@ extern NSString *PARStoreDidSyncNotification;
 // Accesss for backends that need to import data from other devices via cloud services.
 @interface PARStore (RemoteUpdates)
 
-- (void)addChanges:(NSArray *)changes forDeviceIdentifier:(NSString *)deviceIdentifier;
+/// This method can only append changes after existing entries.
+/// In other words, only changes that have a timestamp greater than all
+/// existing entries will be inserted into the store.
+- (void)appendChanges:(NSArray *)changes forDeviceIdentifier:(NSString *)deviceIdentifier;
 
 @end
 

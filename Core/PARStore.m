@@ -950,8 +950,7 @@ NSString *PARDevicesDirectoryName = @"devices";
      }];
 }
 
-// This method is used by remote services that need to insert data for other devices.
-- (void)addChanges:(NSArray *)changes forDeviceIdentifier:(NSString *)deviceIdentifier
+- (void)appendChanges:(NSArray *)changes forDeviceIdentifier:(NSString *)deviceIdentifier
 {
     // Model and PSC
     NSManagedObjectModel *mom = [PARStore managedObjectModel];
@@ -971,8 +970,32 @@ NSString *PARDevicesDirectoryName = @"devices";
     // Add changes
     [moc performBlockAndWait:^{
         NSError *error = nil;
+        
+        // Expression to retrieve the maximum timestamp in the store
+        NSExpression *maxExpression = [NSExpression expressionWithFormat:@"max: %K", TimestampAttributeName];
+        NSExpressionDescription *expressionDescription = [[NSExpressionDescription alloc] init];
+        expressionDescription.name = @"maxTimestamp";
+        expressionDescription.expression = maxExpression;
+        expressionDescription.expressionResultType = NSInteger64AttributeType;
+        
+        // Fetch maximum timestamp
+        NSFetchRequest *maxTimestampRequest = [[NSFetchRequest alloc] initWithEntityName:LogEntityName];
+        maxTimestampRequest.resultType = NSDictionaryResultType;
+        maxTimestampRequest.propertiesToFetch = @[expressionDescription];
+        NSDictionary *resultDict = [[moc executeFetchRequest:maxTimestampRequest error:&error] lastObject];
+        NSNumber *maxTimestampNumber = resultDict[@"maxTimestamp"];
+        int64_t maxTimestamp = maxTimestampNumber ? maxTimestampNumber.longValue : INT64_MIN;
+        if (!maxTimestampNumber && error) {
+            ErrorLog(@"Failed to fetch maxTimestamp: %@", error);
+            return;
+        }
+        
+        // Add changes
         for (PARChange *change in changes)
         {
+            // Skip changes that occur for timestamps that preceed the maximum timestamp of this device.
+            if (change.timestamp.longValue <= maxTimestamp) continue;
+            
             NSData *blob = [self dataFromPropertyList:change.propertyList error:&error];
             if (!blob)
             {
