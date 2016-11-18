@@ -972,7 +972,8 @@ NSString *PARDevicesDirectoryName = @"devices";
         NSError *error = nil;
         
         // Expression to retrieve the maximum timestamp in the store
-        NSExpression *maxExpression = [NSExpression expressionWithFormat:@"max: %K", TimestampAttributeName];
+        NSExpression *keyPath = [NSExpression expressionForKeyPath:TimestampAttributeName];
+        NSExpression *maxExpression = [NSExpression expressionForFunction:@"max:" arguments:@[keyPath]];
         NSExpressionDescription *expressionDescription = [[NSExpressionDescription alloc] init];
         expressionDescription.name = @"maxTimestamp";
         expressionDescription.expression = maxExpression;
