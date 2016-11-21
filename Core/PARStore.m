@@ -258,8 +258,15 @@ NSString *const ParentTimestampAttributeName = @"parentTimestamp";
 
 #pragma mark - Paths
 
+#ifdef PARSTORE_LEGACY
 NSString *PARDatabaseFileName = @"logs.db";
 NSString *PARDevicesDirectoryName = @"devices";
+NSString *PARBlobsDirectoryName = @"blobs";
+#else
+NSString *PARDatabaseFileName = @"Logs.db";
+NSString *PARDevicesDirectoryName = @"Devices";
+NSString *PARBlobsDirectoryName = @"Blobs";
+#endif
 
 - (NSString *)deviceRootPath
 {
@@ -990,7 +997,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (NSURL *)blobDirectoryURL
 {
-    return [self.storeURL URLByAppendingPathComponent:@"blobs"];
+    return [self.storeURL URLByAppendingPathComponent:PARBlobsDirectoryName];
 }
 
 - (BOOL)writeBlobData:(NSData *)data toPath:(NSString *)path error:(NSError **)error
