@@ -966,6 +966,13 @@ NSString *PARDevicesDirectoryName = @"devices";
     NSManagedObjectContext *moc = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSPrivateQueueConcurrencyType];
     [moc setPersistentStoreCoordinator:psc];
     [moc setUndoManager:nil];
+
+    // Have main context observe changes made in background, and merge them.
+    id observer = [[NSNotificationCenter defaultCenter] addObserverForName:NSManagedObjectContextDidSaveNotification object:moc queue:nil usingBlock:^(NSNotification *notification) {
+        [self.databaseQueue dispatchSynchronously:^{
+            [[self managedObjectContext] mergeChangesFromContextDidSaveNotification:notification];
+        }];
+    }];
     
     // Add changes
     [moc performBlockAndWait:^{
@@ -1017,6 +1024,9 @@ NSString *PARDevicesDirectoryName = @"devices";
         }
         [moc reset];
     }];
+    
+    // Clean up the observer
+    [[NSNotificationCenter defaultCenter] removeObserver:observer];
 }
 
 - (void)runTransaction:(PARDispatchBlock)block
