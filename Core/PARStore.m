@@ -484,7 +484,7 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 - (NSPersistentStore *)addPersistentStoreWithCoordinator:(NSPersistentStoreCoordinator *)psc dirPath:(NSString *)path readOnly:(BOOL)readOnly error:(NSError **)error
 {
-    // for readonly stores, check wether a file is in fact present at that path (with iCloud or Dropbox, the directory could be there without the database yet)
+    // for readonly stores, check whether a file is in fact present at that path (with iCloud or Dropbox, the directory could be there without the database yet)
     NSString *storePath = [path stringByAppendingPathComponent:PARDatabaseFileName];
     BOOL isDir = NO;
     if (readOnly && (![[NSFileManager defaultManager] fileExistsAtPath:storePath isDirectory:&isDir] || isDir))
@@ -2208,15 +2208,12 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 #pragma mark - History
 
-- (NSArray *)fetchChangesSinceTimestamp:(NSNumber *)timestampLimit
+- (NSArray *)fetchChangesSinceTimestamp:(nullable NSNumber *)timestampLimit
 {
-    return [self fetchChangesSinceTimestamp:timestampLimit includeOnlyLocalChanges:NO];
+    return [self fetchChangesSinceTimestamp:timestampLimit forDeviceIdentifier:nil];
 }
 
-// TODO: in swift port add:
-// changes(since timestamp: Timestamp?, forKey key: String? = nil, from device: Device? = nil) -> [Change] where a nil timestamp means distantpast and a nil key means all keys, and a nil device means all devices
-// changes(forKey key: String? = nil, from device: Device? = nil) -> [Change]  that calls changes(since:nil, forKey: key, from:nil), and where changes() gives you all changes
-- (NSArray *)fetchChangesSinceTimestamp:(NSNumber *)timestampLimit includeOnlyLocalChanges:(BOOL)onlyLocalChanges
+- (NSArray *)fetchChangesSinceTimestamp:(nullable NSNumber *)timestampLimit forDeviceIdentifier:(nullable NSString *)fetchDeviceIdentifier
 {
     if ([self.memoryQueue isInCurrentQueueStack])
     {
@@ -2240,16 +2237,35 @@ NSString *PARDevicesDirectoryName = @"devices";
         // fetch Log rows in timestamp order, starting at `timestampLimit`
         NSError *errorLogs = nil;
         NSFetchRequest *logsRequest = [NSFetchRequest fetchRequestWithEntityName:LogEntityName];
-        if (onlyLocalChanges)
-        {
-            logsRequest.affectedStores = @[self.readwriteDatabase];
+        
+        // Determine affected stores, based on device identifiers
+        if (fetchDeviceIdentifier == nil) {
+            logsRequest.affectedStores = nil; // All stores
         }
+        else if ([fetchDeviceIdentifier isEqualToString:self.deviceIdentifier])
+        {
+            logsRequest.affectedStores = @[self.readwriteDatabase]; // Local store
+        }
+        else {
+            // Filter stores to find one that matches the device.
+            NSArray *eligibleStores = [self.readonlyDatabases filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^(NSPersistentStore *store, NSDictionary *bindings) {
+                NSString *storeDeviceIdentifier = [self deviceIdentifierForDatabasePath:store.URL.path];
+                return [storeDeviceIdentifier isEqualToString:fetchDeviceIdentifier];
+            }]];
+            logsRequest.affectedStores = eligibleStores;
+        }
+        
+        // Add predicate for time limit, if needed
         if (timestampLimit != nil)
         {
             logsRequest.predicate = [NSPredicate predicateWithFormat:@"%K > %@", TimestampAttributeName, timestampLimit];
         }
+        
+        // Sorting and result type
         logsRequest.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:TimestampAttributeName ascending:YES]];
         logsRequest.resultType = NSDictionaryResultType;
+        
+        // Execute the fetch
         NSArray *logs = [moc executeFetchRequest:logsRequest error:&errorLogs];
         if (!logs)
         {
@@ -2257,7 +2273,7 @@ NSString *PARDevicesDirectoryName = @"devices";
             return;
         }
         
-        // logs --> changes
+        // Convert logs to changes
         for (NSDictionary *logDictionary in logs)
         {
             NSNumber *timestamp = logDictionary[TimestampAttributeName];

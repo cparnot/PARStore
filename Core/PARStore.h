@@ -38,6 +38,7 @@ extern NSString *PARStoreDidSyncNotification;
 /// @name Getting Store Information
 @property (readonly, copy, nullable) NSURL *storeURL;
 @property (readonly, copy) NSString *deviceIdentifier;
+@property (readonly, copy) NSArray *foreignDeviceIdentifiers;
 @property (readonly) BOOL loaded;
 @property (readonly) BOOL deleted;
 @property (readonly) BOOL inMemory;
@@ -94,7 +95,11 @@ extern NSString *PARStoreDidSyncNotification;
 /// @name History
 // This method returns an array of PARChange instances. It should not be called from within a transaction, or it will fail.
 - (NSArray *)fetchChangesSinceTimestamp:(nullable NSNumber *)timestamp;
-- (NSArray *)fetchChangesSinceTimestamp:(nullable NSNumber *)timestampLimit includeOnlyLocalChanges:(BOOL)onlyLocalChanges;
+
+/// This method returns an array of PARChange instances for the device identifier passed in.
+/// It should not be called from within a transaction, or it will fail.
+/// Pass in nil for the device identifier to get results for all devices.
+- (NSArray *)fetchChangesSinceTimestamp:(nullable NSNumber *)timestampLimit forDeviceIdentifier:(nullable NSString *)deviceID;
 
 // TODO: error handling
 
