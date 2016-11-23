@@ -847,11 +847,10 @@ NSString *PARBlobsDirectoryName = @"Blobs";
 
 - (void)setPropertyListValue:(id)plist forKey:(NSString *)key
 {
-    // get the timestamp **now**, so we have the current date, not the date at which the block will run
-    NSNumber *newTimestamp = [PARStore timestampNow];
-
     [self.memoryQueue dispatchSynchronously:^
      {
+         NSNumber *newTimestamp = [PARStore timestampNow];
+         
          self._memory[key] = plist;
          if (self._inMemory)
          {
