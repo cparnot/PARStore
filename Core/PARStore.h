@@ -101,6 +101,12 @@ extern NSString *PARStoreDidSyncNotification;
 /// Pass in nil for the device identifier to get results for all devices.
 - (NSArray *)fetchChangesSinceTimestamp:(nullable NSNumber *)timestampLimit forDeviceIdentifier:(nullable NSString *)deviceID;
 
+/// This method returns an array of PARChange instances for the device identifier passed in, between (including) the timestamps passed.
+/// It should not be called from within a transaction, or it will fail.
+/// Pass in nil for the device identifier to get results for all devices.
+/// Pass nil for either timestamp to have an open range.
+- (NSArray *)fetchChangesFromTimestamp:(nullable NSNumber *)firstTimestamp toTimestamp:(nullable NSNumber *)lastTimestamp forDeviceIdentifier:(nullable NSString *)deviceID;
+
 // TODO: error handling
 
 @end
