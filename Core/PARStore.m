@@ -1021,7 +1021,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         }
         
         // Convert the matching entries to change objects, for easy comparison
-        NSMutableArray *existingChanges = [NSMutableArray array];
+        NSMutableSet *existingChanges = [NSMutableSet set];
         for (NSDictionary *logDictionary in logDictionariesWithSameTimestamp) {
             PARChange *change = [self changeFromLogDictionary:logDictionary];
             if (change) [existingChanges addObject:change];
@@ -2763,6 +2763,11 @@ static void PARStoreLogsDidChange(
     dictionary[@"propertyList"] = self.propertyList;
     if (self.parentTimestamp) dictionary[@"parentTimestamp"] = self.parentTimestamp;
     return [dictionary copy];
+}
+
+- (NSUInteger)hash
+{
+    return self.timestamp.hash ^ self.key.hash;
 }
 
 - (BOOL)isEqual:(id)object
