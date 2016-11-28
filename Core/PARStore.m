@@ -950,17 +950,22 @@ NSString *PARDevicesDirectoryName = @"devices";
      }];
 }
 
-- (void)appendChanges:(NSArray *)changes forDeviceIdentifier:(NSString *)deviceIdentifier
+- (BOOL)appendChanges:(NSArray *)changes forDeviceIdentifier:(NSString *)deviceIdentifier error:(NSError * __autoreleasing *)error
 {
     // Model and PSC
     NSManagedObjectModel *mom = [PARStore managedObjectModel];
     NSPersistentStoreCoordinator *psc = [[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:mom];
     
     // Persistent Store
-    NSError *error = nil;
+    NSError *storeError = nil;
     NSString *dirPath = [self directoryPathForDeviceIdentifier:deviceIdentifier];
     [[NSFileManager defaultManager] createDirectoryAtPath:dirPath withIntermediateDirectories:NO attributes:nil error:NULL];
-    [self addPersistentStoreWithCoordinator:psc dirPath:dirPath readOnly:NO error:&error];
+    id store = [self addPersistentStoreWithCoordinator:psc dirPath:dirPath readOnly:NO error:&storeError];
+    if (store == nil)
+    {
+        if (error) *error = storeError;
+        return NO;
+    }
     
     // Context
     NSManagedObjectContext *moc = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSPrivateQueueConcurrencyType];
@@ -968,13 +973,15 @@ NSString *PARDevicesDirectoryName = @"devices";
     [moc setUndoManager:nil];
 
     // Have main context observe changes made in background, and merge them.
-    id observer = [[NSNotificationCenter defaultCenter] addObserverForName:NSManagedObjectContextDidSaveNotification object:moc queue:nil usingBlock:^(NSNotification *notification) {
+    id observer = [[NSNotificationCenter defaultCenter] addObserverForName:NSManagedObjectContextDidSaveNotification object:moc queue:nil usingBlock:^(NSNotification *notification)
+    {
         [self.databaseQueue dispatchSynchronously:^{
             [[self managedObjectContext] mergeChangesFromContextDidSaveNotification:notification];
         }];
     }];
     
     // Add changes
+    __block NSError *outerError = nil; // Needed to retain autoreleased error in block
     [moc performBlockAndWait:^{
         NSError *error = nil;
         
@@ -993,7 +1000,9 @@ NSString *PARDevicesDirectoryName = @"devices";
         NSDictionary *resultDict = [[moc executeFetchRequest:maxTimestampRequest error:&error] lastObject];
         NSNumber *maxTimestampNumber = resultDict[@"maxTimestamp"];
         int64_t maxTimestamp = maxTimestampNumber ? maxTimestampNumber.longValue : INT64_MIN;
-        if (!maxTimestampNumber && error) {
+        if (!maxTimestampNumber && error)
+        {
+            outerError = error;
             ErrorLog(@"Failed to fetch maxTimestamp: %@", error);
             return;
         }
@@ -1007,8 +1016,9 @@ NSString *PARDevicesDirectoryName = @"devices";
             NSData *blob = [self dataFromPropertyList:change.propertyList error:&error];
             if (!blob)
             {
+                outerError = error;
                 ErrorLog(@"Error creating data from plist:\nkey: %@:\nplist: %@\nerror: %@", change.key, change.propertyList, [error localizedDescription]);
-                continue;
+                return;
             }
             
             NSManagedObject *newLog = [NSEntityDescription insertNewObjectForEntityForName:LogEntityName inManagedObjectContext:moc];
@@ -1019,7 +1029,9 @@ NSString *PARDevicesDirectoryName = @"devices";
         }
         
         // Save
-        if (![moc save:&error]) {
+        if (![moc save:&error])
+        {
+            outerError = error;
             ErrorLog(@"Failed to save context in addChanges: %@", error);
         }
         [moc reset];
@@ -1027,6 +1039,14 @@ NSString *PARDevicesDirectoryName = @"devices";
     
     // Clean up the observer
     [[NSNotificationCenter defaultCenter] removeObserver:observer];
+    
+    if (outerError)
+    {
+        if (error) *error = outerError;
+        return NO;
+    }
+    
+    return YES;
 }
 
 - (void)runTransaction:(PARDispatchBlock)block
@@ -2208,22 +2228,22 @@ NSString *PARDevicesDirectoryName = @"devices";
 
 #pragma mark - History
 
-- (NSArray *)fetchChangesSinceTimestamp:(nullable NSNumber *)timestampLimit
+- (NSArray *)fetchChangesSinceTimestamp:(nullable NSNumber *)timestamp
 {
-    return [self fetchChangesSinceTimestamp:timestampLimit forDeviceIdentifier:nil];
+    return [self fetchChangesSinceTimestamp:timestamp forDeviceIdentifier:nil];
 }
 
-- (NSArray *)fetchChangesSinceTimestamp:(nullable NSNumber *)timestampLimit forDeviceIdentifier:(nullable NSString *)fetchDeviceIdentifier
+- (NSArray *)fetchChangesSinceTimestamp:(nullable NSNumber *)timestamp forDeviceIdentifier:(nullable NSString *)deviceIdentifier
 {
     NSPredicate *predicate = [NSPredicate predicateWithValue:YES];
-    if (timestampLimit != nil)
+    if (timestamp != nil)
     {
-        predicate = [NSPredicate predicateWithFormat:@"%K > %@", TimestampAttributeName, timestampLimit];
+        predicate = [NSPredicate predicateWithFormat:@"%K > %@", TimestampAttributeName, timestamp];
     }
-    return [self fetchChangesMatchingPredicate:predicate forDeviceIdentifier:fetchDeviceIdentifier];
+    return [self fetchChangesMatchingPredicate:predicate forDeviceIdentifier:deviceIdentifier];
 }
 
-- (NSArray *)fetchChangesFromTimestamp:(nullable NSNumber *)firstTimestamp toTimestamp:(nullable NSNumber *)lastTimestamp forDeviceIdentifier:(nullable NSString *)fetchDeviceIdentifier
+- (NSArray *)fetchChangesFromTimestamp:(nullable NSNumber *)firstTimestamp toTimestamp:(nullable NSNumber *)lastTimestamp forDeviceIdentifier:(nullable NSString *)deviceIdentifier
 {
     NSPredicate *predicate = [NSPredicate predicateWithValue:YES];
     if (firstTimestamp != nil)
@@ -2235,7 +2255,7 @@ NSString *PARDevicesDirectoryName = @"devices";
         NSPredicate *timestampPredicate = [NSPredicate predicateWithFormat:@"%K <= %@", TimestampAttributeName, lastTimestamp];
         predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[predicate, timestampPredicate]];
     }
-    return [self fetchChangesMatchingPredicate:predicate forDeviceIdentifier:fetchDeviceIdentifier];
+    return [self fetchChangesMatchingPredicate:predicate forDeviceIdentifier:deviceIdentifier];
 }
 
 - (NSArray *)fetchChangesMatchingPredicate:(NSPredicate *)predicate forDeviceIdentifier:(nullable NSString *)fetchDeviceIdentifier;
@@ -2273,10 +2293,11 @@ NSString *PARDevicesDirectoryName = @"devices";
          }
          else {
              // Filter stores to find one that matches the device.
-             NSArray *eligibleStores = [self.readonlyDatabases filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^(NSPersistentStore *store, NSDictionary *bindings) {
+             NSPredicate *predicate = [NSPredicate predicateWithBlock:^(NSPersistentStore *store, NSDictionary *bindings) {
                  NSString *storeDeviceIdentifier = [self deviceIdentifierForDatabasePath:store.URL.path];
                  return [storeDeviceIdentifier isEqualToString:fetchDeviceIdentifier];
-             }]];
+             }];
+             NSArray *eligibleStores = [self.readonlyDatabases filteredArrayUsingPredicate:predicate];
              logsRequest.affectedStores = eligibleStores;
          }
          
@@ -2691,17 +2712,17 @@ static void PARStoreLogsDidChange(
     return change;
 }
 
-+ (PARChange *)changeWithPropertyListRepresentation:(id)propertyListRepresentation
++ (PARChange *)changeWithPropertyDictionary:(id)propertyDictionary
 {
     PARChange *change = [[PARChange alloc] init];
-    change.timestamp = propertyListRepresentation[@"timestamp"];
-    change.parentTimestamp = propertyListRepresentation[@"parentTimestamp"];
-    change.key = propertyListRepresentation[@"key"];
-    change.propertyList = propertyListRepresentation[@"propertyList"];
+    change.timestamp = propertyDictionary[@"timestamp"];
+    change.parentTimestamp = propertyDictionary[@"parentTimestamp"];
+    change.key = propertyDictionary[@"key"];
+    change.propertyList = propertyDictionary[@"propertyList"];
     return change;
 }
 
-- (id)changePropertyListRepresentation
+- (id)propertyDictionary
 {
     NSMutableDictionary *dictionary = [[NSMutableDictionary alloc] init];
     dictionary[@"timestamp"] = self.timestamp;

@@ -99,13 +99,13 @@ extern NSString *PARStoreDidSyncNotification;
 /// This method returns an array of PARChange instances for the device identifier passed in.
 /// It should not be called from within a transaction, or it will fail.
 /// Pass in nil for the device identifier to get results for all devices.
-- (NSArray *)fetchChangesSinceTimestamp:(nullable NSNumber *)timestampLimit forDeviceIdentifier:(nullable NSString *)deviceID;
+- (NSArray *)fetchChangesSinceTimestamp:(nullable NSNumber *)timestamp forDeviceIdentifier:(nullable NSString *)deviceIdentifier;
 
-/// This method returns an array of PARChange instances for the device identifier passed in, between (including) the timestamps passed.
+/// This method returns an array of PARChange instances for the device identifier passed in, between (and including) the timestamps passed.
 /// It should not be called from within a transaction, or it will fail.
 /// Pass in nil for the device identifier to get results for all devices.
 /// Pass nil for either timestamp to have an open range.
-- (NSArray *)fetchChangesFromTimestamp:(nullable NSNumber *)firstTimestamp toTimestamp:(nullable NSNumber *)lastTimestamp forDeviceIdentifier:(nullable NSString *)deviceID;
+- (NSArray *)fetchChangesFromTimestamp:(nullable NSNumber *)firstTimestamp toTimestamp:(nullable NSNumber *)lastTimestamp forDeviceIdentifier:(nullable NSString *)deviceIdentifier;
 
 // TODO: error handling
 
@@ -117,20 +117,21 @@ extern NSString *PARStoreDidSyncNotification;
 
 /// This method can only append changes after existing entries.
 /// In other words, only changes that have a timestamp greater than all
-/// existing entries will be inserted into the store.
-- (void)appendChanges:(NSArray *)changes forDeviceIdentifier:(NSString *)deviceIdentifier;
+/// existing entries for the given device will be inserted into the store.
+/// Returns `NO` on failure, and the `error` is set on failure.
+- (BOOL)appendChanges:(NSArray *)changes forDeviceIdentifier:(NSString *)deviceIdentifier error:(NSError * __autoreleasing *)error;
 
 @end
 
 
 @interface PARChange : NSObject
 + (PARChange *)changeWithTimestamp:(NSNumber *)timestamp parentTimestamp:(nullable NSNumber *)parentTimestamp key:(NSString *)key propertyList:(id)propertyList;
-+ (PARChange *)changeWithPropertyListRepresentation:(id)propertyListRepresentation;
++ (PARChange *)changeWithPropertyDictionary:(id)propertyDictionary;
 @property (readonly, copy) NSNumber *timestamp;
 @property (readonly, copy, nullable) NSNumber *parentTimestamp;
 @property (readonly, copy) NSString *key;
 @property (readonly, copy) id propertyList;
-@property (readonly, copy) id changePropertyListRepresentation;
+@property (readonly, copy) id propertyDictionary;
 - (BOOL)isEqual:(nullable id)object;
 @end
 
