@@ -38,6 +38,7 @@ extern NSString *PARStoreDidSyncNotification;
 /// @name Getting Store Information
 @property (readonly, copy, nullable) NSURL *storeURL;
 @property (readonly, copy) NSString *deviceIdentifier;
+@property (readonly, copy) NSArray *foreignDeviceIdentifiers;
 @property (readonly) BOOL loaded;
 @property (readonly) BOOL deleted;
 @property (readonly) BOOL inMemory;
@@ -95,17 +96,43 @@ extern NSString *PARStoreDidSyncNotification;
 // This method returns an array of PARChange instances. It should not be called from within a transaction, or it will fail.
 - (NSArray *)fetchChangesSinceTimestamp:(nullable NSNumber *)timestamp;
 
+/// This method returns an array of PARChange instances for the device identifier passed in.
+/// It should not be called from within a transaction, or it will fail.
+/// Pass in nil for the device identifier to get results for all devices.
+- (NSArray *)fetchChangesSinceTimestamp:(nullable NSNumber *)timestamp forDeviceIdentifier:(nullable NSString *)deviceIdentifier;
+
+/// This method returns an array of PARChange instances for the device identifier passed in, between (and including) the timestamps passed.
+/// It should not be called from within a transaction, or it will fail.
+/// Pass in nil for the device identifier to get results for all devices.
+/// Pass nil for either timestamp to have an open range.
+- (NSArray *)fetchChangesFromTimestamp:(nullable NSNumber *)firstTimestamp toTimestamp:(nullable NSNumber *)lastTimestamp forDeviceIdentifier:(nullable NSString *)deviceIdentifier;
+
 // TODO: error handling
+
+@end
+
+
+// Accesss for backends that need to import data from other devices via cloud services.
+@interface PARStore (RemoteUpdates)
+
+/// Inserts the changes passed for the device given.
+/// If `appendOnly` is false, it will insert the new changes regardless of the existing stored changes,
+/// though it will avoid inserting duplicates.
+/// If `appendOnly` is true, it will only insert a change that occurs on or after the most recent change in the store.
+/// Returns `NO` on failure, and the `error` is set on failure.
+- (BOOL)insertChanges:(NSArray *)changes forDeviceIdentifier:(NSString *)deviceIdentifier appendOnly:(BOOL)appendOnly error:(NSError * __autoreleasing *)error;
 
 @end
 
 
 @interface PARChange : NSObject
 + (PARChange *)changeWithTimestamp:(NSNumber *)timestamp parentTimestamp:(nullable NSNumber *)parentTimestamp key:(NSString *)key propertyList:(id)propertyList;
++ (PARChange *)changeWithPropertyDictionary:(id)propertyDictionary;
 @property (readonly, copy) NSNumber *timestamp;
 @property (readonly, copy, nullable) NSNumber *parentTimestamp;
 @property (readonly, copy) NSString *key;
 @property (readonly, copy) id propertyList;
+@property (readonly, copy) id propertyDictionary;
 - (BOOL)isEqual:(nullable id)object;
 @end
 

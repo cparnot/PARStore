@@ -491,7 +491,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
 
 - (NSPersistentStore *)addPersistentStoreWithCoordinator:(NSPersistentStoreCoordinator *)psc dirPath:(NSString *)path readOnly:(BOOL)readOnly error:(NSError **)error
 {
-    // for readonly stores, check wether a file is in fact present at that path (with iCloud or Dropbox, the directory could be there without the database yet)
+    // for readonly stores, check whether a file is in fact present at that path (with iCloud or Dropbox, the directory could be there without the database yet)
     NSString *storePath = [path stringByAppendingPathComponent:PARDatabaseFileName];
     BOOL isDir = NO;
     if (readOnly && (![[NSFileManager defaultManager] fileExistsAtPath:storePath isDirectory:&isDir] || isDir))
@@ -575,6 +575,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     // context
     NSManagedObjectContext *moc = [[NSManagedObjectContext alloc] init];
     [moc setPersistentStoreCoordinator:psc];
+    [moc setUndoManager:nil];
     self._managedObjectContext = moc;
     return moc;
 }
@@ -953,6 +954,130 @@ NSString *PARBlobsDirectoryName = @"Blobs";
               [self saveSoon];
           }];
      }];
+}
+
+- (BOOL)insertChanges:(NSArray *)changes forDeviceIdentifier:(NSString *)deviceIdentifier appendOnly:(BOOL)appendOnly error:(NSError * __autoreleasing *)error
+{
+    // Model and PSC
+    NSManagedObjectModel *mom = [PARStore managedObjectModel];
+    NSPersistentStoreCoordinator *psc = [[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:mom];
+    
+    // Persistent Store
+    NSError *storeError = nil;
+    NSString *dirPath = [self directoryPathForDeviceIdentifier:deviceIdentifier];
+    [[NSFileManager defaultManager] createDirectoryAtPath:dirPath withIntermediateDirectories:NO attributes:nil error:NULL];
+    id store = [self addPersistentStoreWithCoordinator:psc dirPath:dirPath readOnly:NO error:&storeError];
+    if (store == nil)
+    {
+        if (error) *error = storeError;
+        return NO;
+    }
+    
+    // Context
+    NSManagedObjectContext *moc = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSPrivateQueueConcurrencyType];
+    [moc setPersistentStoreCoordinator:psc];
+    [moc setUndoManager:nil];
+
+    // Have main context observe changes made in background, and merge them.
+    id observer = [[NSNotificationCenter defaultCenter] addObserverForName:NSManagedObjectContextDidSaveNotification object:moc queue:nil usingBlock:^(NSNotification *notification)
+    {
+        [self.databaseQueue dispatchSynchronously:^{
+            [[self managedObjectContext] mergeChangesFromContextDidSaveNotification:notification];
+        }];
+    }];
+    
+    // Add changes
+    __block NSError *outerError = nil; // Needed to retain autoreleased error in block
+    [moc performBlockAndWait:^{
+        NSError *error = nil;
+        
+        // Expression to retrieve the maximum timestamp in the store
+        NSExpression *keyPath = [NSExpression expressionForKeyPath:TimestampAttributeName];
+        NSExpression *maxExpression = [NSExpression expressionForFunction:@"max:" arguments:@[keyPath]];
+        NSExpressionDescription *expressionDescription = [[NSExpressionDescription alloc] init];
+        expressionDescription.name = @"maxTimestamp";
+        expressionDescription.expression = maxExpression;
+        expressionDescription.expressionResultType = NSInteger64AttributeType;
+        
+        // Fetch maximum timestamp
+        NSFetchRequest *maxTimestampRequest = [[NSFetchRequest alloc] initWithEntityName:LogEntityName];
+        maxTimestampRequest.resultType = NSDictionaryResultType;
+        maxTimestampRequest.propertiesToFetch = @[expressionDescription];
+        NSDictionary *resultDict = [[moc executeFetchRequest:maxTimestampRequest error:&error] lastObject];
+        NSNumber *maxTimestampNumber = resultDict[@"maxTimestamp"];
+        int64_t maxTimestamp = maxTimestampNumber ? maxTimestampNumber.longValue : INT64_MIN;
+        if (!maxTimestampNumber && error)
+        {
+            outerError = error;
+            ErrorLog(@"Failed to fetch maxTimestamp: %@", error);
+            return;
+        }
+        
+        // Fetch all existing entries that have the same timestamp as one of the new changes.
+        NSArray *newChangeTimestamps = [changes valueForKeyPath:@"timestamp"];
+        NSFetchRequest *matchingTimestampFetch = [[NSFetchRequest alloc] initWithEntityName:LogEntityName];
+        matchingTimestampFetch.predicate = [NSPredicate predicateWithFormat:@"timestamp IN %@", newChangeTimestamps];
+        matchingTimestampFetch.resultType = NSDictionaryResultType;
+        NSArray *logDictionariesWithSameTimestamp = [moc executeFetchRequest:matchingTimestampFetch error:&error];
+        if (logDictionariesWithSameTimestamp == nil && error)
+        {
+            outerError = error;
+            ErrorLog(@"Failed to fetch existing changes: %@", error);
+            return;
+        }
+        
+        // Convert the matching entries to change objects, for easy comparison
+        NSMutableSet *existingChanges = [NSMutableSet set];
+        for (NSDictionary *logDictionary in logDictionariesWithSameTimestamp) {
+            PARChange *change = [self changeFromLogDictionary:logDictionary];
+            if (change) [existingChanges addObject:change];
+        }
+        
+        // Add changes
+        for (PARChange *change in changes)
+        {
+            // If append only, skip changes that occur for timestamps that preceed the maximum timestamp of this device.
+            // Deliberately include the latest timestamp, in case there are changes with the same timestamp.
+            if (appendOnly && change.timestamp.longValue < maxTimestamp) continue;
+            
+            // Is this change new? Compare to existing.
+            if ([existingChanges containsObject:change]) continue;
+            
+            // Add it to the store
+            NSData *blob = [self dataFromPropertyList:change.propertyList error:&error];
+            if (!blob)
+            {
+                outerError = error;
+                ErrorLog(@"Error creating data from plist:\nkey: %@:\nplist: %@\nerror: %@", change.key, change.propertyList, [error localizedDescription]);
+                return;
+            }
+            
+            NSManagedObject *newLog = [NSEntityDescription insertNewObjectForEntityForName:LogEntityName inManagedObjectContext:moc];
+            [newLog setValue:change.timestamp forKey:TimestampAttributeName];
+            [newLog setValue:change.parentTimestamp forKey:ParentTimestampAttributeName];
+            [newLog setValue:change.key forKey:KeyAttributeName];
+            [newLog setValue:blob forKey:BlobAttributeName];
+        }
+        
+        // Save
+        if (![moc save:&error])
+        {
+            outerError = error;
+            ErrorLog(@"Failed to save context in addChanges: %@", error);
+        }
+        [moc reset];
+    }];
+    
+    // Clean up the observer
+    [[NSNotificationCenter defaultCenter] removeObserver:observer];
+    
+    if (outerError)
+    {
+        if (error) *error = outerError;
+        return NO;
+    }
+    
+    return YES;
 }
 
 - (void)runTransaction:(PARDispatchBlock)block
@@ -1721,6 +1846,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     }
     NSManagedObjectContext *moc = [[NSManagedObjectContext alloc] init];
     [moc setPersistentStoreCoordinator:psc];
+    [moc setUndoManager:nil];
 
     // sorted logs
     // multiple sort keys are used so the order is reproducible even for multiple logs with same timestamps
@@ -1789,6 +1915,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
         }
         NSManagedObjectContext *moc = [[NSManagedObjectContext alloc] init];
         [moc setPersistentStoreCoordinator:psc];
+        [moc setUndoManager:nil];
         
         // populate new moc
         for (NSDictionary *rep in logRepresentations)
@@ -2132,66 +2259,121 @@ NSString *PARBlobsDirectoryName = @"Blobs";
 
 #pragma mark - History
 
-// TODO: in swift port add:
-// changes(since timestamp: Timestamp?, forKey key: String? = nil, from device: Device? = nil) -> [Change] where a nil timestamp means distantpast and a nil key means all keys, and a nil device means all devices
-// changes(forKey key: String? = nil, from device: Device? = nil) -> [Change]  that calls changes(since:nil, forKey: key, from:nil), and where changes() gives you all changes
+- (NSArray *)fetchChangesSinceTimestamp:(nullable NSNumber *)timestamp
+{
+    return [self fetchChangesSinceTimestamp:timestamp forDeviceIdentifier:nil];
+}
 
-- (NSArray *)fetchChangesSinceTimestamp:(NSNumber *)timestampLimit
+- (NSArray *)fetchChangesSinceTimestamp:(nullable NSNumber *)timestamp forDeviceIdentifier:(nullable NSString *)deviceIdentifier
+{
+    NSPredicate *predicate = [NSPredicate predicateWithValue:YES];
+    if (timestamp != nil)
+    {
+        predicate = [NSPredicate predicateWithFormat:@"%K > %@", TimestampAttributeName, timestamp];
+    }
+    return [self fetchChangesMatchingPredicate:predicate forDeviceIdentifier:deviceIdentifier];
+}
+
+- (NSArray *)fetchChangesFromTimestamp:(nullable NSNumber *)firstTimestamp toTimestamp:(nullable NSNumber *)lastTimestamp forDeviceIdentifier:(nullable NSString *)deviceIdentifier
+{
+    NSPredicate *predicate = [NSPredicate predicateWithValue:YES];
+    if (firstTimestamp != nil)
+    {
+        predicate = [NSPredicate predicateWithFormat:@"%K >= %@", TimestampAttributeName, firstTimestamp];
+    }
+    if (lastTimestamp != nil)
+    {
+        NSPredicate *timestampPredicate = [NSPredicate predicateWithFormat:@"%K <= %@", TimestampAttributeName, lastTimestamp];
+        predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[predicate, timestampPredicate]];
+    }
+    return [self fetchChangesMatchingPredicate:predicate forDeviceIdentifier:deviceIdentifier];
+}
+
+- (NSArray *)fetchChangesMatchingPredicate:(NSPredicate *)predicate forDeviceIdentifier:(nullable NSString *)fetchDeviceIdentifier;
 {
     if ([self.memoryQueue isInCurrentQueueStack])
     {
         ErrorLog(@"To avoid deadlocks, %@ should not be called within a transaction. Bailing out.", NSStringFromSelector(_cmd));
         return nil;
     }
-
+    
     NSMutableArray *changes = [NSMutableArray array];
     [self.databaseQueue dispatchSynchronously:^
-    {
-        NSManagedObjectContext *moc = [self managedObjectContext];
-        if (moc == nil)
-        {
-            return;
-        }
-        
-        // From the documentation for `includesPendingChanges`: "A value of YES is not supported in conjunction with the result type NSDictionaryResultType, including calculation of aggregate results (such as max and min). For dictionaries, the array returned from the fetch reflects the current state in the persistent store, and does not take into account any pending changes, insertions, or deletions in the context."
-        // this means we need to save pending changes first to make sure they show up in the query
-        [self _save:NULL];
-        
-        // fetch Log rows in timestamp order, starting at `timestampLimit`
-        NSError *errorLogs = nil;
-        NSFetchRequest *logsRequest = [NSFetchRequest fetchRequestWithEntityName:LogEntityName];
-        if (timestampLimit != nil)
-        {
-            logsRequest.predicate = [NSPredicate predicateWithFormat:@"%K > %@", TimestampAttributeName, timestampLimit];
-        }
-        logsRequest.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:TimestampAttributeName ascending:YES]];
-        logsRequest.resultType = NSDictionaryResultType;
-        NSArray *logs = [moc executeFetchRequest:logsRequest error:&errorLogs];
-        if (!logs)
-        {
-            ErrorLog(@"Error fetching logs for store at path '%@' because of error: %@", [self.storeURL path], errorLogs);
-            return;
-        }
-        
-        // logs --> changes
-        for (NSDictionary *logDictionary in logs)
-        {
-            NSNumber *timestamp = logDictionary[TimestampAttributeName];
-            NSNumber *parentTimestamp = logDictionary[ParentTimestampAttributeName];
-            NSString *key = logDictionary[KeyAttributeName];
-            NSData *blob = logDictionary[BlobAttributeName];
-            id propertyList = [self propertyListFromData:blob error:NULL];
-            if (timestamp != nil && key != nil && blob != nil)
-            {
-                PARChange *change = [PARChange changeWithTimestamp:timestamp parentTimestamp:parentTimestamp key:key propertyList:propertyList];
-                [changes addObject:change];
-            }
-        }
-        
-        [self closeDatabaseSoon];
-    }];
+     {
+         NSManagedObjectContext *moc = [self managedObjectContext];
+         if (moc == nil)
+         {
+             return;
+         }
+         
+         // From the documentation for `includesPendingChanges`: "A value of YES is not supported in conjunction with the result type NSDictionaryResultType, including calculation of aggregate results (such as max and min). For dictionaries, the array returned from the fetch reflects the current state in the persistent store, and does not take into account any pending changes, insertions, or deletions in the context."
+         // this means we need to save pending changes first to make sure they show up in the query
+         [self _save:NULL];
+         
+         // fetch Log rows in timestamp order, starting at `timestampLimit`
+         NSError *errorLogs = nil;
+         NSFetchRequest *logsRequest = [NSFetchRequest fetchRequestWithEntityName:LogEntityName];
+         
+         // Determine affected stores, based on device identifiers
+         if (fetchDeviceIdentifier == nil) {
+             logsRequest.affectedStores = nil; // All stores
+         }
+         else if ([fetchDeviceIdentifier isEqualToString:self.deviceIdentifier])
+         {
+             logsRequest.affectedStores = @[self.readwriteDatabase]; // Local store
+         }
+         else {
+             // Filter stores to find one that matches the device.
+             NSPredicate *predicate = [NSPredicate predicateWithBlock:^(NSPersistentStore *store, NSDictionary *bindings) {
+                 NSString *storeDeviceIdentifier = [self deviceIdentifierForDatabasePath:store.URL.path];
+                 return [storeDeviceIdentifier isEqualToString:fetchDeviceIdentifier];
+             }];
+             NSArray *eligibleStores = [self.readonlyDatabases filteredArrayUsingPredicate:predicate];
+             logsRequest.affectedStores = eligibleStores;
+         }
+         
+         // Predicate
+         logsRequest.predicate = predicate;
+         
+         // Sorting and result type
+         logsRequest.sortDescriptors = @[[NSSortDescriptor sortDescriptorWithKey:TimestampAttributeName ascending:YES]];
+         logsRequest.resultType = NSDictionaryResultType;
+         
+         // Execute the fetch
+         NSArray *logs = [moc executeFetchRequest:logsRequest error:&errorLogs];
+         if (!logs)
+         {
+             ErrorLog(@"Error fetching logs for store at path '%@' because of error: %@", [self.storeURL path], errorLogs);
+             return;
+         }
+         
+         // Convert logs to changes
+         for (NSDictionary *logDictionary in logs)
+         {
+             PARChange *change = [self changeFromLogDictionary:logDictionary];
+             if (change) [changes addObject:change];
+         }
+         
+         [self closeDatabaseSoon];
+     }];
     
     return changes;
+}
+
+- (PARChange *)changeFromLogDictionary:(NSDictionary *)logDictionary {
+    NSNumber *timestamp = logDictionary[TimestampAttributeName];
+    NSNumber *parentTimestamp = logDictionary[ParentTimestampAttributeName];
+    NSString *key = logDictionary[KeyAttributeName];
+    NSData *blob = logDictionary[BlobAttributeName];
+    id propertyList = [self propertyListFromData:blob error:NULL];
+    if (timestamp != nil && key != nil && blob != nil)
+    {
+        PARChange *change = [PARChange changeWithTimestamp:timestamp parentTimestamp:parentTimestamp key:key propertyList:propertyList];
+        return change;
+    }
+    else {
+        return nil;
+    }
 }
 
 
@@ -2567,6 +2749,31 @@ static void PARStoreLogsDidChange(
     change.key = key;
     change.propertyList = propertyList;
     return change;
+}
+
++ (PARChange *)changeWithPropertyDictionary:(id)propertyDictionary
+{
+    PARChange *change = [[PARChange alloc] init];
+    change.timestamp = propertyDictionary[@"timestamp"];
+    change.parentTimestamp = propertyDictionary[@"parentTimestamp"];
+    change.key = propertyDictionary[@"key"];
+    change.propertyList = propertyDictionary[@"propertyList"];
+    return change;
+}
+
+- (id)propertyDictionary
+{
+    NSMutableDictionary *dictionary = [[NSMutableDictionary alloc] init];
+    dictionary[@"timestamp"] = self.timestamp;
+    dictionary[@"key"] = self.key;
+    dictionary[@"propertyList"] = self.propertyList;
+    if (self.parentTimestamp) dictionary[@"parentTimestamp"] = self.parentTimestamp;
+    return [dictionary copy];
+}
+
+- (NSUInteger)hash
+{
+    return self.timestamp.hash ^ self.key.hash;
 }
 
 - (BOOL)isEqual:(id)object
