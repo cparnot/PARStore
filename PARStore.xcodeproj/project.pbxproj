@@ -74,7 +74,7 @@
 		569D021F16E2509F002675BA /* PARAppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PARAppDelegate.h; sourceTree = "<group>"; };
 		569D022016E2509F002675BA /* PARAppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PARAppDelegate.m; sourceTree = "<group>"; };
 		569D022216E250A7002675BA /* MainMenu.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MainMenu.xib; sourceTree = "<group>"; };
-		569D022916E25340002675BA /* LICENSE-BSD.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "LICENSE-BSD.txt"; sourceTree = "<group>"; };
+		569D022916E25340002675BA /* LICENSE-BSD.txt */ = {isa = PBXFileReference; lastKnownFileType = text; lineEnding = 0; path = "LICENSE-BSD.txt"; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = "<none>"; };
 		569D022A16E25340002675BA /* README.markdown */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.markdown; sourceTree = "<group>"; };
 		56C7EDC216E260EA00FFBBF2 /* iOS-PARStore.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "iOS-PARStore.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		56C7EDC416E260EA00FFBBF2 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = Library/Frameworks/UIKit.framework; sourceTree = DEVELOPER_DIR; };
