@@ -68,7 +68,7 @@
 /* Begin PBXFileReference section */
 		560C93DF16F1272C00C0E890 /* NSError+Factory.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSError+Factory.h"; sourceTree = "<group>"; };
 		560C93E016F1272C00C0E890 /* NSError+Factory.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSError+Factory.m"; sourceTree = "<group>"; };
-		561148E6196E952800F488F2 /* PARSQLiteTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PARSQLiteTests.m; sourceTree = "<group>"; };
+		561148E6196E952800F488F2 /* PARSQLiteTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = PARSQLiteTests.m; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		569D021C16E24FDA002675BA /* PARDispatchQueue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PARDispatchQueue.h; sourceTree = "<group>"; };
 		569D021D16E24FDA002675BA /* PARDispatchQueue.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PARDispatchQueue.m; sourceTree = "<group>"; };
 		569D021F16E2509F002675BA /* PARAppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PARAppDelegate.h; sourceTree = "<group>"; };
@@ -91,7 +91,7 @@
 		56C7EDDA16E260EB00FFBBF2 /* Default-568h@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-568h@2x.png"; sourceTree = "<group>"; };
 		56C7EDE116E260EB00FFBBF2 /* iOS-PARStoreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "iOS-PARStoreTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		56C7EDFA16E26D0700FFBBF2 /* PARTestCase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PARTestCase.h; sourceTree = "<group>"; };
-		56C7EDFB16E26D0700FFBBF2 /* PARTestCase.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PARTestCase.m; sourceTree = "<group>"; };
+		56C7EDFB16E26D0700FFBBF2 /* PARTestCase.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = PARTestCase.m; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		56C7EDFE16E270C600FFBBF2 /* PARStoreExample.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PARStoreExample.h; sourceTree = "<group>"; };
 		56C7EDFF16E270C600FFBBF2 /* PARStoreExample.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PARStoreExample.m; sourceTree = "<group>"; };
 		56C7EE0816E2811E00FFBBF2 /* PARNotificationSemaphore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PARNotificationSemaphore.h; sourceTree = "<group>"; };
@@ -105,14 +105,14 @@
 		56EAE18716E24C7500A7F31F /* Mac-PARStoreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Mac-PARStoreTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		56EAE18F16E24C7500A7F31F /* PARStoreTests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "PARStoreTests-Info.plist"; sourceTree = "<group>"; };
 		56EAE19116E24C7500A7F31F /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		56EAE19416E24C7500A7F31F /* PARStoreTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PARStoreTests.m; sourceTree = "<group>"; };
+		56EAE19416E24C7500A7F31F /* PARStoreTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = PARStoreTests.m; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		56EAE1B316E24E5500A7F31F /* PARStore-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "PARStore-Info.plist"; path = "Mac/PARStore-Info.plist"; sourceTree = SOURCE_ROOT; };
 		56EAE1B416E24E5500A7F31F /* PARStore-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "PARStore-Prefix.pch"; path = "Mac/PARStore-Prefix.pch"; sourceTree = SOURCE_ROOT; };
 		56EAE1B616E24E7300A7F31F /* Credits.rtf */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.rtf; name = Credits.rtf; path = Mac/Credits.rtf; sourceTree = SOURCE_ROOT; };
 		56EAE1B716E24E7300A7F31F /* InfoPlist.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; name = InfoPlist.strings; path = Mac/InfoPlist.strings; sourceTree = SOURCE_ROOT; };
 		56EAE1B816E24E7300A7F31F /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = Mac/main.m; sourceTree = SOURCE_ROOT; };
 		56EAE1BC16E24EAA00A7F31F /* PARStore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PARStore.h; path = Core/PARStore.h; sourceTree = SOURCE_ROOT; };
-		56EAE1BD16E24EAA00A7F31F /* PARStore.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PARStore.m; path = Core/PARStore.m; sourceTree = SOURCE_ROOT; };
+		56EAE1BD16E24EAA00A7F31F /* PARStore.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; name = PARStore.m; path = Core/PARStore.m; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		56FA3D761970359C00BF81D3 /* libsqlite3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libsqlite3.dylib; path = usr/lib/libsqlite3.dylib; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
