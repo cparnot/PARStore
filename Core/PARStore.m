@@ -1483,6 +1483,8 @@ NSString *PARBlobsDirectoryName = @"Blobs";
         // we already have the latest value from that key
         if (updatedValues[key] != nil)
         {
+            // Turn object back into fault to free up memory
+            [moc refreshObject:log mergeChanges:NO];
             continue;
         }
 
@@ -1509,10 +1511,10 @@ NSString *PARBlobsDirectoryName = @"Blobs";
         
         if ([[log objectID] persistentStore] != self.readwriteDatabase)
             hasForeignChanges = YES;
+        
+        // Turn object back into fault to free up memory
+        [moc refreshObject:log mergeChanges:NO];
     }
-    
-    // Reset MOC to free up memory
-    [moc reset];
     
     // update the timestamps for the keys
     NSMutableDictionary *newKeyTimestamps = self.keyTimestamps.mutableCopy ?: [NSMutableDictionary dictionary];
