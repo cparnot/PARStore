@@ -1443,10 +1443,9 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     if (timestampLimit)
         [logsRequest setPredicate:[NSPredicate predicateWithFormat:@"%K > %@", TimestampAttributeName, timestampLimit]];
     [logsRequest setSortDescriptors:@[[NSSortDescriptor sortDescriptorWithKey:TimestampAttributeName ascending:NO]]];
-    [logsRequest setFetchBatchSize:LOGS_BATCH_SIZE];
-    [logsRequest setReturnsObjectsAsFaults:NO];
-    NSArray *allLogs = [moc executeFetchRequest:logsRequest error:&errorLogs];
-    if (!allLogs)
+    [logsRequest setResultType:NSManagedObjectIDResultType];
+    NSArray *allLogObjectIDs = [moc executeFetchRequest:logsRequest error:&errorLogs];
+    if (!allLogObjectIDs)
     {
         ErrorLog(@"Error fetching logs for store at path '%@' because of error: %@", [self.storeURL path], errorLogs);
         return;
@@ -1458,8 +1457,11 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     
     // just go through each row (back in time) until all entries are loaded
     NSMutableDictionary *updatedValues = [NSMutableDictionary dictionary];
-    for (NSManagedObject *log in allLogs)
+    for (NSManagedObjectID *logID in allLogObjectIDs)
     {
+        // Get object
+        NSManagedObject *log = [moc objectWithID:logID];
+        
         // key
         NSString *key = [log valueForKey:KeyAttributeName];
         if (!key)
@@ -1508,6 +1510,9 @@ NSString *PARBlobsDirectoryName = @"Blobs";
         if ([[log objectID] persistentStore] != self.readwriteDatabase)
             hasForeignChanges = YES;
     }
+    
+    // Reset MOC to free up memory
+    [moc reset];
     
     // update the timestamps for the keys
     NSMutableDictionary *newKeyTimestamps = self.keyTimestamps.mutableCopy ?: [NSMutableDictionary dictionary];
