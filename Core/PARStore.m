@@ -1437,6 +1437,17 @@ NSString *PARBlobsDirectoryName = @"Blobs";
         }
     }
     
+    // Make sure logs are saved before querying. Some queries don't work without saved data, because they use SQLite.
+    NSError *saveError;
+    if (moc.hasChanges)
+    {
+        if (![moc save:&saveError])
+        {
+            ErrorLog(@"Could not save the context in preparation for sync: %@", saveError);
+            return;
+        }
+    }
+    
     // fetch Log rows created after the `timestampLimit` in reverse timestamp order (newest first) 
     NSError *errorLogs = nil;
     NSFetchRequest *logsRequest = [NSFetchRequest fetchRequestWithEntityName:LogEntityName];
