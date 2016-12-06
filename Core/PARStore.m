@@ -1484,7 +1484,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
         if (updatedValues[key] != nil)
         {
             // Turn object back into fault to free up memory
-            [moc refreshObject:log mergeChanges:NO];
+            [moc refreshObject:log mergeChanges:YES];
             continue;
         }
 
@@ -1513,7 +1513,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
             hasForeignChanges = YES;
         
         // Turn object back into fault to free up memory
-        [moc refreshObject:log mergeChanges:NO];
+        [moc refreshObject:log mergeChanges:YES];
     }
     
     // update the timestamps for the keys
