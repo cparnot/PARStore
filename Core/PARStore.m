@@ -618,7 +618,11 @@ NSString *PARDevicesDirectoryName = @"devices";
     [self closeDatabaseSoon];
 
     NSError *localError = nil;
-    if (self._managedObjectContext)
+    if (self._managedObjectContext == nil)
+    {
+        return YES;
+    }
+    else
     {
         NSFileCoordinator *coordinator = [[NSFileCoordinator alloc] initWithFilePresenter:self];
         NSURL *databaseURL = [NSURL fileURLWithPath:[[self readwriteDirectoryPath] stringByAppendingPathComponent:PARDatabaseFileName]];
@@ -630,13 +634,7 @@ NSString *PARDevicesDirectoryName = @"devices";
              if (![self._managedObjectContext save:&blockError])
                  saveError = blockError;
          }];
-        localError =coordinatorError;
-        if (!localError)
-            localError = saveError;
-    }
-    else
-    {
-        localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:@"No managed object context" underlyingError:nil];
+        localError =coordinatorError ?: saveError;
     }
     
     if (localError)
@@ -653,14 +651,11 @@ NSString *PARDevicesDirectoryName = @"devices";
     #elif TARGET_OS_MAC
     // save was successful: "blink" the database which relinquishes the lock on the file just enough for a service like Dropbox to upload the new version on the server
     // not needed on iOS where the files are all under the control of the app and would need to be manually uploaded to online file services
-    else
+    NSPersistentStore *store = self.readwriteDatabase;
+    if (store !=  nil)
     {
-        NSPersistentStore *store = self.readwriteDatabase;
-        if (store !=  nil)
-        {
-            // "blinking" can be done by simply setting again the URL of the persistent store
-            [[self._managedObjectContext persistentStoreCoordinator] setURL:store.URL forPersistentStore:store];
-        }
+        // "blinking" can be done by simply setting again the URL of the persistent store
+        [[self._managedObjectContext persistentStoreCoordinator] setURL:store.URL forPersistentStore:store];
     }
     #endif
 
