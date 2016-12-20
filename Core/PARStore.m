@@ -161,7 +161,7 @@ NSString *const ParentTimestampAttributeName = @"parentTimestamp";
     
     if ([self loaded])
     {
-        DebugLog(@"%@ added as file presenter", self.deviceIdentifier);
+        // DebugLog(@"%@ added as file presenter", self.deviceIdentifier);
         [NSFileCoordinator addFilePresenter:self];
         [self startFileSystemEventStreams];
     }
