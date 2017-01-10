@@ -48,7 +48,8 @@ extern NSString *PARStoreDidSyncNotification;
 - (void)setPropertyListValue:(id)plist forKey:(NSString *)key;
 - (NSArray *)allKeys;
 - (NSDictionary *)allEntries;
-- (void)setEntriesFromDictionary:(NSDictionary *)dictionary;
+- (void)setEntriesFromDictionary:(NSDictionary *)dictionary NS_SWIFT_NAME(setEntries(from:));
+
 - (void)runTransaction:(PARDispatchBlock)block;
 
 /// @name Adding and Accessing Blobs
