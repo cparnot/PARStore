@@ -50,6 +50,7 @@ NSString *const ParentTimestampAttributeName = @"parentTimestamp";
 @property (readwrite, nonatomic) BOOL _loaded;
 @property (readwrite, nonatomic) BOOL _deleted;
 @property (readwrite, nonatomic) BOOL _inMemory;
+@property (readwrite, nonatomic) BOOL _inMemoryCacheEnabled;
 @property (retain, nonatomic) NSMutableDictionary *_memoryFileData;
 @property (retain) NSMutableDictionary *_memoryKeyTimestamps;
 
@@ -113,6 +114,7 @@ NSString *const ParentTimestampAttributeName = @"parentTimestamp";
         self._memoryKeyTimestamps = [NSMutableDictionary dictionary];
         self._loaded = NO;
         self._deleted = NO;
+        self._inMemoryCacheEnabled = YES;
         
         // in memory store?
         if (url == nil)
@@ -134,6 +136,17 @@ NSString *const ParentTimestampAttributeName = @"parentTimestamp";
 - (NSString *)description
 {
     return [NSString stringWithFormat:@"<%@:%p> (device identifier: %@, url path: %@)", self.class, self, self.deviceIdentifier, self.storeURL.path];
+}
+
+#pragma mark - In-Memory Caching
+
+- (BOOL)inMemoryCacheEnabled {
+    return self._inMemoryCacheEnabled;
+}
+
+- (void)disableInMemoryCache {
+    self._inMemoryCacheEnabled = NO;
+    self._memory = nil;
 }
 
 #pragma mark - Loading / Closing Memory Layer
@@ -187,7 +200,7 @@ NSString *const ParentTimestampAttributeName = @"parentTimestamp";
     NSAssert([self.memoryQueue isInCurrentQueueStack], @"%@:%@ should only be called from within the memory queue", [self class], NSStringFromSelector(_cmd));
 
     // reset in-memory info
-    self._memory = [NSMutableDictionary dictionary];
+    self._memory = self._inMemoryCacheEnabled ? [NSMutableDictionary dictionary] : nil;
     self._memoryKeyTimestamps = [NSMutableDictionary dictionary];
     self._loaded = NO;
     self._deleted = NO;
@@ -818,6 +831,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
 
 - (NSDictionary *)allEntries
 {
+    NSAssert(self._inMemoryCacheEnabled, @"allEntries method only supported for PARStores using a memory cache");
     __block NSDictionary *allEntries = nil;
     [self.memoryQueue dispatchSynchronously:^{ allEntries = self._memory.copy; }];
     return allEntries;
@@ -825,6 +839,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
 
 - (id)propertyListValueForKey:(NSString *)key
 {
+    NSAssert(self._inMemoryCacheEnabled, @"propertyListValueForKey: method only supported for PARStores using a memory cache");
     __block id plist = nil;
     [self.memoryQueue dispatchSynchronously:^{ plist = self._memory[key]; }];
     return plist;
@@ -1373,7 +1388,10 @@ NSString *PARBlobsDirectoryName = @"Blobs";
 - (void)applySyncChangeWithValues:(NSDictionary *)values timestamps:(NSDictionary *)timestamps
 {
     NSAssert([self.memoryQueue isInCurrentQueueStack], @"%@:%@ should only be called from within the memory queue", [self class],NSStringFromSelector(_cmd));
-    [values enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *s)     { self._memory[key] = obj;              }];
+    if (self._inMemoryCacheEnabled)
+    {
+        [values enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *s)     { self._memory[key] = obj;              }];
+    }
     [timestamps enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *s) { self._memoryKeyTimestamps[key] = obj; }];
 }
 
@@ -1551,7 +1569,10 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     {
         [self.memoryQueue dispatchAsynchronously:^
          {
-             self._memory = [NSMutableDictionary dictionaryWithDictionary:updatedValues];
+             if (self._inMemoryCacheEnabled)
+             {
+                 self._memory = [NSMutableDictionary dictionaryWithDictionary:updatedValues];
+             }
              self._memoryKeyTimestamps = [NSMutableDictionary dictionaryWithDictionary:updatedKeyTimestamps];
              self._loaded = YES;
              [self postNotificationWithName:PARStoreDidLoadNotification userInfo:nil];
@@ -2255,6 +2276,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
 
 - (NSDictionary *)mostRecentTimestampsByKey
 {
+    NSAssert(self._inMemoryCacheEnabled, @"mostRecentTimestampsByKey not available if there is no memory cache");
     __block NSDictionary *timestamps = [NSMutableDictionary dictionary];
     [self.memoryQueue dispatchSynchronously:^
      {
