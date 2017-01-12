@@ -128,12 +128,12 @@ extern NSString *PARStoreDidSyncNotification;
 
 @interface PARChange : NSObject
 + (PARChange *)changeWithTimestamp:(NSNumber *)timestamp parentTimestamp:(nullable NSNumber *)parentTimestamp key:(NSString *)key propertyList:(id)propertyList;
-+ (PARChange *)changeWithPropertyDictionary:(id)propertyDictionary;
++ (PARChange *)changeWithPropertyDictionary:(NSDictionary *)propertyDictionary;
 @property (readonly, copy) NSNumber *timestamp;
 @property (readonly, copy, nullable) NSNumber *parentTimestamp;
 @property (readonly, copy) NSString *key;
 @property (readonly, copy) id propertyList;
-@property (readonly, copy) id propertyDictionary;
+@property (readonly, copy) NSDictionary *propertyDictionary;
 - (BOOL)isEqual:(nullable id)object;
 @end
 

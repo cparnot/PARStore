@@ -2769,7 +2769,7 @@ static void PARStoreLogsDidChange(
     return change;
 }
 
-+ (PARChange *)changeWithPropertyDictionary:(id)propertyDictionary
++ (PARChange *)changeWithPropertyDictionary:(NSDictionary *)propertyDictionary
 {
     PARChange *change = [[PARChange alloc] init];
     change.timestamp = propertyDictionary[@"timestamp"];
@@ -2779,7 +2779,7 @@ static void PARStoreLogsDidChange(
     return change;
 }
 
-- (id)propertyDictionary
+- (NSDictionary *)propertyDictionary
 {
     NSMutableDictionary *dictionary = [[NSMutableDictionary alloc] init];
     dictionary[@"timestamp"] = self.timestamp;
