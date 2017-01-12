@@ -10,7 +10,7 @@
 ///  - transparent syncing between multiple devices sharing the file via Dropbox, iCloud, or other file-based syncing system
 ///  - includes full history
 
-/// Note on memory management: before releasing a store object, it is recommended to call `saveNow` or `waitUntilFinished`, but not necessary. Any change will schedule a save operation that will still be performed and the object will still be retained until that happens. It is not necessary to explicitely `close` a store.
+/// Note on memory management: before releasing a store object, it is recommended to call `saveNow` or `waitUntilFinished`, but not necessary. Any change will schedule a save operation that will still be performed and the object will still be retained until that happens. It is not necessary to explicitly `close` a store.
 
 // TODO: add documentation to methods, also include whether the method will hit the db or not
 
@@ -42,6 +42,10 @@ extern NSString *PARStoreDidSyncNotification;
 @property (readonly) BOOL loaded;
 @property (readonly) BOOL deleted;
 @property (readonly) BOOL inMemory;
+@property (readonly) BOOL inMemoryCacheEnabled;
+
+/// @name Memory Cache
+- (void)disableInMemoryCache;
 
 /// @name Adding and Accessing Values
 - (nullable id)propertyListValueForKey:(NSString *)key;
