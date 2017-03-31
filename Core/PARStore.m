@@ -2331,33 +2331,48 @@ NSString *PARBlobsDirectoryName = @"Blobs";
 
 - (NSDictionary *)fetchMostRecentPredecessorsOfChanges:(NSArray *)changes forDeviceIdentifier:(nullable NSString *)deviceIdentifier
 {
-    // Fetch all changes corresponding to the keys passed in. Ordered asscending in time.
-    // Only fetch changes up to the maximum timestamp in our change set.
     NSArray *keys = [changes valueForKeyPath:KeyAttributeName];
     NSNumber *maximumTimestamp = [changes valueForKeyPath:@"@max.timestamp"];
-    NSDictionary *finalChangesByKey = [NSDictionary dictionaryWithObjects:changes forKeys:keys];
     NSPredicate *predicate = [NSPredicate predicateWithFormat:@"%K <= %@ AND %K IN %@", TimestampAttributeName, maximumTimestamp, KeyAttributeName, keys];
+    return [self fetchMostRecentVersionOfChanges:changes whereVersionPreceeds:YES andMatchesPredicate:predicate forDeviceIdentifier:deviceIdentifier];
+}
+
+- (NSDictionary *)fetchMostRecentSuccessorOfChanges:(NSArray *)changes forDeviceIdentifier:(nullable NSString *)deviceIdentifier
+{
+    NSArray *keys = [changes valueForKeyPath:KeyAttributeName];
+    NSNumber *minimumTimestamp = [changes valueForKeyPath:@"@min.timestamp"];
+    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"%K >= %@ AND %K IN %@", TimestampAttributeName, minimumTimestamp, KeyAttributeName, keys];
+    return [self fetchMostRecentVersionOfChanges:changes whereVersionPreceeds:NO andMatchesPredicate:predicate forDeviceIdentifier:deviceIdentifier];
+}
+
+- (NSDictionary *)fetchMostRecentVersionOfChanges:(NSArray *)changes whereVersionPreceeds:(BOOL)versionPreceeds andMatchesPredicate:(NSPredicate *)predicate forDeviceIdentifier:(nullable NSString *)deviceIdentifier
+{
+    // Fetch all changes corresponding to the keys passed in. Ordered asscending in time.
+    NSArray *keys = [changes valueForKeyPath:KeyAttributeName];
+    NSDictionary *finalChangesByKey = [NSDictionary dictionaryWithObjects:changes forKeys:keys];
     NSArray *allChanges = [self fetchChangesMatchingPredicate:predicate forDeviceIdentifier:deviceIdentifier];
     
-    // Iterate the changes in reverse order, looking for the most recent predecessor for each key.
-    NSMutableDictionary *predecessorsByKey = [NSMutableDictionary dictionary];
+    // Iterate the changes in reverse order, looking for the most recent version for each key.
+    NSMutableDictionary *versionsByKey = [NSMutableDictionary dictionary];
     for (PARChange *change in allChanges.reverseObjectEnumerator) {
-        // Check if we already have the most recent predecessor
+        // Check if we already have the most recent version
         NSString *key = change.key;
-        if (predecessorsByKey[key]) continue;
+        if (versionsByKey[key]) continue;
         
-        // Change must preceed our final change
-        PARChange *finalChange = finalChangesByKey[key];
-        if (change.timestamp >= finalChange.timestamp) continue;
+        // Check version is on the right side of change in time
+        PARChange *version = finalChangesByKey[key];
+        BOOL versionIsFirst = change.timestamp > version.timestamp;
+        BOOL timesAreEqual = change.timestamp == version.timestamp;
+        if (timesAreEqual || (versionPreceeds ^ versionIsFirst)) continue;
         
         // Store change
-        predecessorsByKey[key] = change;
+        versionsByKey[key] = change;
         
         // If we have already all keys populated, no need to continue
-        if (keys.count == predecessorsByKey.count) break;
+        if (keys.count == versionsByKey.count) break;
     }
     
-    return [predecessorsByKey copy];
+    return [versionsByKey copy];
 }
 
 - (NSArray *)fetchChangesMatchingPredicate:(NSPredicate *)predicate forDeviceIdentifier:(nullable NSString *)fetchDeviceIdentifier;
