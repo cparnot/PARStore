@@ -112,6 +112,12 @@ extern NSString *PARStoreDidSyncNotification;
 /// Pass nil for either timestamp to have an open range.
 - (NSArray *)fetchChangesFromTimestamp:(nullable NSNumber *)firstTimestamp toTimestamp:(nullable NSNumber *)lastTimestamp forDeviceIdentifier:(nullable NSString *)deviceIdentifier;
 
+/// Fetches the most recent predecessor of each change passed in, for the device passed in. If the device passed in is `nil`,
+/// it gives back the predecessor from any device.
+/// The returned dictionary contains the predecessors by `key` atribute.
+/// If a key is missing from the dictionary, no predecessor was found for that key.
+- (NSDictionary *)fetchMostRecentPredecessorsOfChanges:(NSArray *)changes forDeviceIdentifier:(nullable NSString *)deviceIdentifier;
+
 // TODO: error handling
 
 @end

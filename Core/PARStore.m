@@ -2329,6 +2329,31 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     return [self fetchChangesMatchingPredicate:predicate forDeviceIdentifier:deviceIdentifier];
 }
 
+- (NSDictionary *)fetchMostRecentPredecessorsOfChanges:(NSArray *)changes forDeviceIdentifier:(nullable NSString *)deviceIdentifier
+{
+    // Fetch all changes corresponding to the keys passed in. Ordered asscending in time.
+    NSArray *keys = [changes valueForKeyPath:KeyAttributeName];
+    NSDictionary *finalChangesByKey = [NSDictionary dictionaryWithObjects:changes forKeys:keys];
+    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"%K IN %@", KeyAttributeName, keys];
+    NSArray *allChanges = [self fetchChangesMatchingPredicate:predicate forDeviceIdentifier:deviceIdentifier];
+    
+    // Iterate the changes in reverse order, looking for the most recent predecessor for each key.
+    NSMutableDictionary *predecessorsByKey = [NSMutableDictionary dictionary];
+    for (PARChange *change in allChanges.reverseObjectEnumerator) {
+        // Check if we already have the most recent predecessor
+        NSString *key = change.key;
+        if (predecessorsByKey[key]) continue;
+        
+        // Change must preceed our final change
+        PARChange *finalChange = finalChangesByKey[key];
+        if (change.timestamp >= finalChange.timestamp) continue;
+        
+        predecessorsByKey[key] = change;
+    }
+    
+    return [predecessorsByKey copy];
+}
+
 - (NSArray *)fetchChangesMatchingPredicate:(NSPredicate *)predicate forDeviceIdentifier:(nullable NSString *)fetchDeviceIdentifier;
 {
     if ([self.memoryQueue isInCurrentQueueStack])
