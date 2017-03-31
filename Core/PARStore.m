@@ -2332,9 +2332,11 @@ NSString *PARBlobsDirectoryName = @"Blobs";
 - (NSDictionary *)fetchMostRecentPredecessorsOfChanges:(NSArray *)changes forDeviceIdentifier:(nullable NSString *)deviceIdentifier
 {
     // Fetch all changes corresponding to the keys passed in. Ordered asscending in time.
+    // Only fetch changes up to the maximum timestamp in our change set.
     NSArray *keys = [changes valueForKeyPath:KeyAttributeName];
+    NSNumber *maximumTimestamp = [changes valueForKeyPath:@"@max.timestamp"];
     NSDictionary *finalChangesByKey = [NSDictionary dictionaryWithObjects:changes forKeys:keys];
-    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"%K IN %@", KeyAttributeName, keys];
+    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"%K <= %@ AND %K IN %@", TimestampAttributeName, maximumTimestamp, KeyAttributeName, keys];
     NSArray *allChanges = [self fetchChangesMatchingPredicate:predicate forDeviceIdentifier:deviceIdentifier];
     
     // Iterate the changes in reverse order, looking for the most recent predecessor for each key.
@@ -2348,7 +2350,11 @@ NSString *PARBlobsDirectoryName = @"Blobs";
         PARChange *finalChange = finalChangesByKey[key];
         if (change.timestamp >= finalChange.timestamp) continue;
         
+        // Store change
         predecessorsByKey[key] = change;
+        
+        // If we have already all keys populated, no need to continue
+        if (keys.count == predecessorsByKey.count) break;
     }
     
     return [predecessorsByKey copy];
