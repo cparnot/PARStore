@@ -2337,7 +2337,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     return [self fetchMostRecentVersionOfChanges:changes whereVersionPreceeds:YES andMatchesPredicate:predicate forDeviceIdentifier:deviceIdentifier];
 }
 
-- (NSDictionary *)fetchMostRecentSuccessorOfChanges:(NSArray *)changes forDeviceIdentifier:(nullable NSString *)deviceIdentifier
+- (NSDictionary *)fetchMostRecentSuccessorsOfChanges:(NSArray *)changes forDeviceIdentifier:(nullable NSString *)deviceIdentifier
 {
     NSArray *keys = [changes valueForKeyPath:KeyAttributeName];
     NSNumber *minimumTimestamp = [changes valueForKeyPath:@"@min.timestamp"];
