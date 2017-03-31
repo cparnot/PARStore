@@ -2345,28 +2345,28 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     return [self fetchMostRecentVersionOfChanges:changes whereVersionPreceeds:NO andMatchesPredicate:predicate forDeviceIdentifier:deviceIdentifier];
 }
 
-- (NSDictionary *)fetchMostRecentVersionOfChanges:(NSArray *)changes whereVersionPreceeds:(BOOL)versionPreceeds andMatchesPredicate:(NSPredicate *)predicate forDeviceIdentifier:(nullable NSString *)deviceIdentifier
+- (NSDictionary *)fetchMostRecentVersionOfChanges:(NSArray *)changes whereVersionPreceeds:(BOOL)versionShouldPreceed andMatchesPredicate:(NSPredicate *)predicate forDeviceIdentifier:(nullable NSString *)deviceIdentifier
 {
     // Fetch all changes corresponding to the keys passed in. Ordered asscending in time.
     NSArray *keys = [changes valueForKeyPath:KeyAttributeName];
-    NSDictionary *finalChangesByKey = [NSDictionary dictionaryWithObjects:changes forKeys:keys];
-    NSArray *allChanges = [self fetchChangesMatchingPredicate:predicate forDeviceIdentifier:deviceIdentifier];
+    NSDictionary *changesByKey = [NSDictionary dictionaryWithObjects:changes forKeys:keys];
+    NSArray *fetchedChanges = [self fetchChangesMatchingPredicate:predicate forDeviceIdentifier:deviceIdentifier];
     
     // Iterate the changes in reverse order, looking for the most recent version for each key.
     NSMutableDictionary *versionsByKey = [NSMutableDictionary dictionary];
-    for (PARChange *change in allChanges.reverseObjectEnumerator) {
+    for (PARChange *version in fetchedChanges.reverseObjectEnumerator) {
         // Check if we already have the most recent version
-        NSString *key = change.key;
+        NSString *key = version.key;
         if (versionsByKey[key]) continue;
         
-        // Check version is on the right side of change in time
-        PARChange *version = finalChangesByKey[key];
-        BOOL versionIsFirst = change.timestamp > version.timestamp;
-        BOOL timesAreEqual = change.timestamp == version.timestamp;
-        if (timesAreEqual || (versionPreceeds ^ versionIsFirst)) continue;
+        // Check version is on the right side of the original change in time
+        PARChange *change = changesByKey[key];
+        BOOL versionPreceeds = version.timestamp < change.timestamp;
+        BOOL timesAreEqual = version.timestamp == change.timestamp;
+        if (timesAreEqual || (versionShouldPreceed != versionPreceeds)) continue;
         
         // Store change
-        versionsByKey[key] = change;
+        versionsByKey[key] = version;
         
         // If we have already all keys populated, no need to continue
         if (keys.count == versionsByKey.count) break;
