@@ -2347,7 +2347,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
 
 - (NSDictionary *)fetchMostRecentVersionOfChanges:(NSArray *)changes whereVersionPreceeds:(BOOL)versionShouldPreceed andMatchesPredicate:(NSPredicate *)predicate forDeviceIdentifier:(nullable NSString *)deviceIdentifier
 {
-    // Fetch all changes corresponding to the keys passed in. Ordered asscending in time.
+    // Fetch all changes corresponding to the keys passed in. Ordered ascending in time.
     NSArray *keys = [changes valueForKeyPath:KeyAttributeName];
     NSDictionary *changesByKey = [NSDictionary dictionaryWithObjects:changes forKeys:keys];
     NSArray *fetchedChanges = [self fetchChangesMatchingPredicate:predicate forDeviceIdentifier:deviceIdentifier];
@@ -2368,7 +2368,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
         // Store change
         versionsByKey[key] = version;
         
-        // If we have already all keys populated, no need to continue
+        // If we already have all keys populated, no need to continue
         if (keys.count == versionsByKey.count) break;
     }
     
