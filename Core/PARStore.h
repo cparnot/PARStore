@@ -53,6 +53,7 @@ extern NSString *PARStoreDidSyncNotification;
 - (NSArray *)allKeys;
 - (NSDictionary *)allEntries;
 - (void)setEntriesFromDictionary:(NSDictionary *)dictionary NS_SWIFT_NAME(setEntries(from:));
+- (void)setEntriesFromDictionary:(NSDictionary *)dictionary timestampApplied:(NSNumber * __autoreleasing _Nonnull * _Nullable)returnTimestamp NS_SWIFT_NAME(setEntries(from:timestampApplied:));
 
 - (void)runTransaction:(PARDispatchBlock)block;
 

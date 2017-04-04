@@ -906,10 +906,15 @@ NSString *PARBlobsDirectoryName = @"Blobs";
      }];
 }
 
-- (void)setEntriesFromDictionary:(NSDictionary *)dictionary
+- (void)setEntriesFromDictionary:(NSDictionary *)dictionary {
+    [self setEntriesFromDictionary:dictionary timestampApplied:NULL];
+}
+
+- (void)setEntriesFromDictionary:(NSDictionary *)dictionary timestampApplied:(NSNumber * _Nonnull __autoreleasing * _Nullable)returnTimestamp
 {
     // get the timestamp **now**, so we have the current date, not the date at which the block will run
     NSNumber *newTimestamp = [PARStore timestampNow];
+    if (returnTimestamp) *returnTimestamp = newTimestamp;
 
     [self.memoryQueue dispatchSynchronously:^
      {
