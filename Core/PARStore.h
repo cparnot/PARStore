@@ -125,6 +125,10 @@ extern NSString *PARStoreDidSyncNotification;
 /// If a key is missing from the dictionary, no successor was found for that key (ie the change itself is most recent).
 - (NSDictionary *)fetchMostRecentSuccessorsOfChanges:(NSArray *)changes forDeviceIdentifier:(nullable NSString *)deviceIdentifier;
 
+/// Returns an array representing the most recent set of changes matching a given key prefix. A single device can be passed in, or nil,
+/// to search across all devices.
+- (NSArray *)fetchMostRecentChangesMatchingKeyPrefix:(NSString *)prefix forDeviceIdentifier:(nullable NSString *)fetchDeviceIdentifier;
+
 // TODO: error handling
 
 @end
