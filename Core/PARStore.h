@@ -16,6 +16,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@class PARChange;
+
 /// @name Notifications
 /// Notifications are posted asynchronously. You cannot expect the store to be in the state that it was after the last operation that triggered the notification. The 'Change' and 'Sync' notifications includes a user info dictionary with two entries @"values" and @"timestamps"; each entry contain a dictionary where the keys correspond to the keys changed by the sync, and the values corresponding property list values and timestamps, respectively. In the case of 'Sync' notifications, these are the same dictionaries as the one passed to the method `applySyncChangeWithValues:timestamps:`.
 
@@ -100,34 +102,34 @@ extern NSString *PARStoreDidSyncNotification;
 
 /// @name History
 // This method returns an array of PARChange instances. It should not be called from within a transaction, or it will fail.
-- (NSArray *)fetchChangesSinceTimestamp:(nullable NSNumber *)timestamp;
+- (NSArray<PARChange *> *)fetchChangesSinceTimestamp:(nullable NSNumber *)timestamp;
 
 /// This method returns an array of PARChange instances for the device identifier passed in.
 /// It should not be called from within a transaction, or it will fail.
 /// Pass in nil for the device identifier to get results for all devices.
-- (NSArray *)fetchChangesSinceTimestamp:(nullable NSNumber *)timestamp forDeviceIdentifier:(nullable NSString *)deviceIdentifier;
+- (NSArray<PARChange *> *)fetchChangesSinceTimestamp:(nullable NSNumber *)timestamp forDeviceIdentifier:(nullable NSString *)deviceIdentifier;
 
 /// This method returns an array of PARChange instances for the device identifier passed in, between (and including) the timestamps passed.
 /// It should not be called from within a transaction, or it will fail.
 /// Pass in nil for the device identifier to get results for all devices.
 /// Pass nil for either timestamp to have an open range.
-- (NSArray *)fetchChangesFromTimestamp:(nullable NSNumber *)firstTimestamp toTimestamp:(nullable NSNumber *)lastTimestamp forDeviceIdentifier:(nullable NSString *)deviceIdentifier;
+- (NSArray<PARChange *> *)fetchChangesFromTimestamp:(nullable NSNumber *)firstTimestamp toTimestamp:(nullable NSNumber *)lastTimestamp forDeviceIdentifier:(nullable NSString *)deviceIdentifier;
 
 /// Fetches the most recent predecessor of each change passed in, for the device passed in. If the device passed in is `nil`,
 /// it gives back the predecessor from any device.
 /// The returned dictionary contains the predecessors by `key` atribute.
 /// If a key is missing from the dictionary, no predecessor was found for that key.
-- (NSDictionary *)fetchMostRecentPredecessorsOfChanges:(NSArray *)changes forDeviceIdentifier:(nullable NSString *)deviceIdentifier;
+- (NSDictionary<NSString *, PARChange *> *)fetchMostRecentPredecessorsOfChanges:(NSArray *)changes forDeviceIdentifier:(nullable NSString *)deviceIdentifier;
 
 /// Fetches the most recent successor of each change passed in, for the device passed in. If the device passed in is `nil`,
 /// it gives back the successor from any device.
 /// The returned dictionary contains the successors by `key` atribute.
 /// If a key is missing from the dictionary, no successor was found for that key (ie the change itself is most recent).
-- (NSDictionary *)fetchMostRecentSuccessorsOfChanges:(NSArray *)changes forDeviceIdentifier:(nullable NSString *)deviceIdentifier;
+- (NSDictionary<NSString *, PARChange *> *)fetchMostRecentSuccessorsOfChanges:(NSArray *)changes forDeviceIdentifier:(nullable NSString *)deviceIdentifier;
 
 /// Returns an array representing the most recent set of changes matching a given key prefix. A single device can be passed in, or nil,
 /// to search across all devices.
-- (NSArray *)fetchMostRecentChangesMatchingKeyPrefix:(NSString *)prefix forDeviceIdentifier:(nullable NSString *)fetchDeviceIdentifier;
+- (NSArray<PARChange *> *)fetchMostRecentChangesMatchingKeyPrefix:(NSString *)prefix forDeviceIdentifier:(nullable NSString *)fetchDeviceIdentifier;
 
 // TODO: error handling
 
