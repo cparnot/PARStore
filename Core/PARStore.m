@@ -586,7 +586,10 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     self.readonlyDatabases = [NSArray arrayWithArray:otherStores];
 
     // context
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     NSManagedObjectContext *moc = [[NSManagedObjectContext alloc] init];
+#pragma clang diagnostic pop
     [moc setPersistentStoreCoordinator:psc];
     [moc setUndoManager:nil];
     self._managedObjectContext = moc;
@@ -1888,7 +1891,11 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     {
         return @[];
     }
+    
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     NSManagedObjectContext *moc = [[NSManagedObjectContext alloc] init];
+#pragma clang diagnostic pop
     [moc setPersistentStoreCoordinator:psc];
     [moc setUndoManager:nil];
 
@@ -1957,7 +1964,11 @@ NSString *PARBlobsDirectoryName = @"Blobs";
         {
             return nil;
         }
+        
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
         NSManagedObjectContext *moc = [[NSManagedObjectContext alloc] init];
+#pragma clang diagnostic pop
         [moc setPersistentStoreCoordinator:psc];
         [moc setUndoManager:nil];
         
