@@ -232,7 +232,8 @@
     [store1 syncNow];
 }
 
-- (void)testStoreSync
+// testing that new property added to first device is properly applied to second device
+- (void)testStoreSyncNewPropertyFirstToSecond
 {
 	NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"SyncTest.parstore"];
 	
@@ -260,8 +261,8 @@
     [store2 tearDownNow];
 }
 
-// same as `testStoreSync` but changing store 2
-- (void)testDeviceAddition
+// testing that new property added to second device is properly applied to first device
+- (void)testStoreSyncNewPropertySecondToFirst
 {
 	NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"SyncTest.parstore"];
 	
@@ -290,6 +291,94 @@
     [store2 tearDownNow];
 }
 
+// testing that changed property done in second device is properly applied to first device
+- (void)testStoreSyncChangedPropertyFirstToSecond
+{
+    NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"SyncTest.parstore"];
+    
+    PARStoreExample *store1 = [PARStoreExample storeWithURL:url deviceIdentifier:@"1"];
+    [store1 loadNow];
+    XCTAssertTrue([store1 loaded], @"Store not loaded");
+    XCTAssertNil(store1.title, @"A new store should not have a title");
+    
+    PARStoreExample *store2 = [PARStoreExample storeWithURL:url deviceIdentifier:@"2"];
+    [store2 loadNow];
+    XCTAssertTrue([store2 loaded], @"Store not loaded");
+    XCTAssertNil(store2.title, @"A new store should not have a title");
+    
+    // change first store --> should trigger a change in the second store
+    NSString *title1 = @"Title 1";
+    NSString *title2 = @"Title 2";
+    store2.title = title2;
+    PARNotificationSemaphore *semaphore = [PARNotificationSemaphore semaphoreForNotificationName:PARStoreDidSyncNotification object:store2];
+    store1.title = title1;
+    [store1 saveNow];
+    
+    BOOL completedWithoutTimeout = [semaphore waitUntilNotificationWithTimeout:10.0];
+    XCTAssertTrue(completedWithoutTimeout, @"Timeout while waiting for document sync");
+    
+    NSString *expectedTitle = title1;
+    XCTAssertEqualObjects(store1.title, expectedTitle, @"Title is '%@' but should be '%@'", store1.title, expectedTitle);
+    XCTAssertEqualObjects(store2.title, expectedTitle, @"Title is '%@' but should be '%@'", store2.title, expectedTitle);
+    
+    [store1 tearDownNow];
+    [store2 tearDownNow];
+    
+    // reopening the stores with either device from scratch should give the same results
+    PARStoreExample *store3 = [PARStoreExample storeWithURL:url deviceIdentifier:@"1"];
+    PARStoreExample *store4 = [PARStoreExample storeWithURL:url deviceIdentifier:@"2"];
+    [store3 loadNow];
+    [store4 loadNow];
+    XCTAssertEqualObjects(store3.title, expectedTitle, @"Title is '%@' but should be '%@'", store3.title, expectedTitle);
+    XCTAssertEqualObjects(store4.title, expectedTitle, @"Title is '%@' but should be '%@'", store3.title, expectedTitle);
+    [store3 tearDownNow];
+    [store4 tearDownNow];
+}
+
+// testing that changed property done in second device is properly applied to first device
+- (void)testStoreSyncChangedPropertySecondToFirst
+{
+    NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"SyncTest.parstore"];
+    
+    PARStoreExample *store1 = [PARStoreExample storeWithURL:url deviceIdentifier:@"1"];
+    [store1 loadNow];
+    XCTAssertTrue([store1 loaded], @"Store not loaded");
+    XCTAssertNil(store1.title, @"A new store should not have a title");
+    
+    PARStoreExample *store2 = [PARStoreExample storeWithURL:url deviceIdentifier:@"2"];
+    [store2 loadNow];
+    XCTAssertTrue([store2 loaded], @"Store not loaded");
+    XCTAssertNil(store2.title, @"A new store should not have a title");
+    
+    // change first store --> should trigger a change in the second store
+    NSString *title1 = @"Title 1";
+    NSString *title2 = @"Title 2";
+    store1.title = title1;
+    PARNotificationSemaphore *semaphore = [PARNotificationSemaphore semaphoreForNotificationName:PARStoreDidSyncNotification object:store1];
+    store2.title = title2;
+    [store2 saveNow];
+    
+    BOOL completedWithoutTimeout = [semaphore waitUntilNotificationWithTimeout:10.0];
+    XCTAssertTrue(completedWithoutTimeout, @"Timeout while waiting for document sync");
+
+    NSString *expectedTitle = title2;
+    XCTAssertEqualObjects(store1.title, expectedTitle, @"Title is '%@' but should be '%@'", store1.title, expectedTitle);
+    XCTAssertEqualObjects(store2.title, expectedTitle, @"Title is '%@' but should be '%@'", store2.title, expectedTitle);
+    
+    [store1 tearDownNow];
+    [store2 tearDownNow];
+
+    // reopening the stores with either device from scratch should give the same results
+    PARStoreExample *store3 = [PARStoreExample storeWithURL:url deviceIdentifier:@"1"];
+    PARStoreExample *store4 = [PARStoreExample storeWithURL:url deviceIdentifier:@"2"];
+    [store3 loadNow];
+    [store4 loadNow];
+    XCTAssertEqualObjects(store3.title, expectedTitle, @"Title is '%@' but should be '%@'", store3.title, expectedTitle);
+    XCTAssertEqualObjects(store4.title, expectedTitle, @"Title is '%@' but should be '%@'", store3.title, expectedTitle);
+    [store3 tearDownNow];
+    [store4 tearDownNow];
+}
+
 
 #pragma mark - Testing Merge
 
@@ -297,18 +386,18 @@
 {
     NSURL *urlA = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"MergeTestA.parstore"];
     PARStoreExample *storeA1 = [PARStoreExample storeWithURL:urlA deviceIdentifier:@"1"];
-    [storeA1 loadNow];
     PARStoreExample *storeA2 = [PARStoreExample storeWithURL:urlA deviceIdentifier:@"2"];
+    [storeA1 loadNow];
     [storeA2 loadNow];
     storeA1.title = @"titleA1";
     storeA2.title = @"titleA2";
     [storeA1 saveNow];
     [storeA2 saveNow];
-    
+
     NSURL *urlB = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"MergeTestB.parstore"];
     PARStoreExample *storeB1 = [PARStoreExample storeWithURL:urlB deviceIdentifier:@"1"];
-    [storeB1 loadNow];
     PARStoreExample *storeB2 = [PARStoreExample storeWithURL:urlB deviceIdentifier:@"2"];
+    [storeB1 loadNow];
     [storeB2 loadNow];
     storeB1.title = @"titleB1";
     storeB2.title = @"titleB2";
@@ -323,15 +412,20 @@
     }];
     BOOL completedWithoutTimeout = [semaphore waitUntilNotificationWithTimeout:1.0];
     XCTAssertTrue(completedWithoutTimeout, @"Timeout while waiting for PARStore merge");
-    
     NSString *expectedTitle = @"titleB2";
     [storeA1 loadNow];
     XCTAssertEqualObjects(storeA1.title, expectedTitle, @" - title is '%@' but should be '%@'", storeA1.title, expectedTitle);
-    
+
     [storeA1 tearDownNow];
     [storeA2 tearDownNow];
     [storeB1 tearDownNow];
     [storeB2 tearDownNow];
+
+    // it should also work by loading a store from another device
+    PARStoreExample *storeA3 = [PARStoreExample storeWithURL:urlA deviceIdentifier:@"3"];
+    [storeA3 loadNow];
+    XCTAssertEqualObjects(storeA3.title, expectedTitle, @" - title is '%@' but should be '%@'", storeA3.title, expectedTitle);
+    [storeA3 tearDownNow];
 }
 
 - (void)testMergeWithUnsafeDeviceIdentifiers
