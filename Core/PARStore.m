@@ -1517,12 +1517,16 @@ NSString *PARBlobsDirectoryName = @"Blobs";
             [updatedDatabaseTimestamps setObject:logTimestamp forKey:store];
         }
 
-        // we already have the latest value from that key
+        // we may already have the latest value from that key
         if (updatedValues[key] != nil)
         {
-            // Turn object back into fault to free up memory
-            [moc refreshObject:log mergeChanges:YES];
-            continue;
+            NSNumber *earliestTimestamp = updatedKeyTimestamps[key];
+            if ([logTimestamp compare:earliestTimestamp] == NSOrderedAscending)
+            {
+                // Turn object back into fault to free up memory
+                [moc refreshObject:log mergeChanges:YES];
+                continue;
+            }
         }
 
         // blob --> object
