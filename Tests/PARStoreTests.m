@@ -175,6 +175,47 @@
     document2 = nil;
 }
 
+// Tests that the correct value is picked up based on the latest timestamp even if the rows are not added in timestamp order
+- (void)testReverseTimestampOrder
+{
+    NSString *titleA = @"Title A";
+    NSString *firstA = @"Albert";
+    NSNumber *timestampA = [PARStore timestampNow];
+    
+    NSString *titleB = @"Title B";
+    NSString *firstB = @"Benjamin";
+    NSNumber *timestampB = [PARStore timestampNow];
+
+    // 'title' changes will be applied in chronological order
+    PARChange *changeA1 = [PARChange changeWithTimestamp:timestampA parentTimestamp:nil key:@"title" propertyList:titleA];
+    PARChange *changeB1 = [PARChange changeWithTimestamp:timestampB parentTimestamp:nil key:@"title" propertyList:titleB];
+
+    // 'first' changes will be applied in reverse chronological order, which is not what we typically expect, but can still happen, and thus need to be tested
+    // we expect the history to be read in the correct order and the first change with timestampB to correctly be interpreted as corresponding the latest value
+    PARChange *changeA2 = [PARChange changeWithTimestamp:timestampB parentTimestamp:nil key:@"first" propertyList:firstA];
+    PARChange *changeB2 = [PARChange changeWithTimestamp:timestampA parentTimestamp:nil key:@"first" propertyList:firstB];
+
+    // to insert the changes manually, we use the `insertChanges:` API
+    NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
+    NSString *device = [self deviceIdentifierForTest];
+    PARStoreExample *document1 = [PARStoreExample storeWithURL:url deviceIdentifier:device];
+    [document1 loadNow];
+    NSError *error = nil;
+    XCTAssertTrue([document1 insertChanges:@[changeA1] forDeviceIdentifier:device appendOnly:NO error:nil], @"error applying change: %@", error);
+    XCTAssertTrue([document1 insertChanges:@[changeB1] forDeviceIdentifier:device appendOnly:NO error:nil], @"error applying change: %@", error);
+    XCTAssertTrue([document1 insertChanges:@[changeA2] forDeviceIdentifier:device appendOnly:NO error:nil], @"error applying change: %@", error);
+    XCTAssertTrue([document1 insertChanges:@[changeB2] forDeviceIdentifier:device appendOnly:NO error:nil], @"error applying change: %@", error);
+    [document1 tearDownNow];
+    document1 = nil;
+
+    // because of the `insertChanges:` API, we need to reload the store from scratch and force PARStore to pick up the new logs
+    PARStoreExample *document2 = [PARStoreExample storeWithURL:url deviceIdentifier:device];
+    [document2 loadNow];
+    XCTAssertEqualObjects(document2.title, titleB, @"unexpected 'title' value : '%@' instead of '%@'", document2.title, titleB);
+    XCTAssertEqualObjects(document2.first, firstA, @"unexpected 'title' value : '%@' instead of '%@'", document2.first, firstA);
+    [document2 tearDownNow];
+}
+
 - (void)testPropertyAccessAfterClosingDatabase
 {
     NSString *title   = @"Some title";
