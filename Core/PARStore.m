@@ -874,7 +874,15 @@ NSString *PARBlobsDirectoryName = @"Blobs";
      {
          NSNumber *newTimestamp = [PARStore timestampNow];
          
-         self._memory[key] = plist;
+         if (plist)
+         {
+             self._memory[key] = plist;
+         }
+         else
+         {
+             [self._memory removeObjectForKey:key];
+         }
+         
          if (self._inMemory)
          {
              [self postDidChangeNotificationWithUserInfo:@{@"values": @{key: plist}, @"timestamps": @{key: newTimestamp}}];
@@ -925,10 +933,17 @@ NSString *PARBlobsDirectoryName = @"Blobs";
 
     [self.memoryQueue dispatchSynchronously:^
      {
-         // each key/value --> add to memory story if the value is not a marker for a removed value
+         // each key/value --> add to memory store if the value is not a marker for a removed value
          [dictionary enumerateKeysAndObjectsUsingBlock:^(id key, id plist, BOOL *stop)
          {
-             self._memory[key] = (plist != [NSNull null] ? plist : nil);
+             if (plist != [NSNull null])
+             {
+                 self._memory[key] = plist;
+             }
+             else
+             {
+                 [self._memory removeObjectForKey:key];
+             }
          }];
          
          if (self._inMemory)
@@ -1409,7 +1424,14 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     {
         [values enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *s)
         {
-            self._memory[key] = (obj != [NSNull null] ? obj : nil);
+            if (obj != [NSNull null])
+            {
+                self._memory[key] = obj;
+            }
+            else
+            {
+                [self._memory removeObjectForKey:key];
+            }
         }];
     }
     [timestamps enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *s)
@@ -1597,7 +1619,14 @@ NSString *PARBlobsDirectoryName = @"Blobs";
              {
                  [updatedValues enumerateKeysAndObjectsUsingBlock:^(id key, id newValue, BOOL *stop)
                  {
-                     self._memory[key] = (newValue != [NSNull null] ? newValue : nil);
+                     if (newValue != [NSNull null])
+                     {
+                         self._memory[key] = newValue;
+                     }
+                     else
+                     {
+                         [self._memory removeObjectForKey:key];
+                     }
                  }];
              }
              self._memoryKeyTimestamps = [NSMutableDictionary dictionaryWithDictionary:updatedKeyTimestamps];
@@ -1880,7 +1909,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
             [self _load];
             
             // adjust the memory cache
-            // TODO: @cparnot can you check if merging goes well with two libraries where in one a value was set to nil (so it has a timestamp but is not in the memory story)
+            // TODO: @cparnot can you check if merging goes well with two libraries where in one a value was set to nil (so it has a timestamp but is not in the memory store)
             [currentMemoryKeyTimestamps enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSNumber *memoryTimestamp, BOOL *stop)
              {
                  NSNumber *syncTimestamp = self._memoryKeyTimestamps[key];
