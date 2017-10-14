@@ -897,7 +897,8 @@ NSString *PARBlobsDirectoryName = @"Blobs";
          {
              NSNumber *oldTimestamp = self._memoryKeyTimestamps[key];
              self._memoryKeyTimestamps[key] = newTimestamp;
-             [self postDidChangeNotificationWithUserInfo:@{@"values": @{key: plist}, @"timestamps": @{key: newTimestamp}}];
+             id value = (plist != nil ? plist : [NSNull null]);
+             [self postDidChangeNotificationWithUserInfo:@{@"values": @{key: value}, @"timestamps": @{key: newTimestamp}}];
              
              [self.databaseQueue dispatchAsynchronously:
               ^{
