@@ -272,6 +272,63 @@
     document2 = nil;
 }
 
+// tests the use of the method `insertChanges:forDeviceIdentifier:appendOnly:error:`
+- (void)testInsertChanges
+{
+    NSString *title = @"Some title";
+    NSString *first = @"Albert";
+    PARChange *change1 = [PARChange changeWithTimestamp:[PARStore timestampNow] parentTimestamp:nil key:@"title" propertyList:title];
+    PARChange *change2 = [PARChange changeWithTimestamp:[PARStore timestampNow] parentTimestamp:nil key:@"first" propertyList:first];
+    NSArray *changes = @[change1, change2];
+    
+    // first load = create document and save data
+    NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
+    PARStoreExample *document1 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
+    [document1 loadNow];
+    NSError *error = nil;
+    XCTAssertTrue([document1 insertChanges:changes forDeviceIdentifier:[self deviceIdentifierForTest] appendOnly:false error:&error], @"error: %@", error);
+    [document1 tearDownNow];
+    document1 = nil;
+    
+    // second load = load document and compare data
+    PARStoreExample *document2 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
+    [document2 loadNow];
+    NSString *actualTitle = [document2 propertyListValueForKey:@"title"];
+    NSString *actualFirst = document2.first;
+    XCTAssertEqualObjects(actualTitle, title, @"unexpected 'title' value after closing and reopening a document: '%@' instead of '%@'", actualTitle, title);
+    XCTAssertEqualObjects(actualFirst, first, @"unexpected 'first' value after closing and reopening a document: '%@' instead of '%@'", actualFirst, first);
+    [document2 tearDownNow];
+    document2 = nil;
+}
+
+// tests the use of nil values in the method `insertChanges:forDeviceIdentifier:appendOnly:error:`
+- (void)testInsertChangesWithNil
+{
+    NSString *title = @"Some title";
+    NSString *first = @"Albert";
+    PARChange *change1 = [PARChange changeWithTimestamp:[PARStore timestampNow] parentTimestamp:nil key:@"title" propertyList:title];
+    PARChange *change2 = [PARChange changeWithTimestamp:[PARStore timestampNow] parentTimestamp:nil key:@"first" propertyList:first];
+    PARChange *change3 = [PARChange changeWithTimestamp:[PARStore timestampNow] parentTimestamp:nil key:@"first" propertyList:nil];
+    NSArray *changes = @[change1, change2, change3];
+    
+    // first load = create document and save data
+    NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
+    PARStoreExample *document1 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
+    [document1 loadNow];
+    NSError *error = nil;
+    XCTAssertTrue([document1 insertChanges:changes forDeviceIdentifier:[self deviceIdentifierForTest] appendOnly:false error:&error], @"error: %@", error);
+    [document1 tearDownNow];
+    document1 = nil;
+    
+    // second load = load document and compare data
+    PARStoreExample *document2 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
+    [document2 loadNow];
+    XCTAssertEqualObjects(document2.title, title, @"unexpected 'title' value after closing and reopening a document: '%@' instead of '%@'", document2.title, title);
+    XCTAssertNil(document2.first, @"unexpected 'first' value: '%@' instead of nil", document2.first);
+    [document2 tearDownNow];
+    document2 = nil;
+}
+
 
 #pragma mark - Testing Sync
 
