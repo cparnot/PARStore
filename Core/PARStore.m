@@ -1606,9 +1606,13 @@ NSString *PARBlobsDirectoryName = @"Blobs";
          {
              if (self._inMemoryCacheEnabled)
              {
+                 [self._memory removeAllObjects];
                  [updatedValues enumerateKeysAndObjectsUsingBlock:^(id key, id newValue, BOOL *stop)
                  {
-                     self._memory[key] = (newValue != [NSNull null] ? newValue : nil);
+                     if (newValue != [NSNull null])
+                     {
+                         self._memory[key] = newValue;
+                     }
                  }];
              }
              self._memoryKeyTimestamps = [NSMutableDictionary dictionaryWithDictionary:updatedKeyTimestamps];
