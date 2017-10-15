@@ -201,6 +201,33 @@
     document2 = nil;
 }
 
+- (void)testDictionarySetterWithNullValue
+{
+    NSString *title = @"Some title";
+    NSString *first = @"Albert";
+    NSDictionary *entries1 = @{@"title": title, @"first": first};
+    NSDictionary *entries2 = @{@"title": title, @"first": [NSNull null]};
+    
+    // first load = create document and save data
+    NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
+    PARStoreExample *document1 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
+    [document1 loadNow];
+    [document1 setEntriesFromDictionary:entries1];
+    [document1 setEntriesFromDictionary:entries2];
+    XCTAssertEqualObjects(document1.title, title, @"unexpected 'title' value : '%@' instead of '%@'", document1.title, title);
+    XCTAssertNil(document1.first, @"unexpected 'first' value: '%@' instead of nil", document1.first);
+    [document1 tearDownNow];
+    document1 = nil;
+    
+    // second load = load document and compare data
+    PARStoreExample *document2 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
+    [document2 loadNow];
+    XCTAssertEqualObjects(document2.title, title, @"unexpected 'title' value : '%@' instead of '%@'", document2.title, title);
+    XCTAssertNil(document2.first, @"unexpected 'first' value: '%@' instead of nil", document2.first);
+    [document2 tearDownNow];
+    document2 = nil;
+}
+
 - (void)testPropertyAccessAfterClosingDatabase
 {
     NSString *title   = @"Some title";
