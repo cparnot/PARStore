@@ -1606,7 +1606,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
          {
              if (self._inMemoryCacheEnabled)
              {
-                 [self._memory removeAllObjects];
+                 NSAssert(self._memory.count == 0, @"the memory cache should be empty on first load but has content: %@", self._memory);
                  [updatedValues enumerateKeysAndObjectsUsingBlock:^(id key, id newValue, BOOL *stop)
                  {
                      if (newValue != [NSNull null])
