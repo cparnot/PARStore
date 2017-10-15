@@ -1557,14 +1557,9 @@ NSString *PARBlobsDirectoryName = @"Blobs";
         }
 
         // blob --> object
+        // nil or empty blob counts as a deletion marker, and we will use NSNull as a marker value for the rest of the method
         NSError *blobError = nil;
         NSData *blob = [log valueForKey:BlobAttributeName];
-        if (!blob)
-        {
-            ErrorLog(@"Unexpected nil value for 'blob' column:\nrow: %@\ndatabase: %@", log.objectID, log.objectID.persistentStore.URL.path);
-            continue;
-        }
-        // an empty blob counts as a deletion marker, use NSNull to mark that we have found the key
         id plistValue = (blob.length > 0 ? [self propertyListFromData:blob error:&blobError] : [NSNull null]);
         if (!plistValue)
         {
