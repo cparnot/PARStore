@@ -1896,7 +1896,6 @@ NSString *PARBlobsDirectoryName = @"Blobs";
             [self _load];
             
             // adjust the memory cache
-            // TODO: @cparnot can you check if merging goes well with two libraries where in one a value was set to nil (so it has a timestamp but is not in the memory story)
             [currentMemoryKeyTimestamps enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSNumber *memoryTimestamp, BOOL *stop)
              {
                  NSNumber *syncTimestamp = self._memoryKeyTimestamps[key];
