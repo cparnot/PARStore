@@ -1517,12 +1517,17 @@ NSString *PARBlobsDirectoryName = @"Blobs";
             [updatedDatabaseTimestamps setObject:logTimestamp forKey:store];
         }
 
-        // we already have the latest value from that key
+        // we may already have the latest value from that key
         if (updatedValues[key] != nil)
         {
-            // Turn object back into fault to free up memory
-            [moc refreshObject:log mergeChanges:YES];
-            continue;
+            // despite the sort descriptor set on the fetch request, the timestamp reverse order is not always respected; we thus have to check that if the timestamp is maybe later than the value already recorded for that key
+            NSNumber *earliestTimestamp = updatedKeyTimestamps[key];
+            if ([logTimestamp compare:earliestTimestamp] == NSOrderedAscending)
+            {
+                // Turn object back into fault to free up memory
+                [moc refreshObject:log mergeChanges:YES];
+                continue;
+            }
         }
 
         // blob --> object
