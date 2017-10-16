@@ -1576,7 +1576,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     // store loaded the first time --> set all the data at once
     if (!loaded)
     {
-        [self.memoryQueue dispatchAsynchronously:^
+        [self.memoryQueue dispatchSynchronously:^
          {
              if (self._inMemoryCacheEnabled)
              {
