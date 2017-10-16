@@ -1403,10 +1403,6 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     [timestamps enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *s) { self._memoryKeyTimestamps[key] = obj; }];
 }
 
-
-// as long as we scan the results of a fetch in order, this guarantees that data is only queried from the database in batches of 1000
-#define LOGS_BATCH_SIZE 1000
-
 - (void)_sync
 {
     NSAssert([self.databaseQueue isInCurrentQueueStack], @"%@:%@ should only be called from within the database queue", [self class],NSStringFromSelector(_cmd));
