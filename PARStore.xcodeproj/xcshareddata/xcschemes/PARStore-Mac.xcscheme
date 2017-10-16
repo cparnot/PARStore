@@ -38,14 +38,6 @@
                BlueprintName = "Mac-PARStoreTests"
                ReferencedContainer = "container:PARStore.xcodeproj">
             </BuildableReference>
-            <SkippedTests>
-               <Test
-                  Identifier = "PARStoreTests/testMerge">
-               </Test>
-               <Test
-                  Identifier = "PARStoreTests/testMergeWithUnsafeDeviceIdentifiers">
-               </Test>
-            </SkippedTests>
          </TestableReference>
       </Testables>
       <MacroExpansion>
