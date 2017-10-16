@@ -1434,10 +1434,6 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     }];
 }
 
-
-// as long as we scan the results of a fetch in order, this guarantees that data is only queried from the database in batches of 1000
-#define LOGS_BATCH_SIZE 1000
-
 - (void)_sync
 {
     NSAssert([self.databaseQueue isInCurrentQueueStack], @"%@:%@ should only be called from within the database queue", [self class],NSStringFromSelector(_cmd));
@@ -1552,8 +1548,8 @@ NSString *PARBlobsDirectoryName = @"Blobs";
         if (updatedValues[key] != nil)
         {
             // despite the sort descriptor set on the fetch request, the timestamp reverse order is not always respected; we thus have to check that if the timestamp is maybe later than the value already recorded for that key
-            NSNumber *earliestTimestamp = updatedKeyTimestamps[key];
-            if ([logTimestamp compare:earliestTimestamp] == NSOrderedAscending)
+            NSNumber *mostRecentTimestamp = updatedKeyTimestamps[key];
+            if ([logTimestamp compare:mostRecentTimestamp] == NSOrderedAscending)
             {
                 // Turn object back into fault to free up memory
                 [moc refreshObject:log mergeChanges:YES];
@@ -1607,7 +1603,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     // store loaded the first time --> set all the data at once
     if (!loaded)
     {
-        [self.memoryQueue dispatchAsynchronously:^
+        [self.memoryQueue dispatchSynchronously:^
          {
              if (self._inMemoryCacheEnabled)
              {

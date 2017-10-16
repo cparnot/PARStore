@@ -628,6 +628,55 @@
     [storeB2 tearDownNow];
 }
 
+- (void)testMergeWhileChangingValue
+{
+    NSURL *urlA = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"MergeTestA.parstore"];
+    PARStoreExample *storeA1 = [PARStoreExample storeWithURL:urlA deviceIdentifier:@"1"];
+    PARStoreExample *storeA2 = [PARStoreExample storeWithURL:urlA deviceIdentifier:@"2"];
+    [storeA1 loadNow];
+    [storeA2 loadNow];
+    storeA1.title = @"titleA1";
+    storeA2.title = @"titleA2";
+    [storeA1 saveNow];
+    [storeA2 saveNow];
+    
+    NSURL *urlB = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"MergeTestB.parstore"];
+    PARStoreExample *storeB1 = [PARStoreExample storeWithURL:urlB deviceIdentifier:@"1"];
+    PARStoreExample *storeB2 = [PARStoreExample storeWithURL:urlB deviceIdentifier:@"2"];
+    [storeB1 loadNow];
+    [storeB2 loadNow];
+    storeB1.title = @"titleB1";
+    storeB2.title = @"titleB2";
+    [storeB1 saveNow];
+    [storeB2 saveNow];
+    
+    // merge --> should trigger a 'did load'
+    PARNotificationSemaphore *semaphore = [PARNotificationSemaphore semaphoreForNotificationName:PARStoreDidLoadNotification object:storeA1];
+    [storeA1 mergeStore:storeB1 unsafeDeviceIdentifiers:@[] completionHandler:^(NSError *error) {
+        XCTAssertNil(error, @"error merging: %@", error);
+        NSLog(@"done merging");
+    }];
+    storeA1.title = @"titleA3";
+    BOOL completedWithoutTimeout = [semaphore waitUntilNotificationWithTimeout:1.0];
+    XCTAssertTrue(completedWithoutTimeout, @"Timeout while waiting for PARStore merge");
+    
+    // expected title = last value, changed while merging
+    NSString *expectedTitle = @"titleA3";
+    [storeA1 loadNow];
+    XCTAssertEqualObjects(storeA1.title, expectedTitle, @" - title is '%@' but should be '%@'", storeA1.title, expectedTitle);
+    
+    [storeA1 tearDownNow];
+    [storeA2 tearDownNow];
+    [storeB1 tearDownNow];
+    [storeB2 tearDownNow];
+    
+    // it should also work by loading a store from another device
+    PARStoreExample *storeA3 = [PARStoreExample storeWithURL:urlA deviceIdentifier:@"3"];
+    [storeA3 loadNow];
+    XCTAssertEqualObjects(storeA3.title, expectedTitle, @" - title is '%@' but should be '%@'", storeA3.title, expectedTitle);
+    [storeA3 tearDownNow];
+}
+
 
 #pragma mark - Testing Timestamps
 
