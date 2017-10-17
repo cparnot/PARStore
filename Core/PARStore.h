@@ -51,7 +51,7 @@ extern NSString *PARStoreDidSyncNotification;
 
 /// @name Adding and Accessing Values
 - (nullable id)propertyListValueForKey:(NSString *)key;
-- (void)setPropertyListValue:(id)plist forKey:(NSString *)key;
+- (void)setPropertyListValue:(nullable id)plist forKey:(NSString *)key;
 - (NSArray *)allKeys;
 - (NSDictionary *)allEntries;
 - (void)setEntriesFromDictionary:(NSDictionary *)dictionary NS_SWIFT_NAME(setEntries(from:));
@@ -150,12 +150,12 @@ extern NSString *PARStoreDidSyncNotification;
 
 
 @interface PARChange : NSObject
-+ (PARChange *)changeWithTimestamp:(NSNumber *)timestamp parentTimestamp:(nullable NSNumber *)parentTimestamp key:(NSString *)key propertyList:(id)propertyList;
++ (PARChange *)changeWithTimestamp:(NSNumber *)timestamp parentTimestamp:(nullable NSNumber *)parentTimestamp key:(NSString *)key propertyList:(nullable id)propertyList;
 + (PARChange *)changeWithPropertyDictionary:(NSDictionary *)propertyDictionary;
 @property (readonly, copy) NSNumber *timestamp;
 @property (readonly, copy, nullable) NSNumber *parentTimestamp;
 @property (readonly, copy) NSString *key;
-@property (readonly, copy) id propertyList;
+@property (readonly, copy, nullable) id propertyList;
 @property (readonly, copy) NSDictionary *propertyDictionary;
 - (BOOL)isEqual:(nullable id)object;
 @end

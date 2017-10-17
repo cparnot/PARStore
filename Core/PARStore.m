@@ -755,6 +755,12 @@ NSString *PARBlobsDirectoryName = @"Blobs";
 
 - (NSData *)dataFromPropertyList:(id)plist error:(NSError **)error
 {
+    if (!plist || plist == [NSNull null])
+    {
+        // Because PARStore is append only, if `plist` is nil or NSNull we need to insert a marker that tells the value for the key has been removed/set to nil.
+        return [NSData data];
+    }
+    
     NSError *localError = nil;
     NSData *blob = [NSPropertyListSerialization dataWithPropertyList:plist format:NSPropertyListBinaryFormat_v1_0 options:0 error:&localError];
     if (!blob)
@@ -768,7 +774,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
 
 - (id)propertyListFromData:(NSData *)blob error:(NSError **)error
 {
-    if (!blob)
+    if (!blob || blob.length == 0)
         return nil;
     
     NSError *localError = nil;
@@ -862,15 +868,27 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     return value;
 }
 
-
-
 - (void)setPropertyListValue:(id)plist forKey:(NSString *)key
 {
+    // both nil and [NSNull null] can be used as a marker for removal, but [NSNull null] will be easier to manipulate in the rest of this method
+    if (plist == nil)
+    {
+        plist = [NSNull null];
+    }
+
     [self.memoryQueue dispatchSynchronously:^
      {
          NSNumber *newTimestamp = [PARStore timestampNow];
          
-         self._memory[key] = plist;
+         if (plist == [NSNull null])
+         {
+             [self._memory removeObjectForKey:key];
+         }
+         else
+         {
+             self._memory[key] = plist;
+         }
+         
          if (self._inMemory)
          {
              [self postDidChangeNotificationWithUserInfo:@{@"values": @{key: plist}, @"timestamps": @{key: newTimestamp}}];
@@ -878,9 +896,11 @@ NSString *PARBlobsDirectoryName = @"Blobs";
          }
          
          NSError *error = nil;
-         NSData *blob = [self dataFromPropertyList:plist error:&error];
+         NSData *blob = (plist == [NSNull null]) ? [NSData data] : [self dataFromPropertyList:plist error:&error];
          if (!blob)
+         {
              ErrorLog(@"Error creating data from plist:\nkey: %@:\nplist: %@\nerror: %@", key, plist, [error localizedDescription]);
+         }
          else
          {
              NSNumber *oldTimestamp = self._memoryKeyTimestamps[key];
@@ -921,7 +941,11 @@ NSString *PARBlobsDirectoryName = @"Blobs";
 
     [self.memoryQueue dispatchSynchronously:^
      {
-         [self._memory addEntriesFromDictionary:dictionary];
+         // each key/value --> add to memory story if the value is not a marker for a removed value
+         [dictionary enumerateKeysAndObjectsUsingBlock:^(id key, id plist, BOOL *stop)
+         {
+             self._memory[key] = (plist != [NSNull null] ? plist : nil);
+         }];
          
          if (self._inMemory)
          {
@@ -958,7 +982,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
               [dictionary enumerateKeysAndObjectsUsingBlock:^(id key, id plist, BOOL *stop)
               {
                   NSError *error = nil;
-                  NSData *blob = [self dataFromPropertyList:plist error:&error];
+                  NSData *blob = (plist != [NSNull null] ? [self dataFromPropertyList:plist error:&error] : [NSData data]);
                   if (!blob)
                   {
                       ErrorLog(@"Error creating data from plist:\nkey: %@:\nplist: %@\nerror: %@", key, plist, [error localizedDescription]);
@@ -1067,7 +1091,8 @@ NSString *PARBlobsDirectoryName = @"Blobs";
             if ([existingChanges containsObject:change]) continue;
             
             // Add it to the store
-            NSData *blob = [self dataFromPropertyList:change.propertyList error:&error];
+            id plist = change.propertyList;
+            NSData *blob = (plist != nil && plist != [NSNull null] ? [self dataFromPropertyList:plist error:&error] : [NSData data]);
             if (!blob)
             {
                 outerError = error;
@@ -1398,9 +1423,15 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     NSAssert([self.memoryQueue isInCurrentQueueStack], @"%@:%@ should only be called from within the memory queue", [self class],NSStringFromSelector(_cmd));
     if (self._inMemoryCacheEnabled)
     {
-        [values enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *s)     { self._memory[key] = obj;              }];
+        [values enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *s)
+        {
+            self._memory[key] = (obj != [NSNull null] ? obj : nil);
+        }];
     }
-    [timestamps enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *s) { self._memoryKeyTimestamps[key] = obj; }];
+    [timestamps enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *s)
+    {
+        self._memoryKeyTimestamps[key] = obj;
+    }];
 }
 
 - (void)_sync
@@ -1522,14 +1553,10 @@ NSString *PARBlobsDirectoryName = @"Blobs";
             }
             
             // blob --> object
+            // nil or empty blob counts as a deletion marker, and we will use NSNull as a marker value for the rest of the method
             NSError *blobError = nil;
             NSData *blob = [log valueForKey:BlobAttributeName];
-            if (!blob)
-            {
-                ErrorLog(@"Unexpected nil value for 'blob' column:\nrow: %@\ndatabase: %@", log.objectID, log.objectID.persistentStore.URL.path);
-                continue;
-            }
-            id plistValue = [self propertyListFromData:blob error:&blobError];
+            id plistValue = (blob.length > 0 ? [self propertyListFromData:blob error:&blobError] : [NSNull null]);
             if (!plistValue)
             {
                 ErrorLog(@"Error deserializing blob data:\nrow: %@\ndatabase: %@\nerror: %@", log.objectID, log.objectID.persistentStore.URL.path, blobError);
@@ -1578,7 +1605,14 @@ NSString *PARBlobsDirectoryName = @"Blobs";
          {
              if (self._inMemoryCacheEnabled)
              {
-                 self._memory = [NSMutableDictionary dictionaryWithDictionary:updatedValues];
+                 NSAssert(self._memory.count == 0, @"the memory cache should be empty on first load but has content: %@", self._memory);
+                 [updatedValues enumerateKeysAndObjectsUsingBlock:^(id key, id newValue, BOOL *stop)
+                 {
+                     if (newValue != [NSNull null])
+                     {
+                         self._memory[key] = newValue;
+                     }
+                 }];
              }
              self._memoryKeyTimestamps = [NSMutableDictionary dictionaryWithDictionary:updatedKeyTimestamps];
              self._loaded = YES;
@@ -1598,7 +1632,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
                   // the values could have changed while we were running the sync above; some of the keys could have been modified and have more recent timestamps, in which case we should not apply the new value obtained from the database
                   NSNumber *memoryLatestTimestamp = self._memoryKeyTimestamps[key];
                   NSNumber *databaseLatestTimestamp = newKeyTimestamps[key];
-                  if (memoryLatestTimestamp ==nil || (databaseLatestTimestamp !=nil && [memoryLatestTimestamp compare:databaseLatestTimestamp] == NSOrderedAscending))
+                  if (memoryLatestTimestamp == nil || (databaseLatestTimestamp != nil && [memoryLatestTimestamp compare:databaseLatestTimestamp] == NSOrderedAscending))
                   {
                       changedValues[key] = newValue;
                       changedTimestamps[key] = databaseLatestTimestamp;
@@ -1607,6 +1641,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
              
              if (changedValues.count > 0)
              {
+                 // note that `changedValues` can contain keys with an associated NSNull value, to indicate those keys were set to nil/removed
                  [self applySyncChangeWithValues:changedValues timestamps:changedTimestamps];
                  [self postNotificationWithName:PARStoreDidSyncNotification userInfo:@{@"values": changedValues, @"timestamps": changedTimestamps}];
              }
@@ -1662,11 +1697,15 @@ NSString *PARBlobsDirectoryName = @"Blobs";
          if ([results count] > 0)
          {
              NSManagedObject *latestLog = results.lastObject;
-             NSError *plistError = nil;
-             plist = [self propertyListFromData:[latestLog valueForKey:BlobAttributeName] error:&plistError];
-             if (plist == nil)
-             {
-                 ErrorLog(@"Error deserializing 'blob' data in Logs database:\nrow: %@\nfile: %@\nerror: %@", latestLog.objectID, latestLog.objectID.persistentStore.URL.path, plistError);
+             NSData *blob = [latestLog valueForKey:BlobAttributeName];
+             // an empty data blob acts as a deletion/nil-value marker
+             if (!blob || blob.length > 0) {
+                 NSError *plistError = nil;
+                 plist = [self propertyListFromData:blob error:&plistError];
+                 if (plist == nil)
+                 {
+                     ErrorLog(@"Error deserializing 'blob' data in Logs database:\nrow: %@\nfile: %@\nerror: %@", latestLog.objectID, latestLog.objectID.persistentStore.URL.path, plistError);
+                 }
              }
          }
          
@@ -2548,7 +2587,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     NSNumber *parentTimestamp = logDictionary[ParentTimestampAttributeName];
     NSString *key = logDictionary[KeyAttributeName];
     NSData *blob = logDictionary[BlobAttributeName];
-    id propertyList = [self propertyListFromData:blob error:NULL];
+    id propertyList = (blob.length > 0 ? [self propertyListFromData:blob error:NULL] : nil);
     if (timestamp != nil && key != nil && blob != nil)
     {
         PARChange *change = [PARChange changeWithTimestamp:timestamp parentTimestamp:parentTimestamp key:key propertyList:propertyList];
@@ -2562,12 +2601,12 @@ NSString *PARBlobsDirectoryName = @"Blobs";
 
 #pragma mark - File presenter protocol
 
-- (NSURL *) presentedItemURL
+- (NSURL *)presentedItemURL
 {
 	return self.storeURL;
 }
 
-- (NSOperationQueue *) presentedItemOperationQueue
+- (NSOperationQueue *)presentedItemOperationQueue
 {
 	return self.presenterQueue;
 }
@@ -2703,7 +2742,6 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     
     [self postNotificationWithName:PARStoreDidDeleteNotification userInfo:nil];
 }
-
 
 
 #pragma mark - File System Events
@@ -2918,7 +2956,7 @@ static void PARStoreLogsDidChange(
 @property (readwrite, copy) NSNumber *timestamp;
 @property (readwrite, copy) NSNumber *parentTimestamp;
 @property (readwrite, copy) NSString *key;
-@property (readwrite, copy) id propertyList;
+@property (readwrite, copy, nullable) id propertyList;
 @end
 
 
@@ -2949,7 +2987,7 @@ static void PARStoreLogsDidChange(
     NSMutableDictionary *dictionary = [[NSMutableDictionary alloc] init];
     dictionary[@"timestamp"] = self.timestamp;
     dictionary[@"key"] = self.key;
-    dictionary[@"propertyList"] = self.propertyList;
+    if (self.propertyList) dictionary[@"propertyList"] = self.propertyList;
     if (self.parentTimestamp) dictionary[@"parentTimestamp"] = self.parentTimestamp;
     return [dictionary copy];
 }
