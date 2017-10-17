@@ -121,6 +121,47 @@
     store2 = nil;
 }
 
+- (void)_testLoadDocumentWithSize:(NSUInteger)numberOfRows timeAllowed:(CGFloat)maxTime
+{
+    // create store with relatively large number of logs
+    NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
+    PARStoreExample *document1 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
+    [document1 loadNow];
+    [document1 runTransaction:^
+     {
+         @autoreleasepool
+         {
+             for (NSUInteger i = 0; i < numberOfRows; i++)
+             {
+                 document1.title = [NSString stringWithFormat:@"Title %@", @(i)];
+             }
+         }
+     }];
+    [document1 tearDownNow];
+    document1 = nil;
+    
+    // load document
+    PARStoreExample *document2 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
+    NSDate *start = [NSDate date];
+    [document2 loadNow];
+    NSDate *end = [NSDate date];
+    NSTimeInterval duration = [end timeIntervalSinceDate:start];
+    XCTAssertLessThan(duration, maxTime, @"it takes too long to perform the initial load");
+    NSLog(@"loading %@ logs took %@ seconds", @(numberOfRows), @(duration));
+    [document2 tearDownNow];
+    document2 = nil;
+}
+
+- (void)testLoadTimeMediumDocument
+{
+    [self _testLoadDocumentWithSize:10000 timeAllowed:0.1];
+}
+
+- (void)testLoadTimeLargeDocument
+{
+    [self _testLoadDocumentWithSize:100000 timeAllowed:1.0];
+}
+
 
 #pragma mark - Testing Content Access
 

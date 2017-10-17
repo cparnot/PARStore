@@ -1,0 +1,348 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		566F166A1F90BADF007EA8F9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 566F16691F90BADF007EA8F9 /* AppDelegate.swift */; };
+		566F166E1F90BADF007EA8F9 /* PARStoreDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 566F166D1F90BADF007EA8F9 /* PARStoreDocument.swift */; };
+		566F16701F90BADF007EA8F9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 566F166F1F90BADF007EA8F9 /* Assets.xcassets */; };
+		566F16731F90BADF007EA8F9 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 566F16711F90BADF007EA8F9 /* Main.storyboard */; };
+		566F16821F90BB5B007EA8F9 /* PARDispatchQueue.m in Sources */ = {isa = PBXBuildFile; fileRef = 566F167D1F90BB5B007EA8F9 /* PARDispatchQueue.m */; };
+		566F16831F90BB5B007EA8F9 /* PARStore.m in Sources */ = {isa = PBXBuildFile; fileRef = 566F167F1F90BB5B007EA8F9 /* PARStore.m */; };
+		566F16841F90BB5B007EA8F9 /* NSError+Factory.m in Sources */ = {isa = PBXBuildFile; fileRef = 566F16811F90BB5B007EA8F9 /* NSError+Factory.m */; };
+		566F16881F90BD0E007EA8F9 /* HistoryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 566F16871F90BD0E007EA8F9 /* HistoryViewController.swift */; };
+		566F168A1F90BE9C007EA8F9 /* TextViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 566F16891F90BE9C007EA8F9 /* TextViewController.swift */; };
+		566F168C1F90C03A007EA8F9 /* DocumentWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 566F168B1F90C03A007EA8F9 /* DocumentWindowController.swift */; };
+		566F168E1F90C08A007EA8F9 /* PARStore+ContentDump.swift in Sources */ = {isa = PBXBuildFile; fileRef = 566F168D1F90C08A007EA8F9 /* PARStore+ContentDump.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		566F16661F90BADF007EA8F9 /* PARStore Viewer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "PARStore Viewer.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		566F16691F90BADF007EA8F9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		566F166D1F90BADF007EA8F9 /* PARStoreDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PARStoreDocument.swift; sourceTree = "<group>"; };
+		566F166F1F90BADF007EA8F9 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		566F16721F90BADF007EA8F9 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		566F16741F90BADF007EA8F9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		566F167B1F90BB5A007EA8F9 /* PARStore Viewer-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "PARStore Viewer-Bridging-Header.h"; sourceTree = SOURCE_ROOT; };
+		566F167C1F90BB5B007EA8F9 /* PARDispatchQueue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PARDispatchQueue.h; path = ../Core/PARDispatchQueue.h; sourceTree = "<group>"; };
+		566F167D1F90BB5B007EA8F9 /* PARDispatchQueue.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PARDispatchQueue.m; path = ../Core/PARDispatchQueue.m; sourceTree = "<group>"; };
+		566F167E1F90BB5B007EA8F9 /* PARStore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PARStore.h; path = ../Core/PARStore.h; sourceTree = "<group>"; };
+		566F167F1F90BB5B007EA8F9 /* PARStore.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = PARStore.m; path = ../Core/PARStore.m; sourceTree = "<group>"; };
+		566F16801F90BB5B007EA8F9 /* NSError+Factory.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "NSError+Factory.h"; path = "../Core/NSError+Factory.h"; sourceTree = "<group>"; };
+		566F16811F90BB5B007EA8F9 /* NSError+Factory.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = "NSError+Factory.m"; path = "../Core/NSError+Factory.m"; sourceTree = "<group>"; };
+		566F16871F90BD0E007EA8F9 /* HistoryViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HistoryViewController.swift; sourceTree = "<group>"; };
+		566F16891F90BE9C007EA8F9 /* TextViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TextViewController.swift; sourceTree = "<group>"; };
+		566F168B1F90C03A007EA8F9 /* DocumentWindowController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DocumentWindowController.swift; sourceTree = "<group>"; };
+		566F168D1F90C08A007EA8F9 /* PARStore+ContentDump.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "PARStore+ContentDump.swift"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		566F16631F90BADF007EA8F9 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		566F165D1F90BADF007EA8F9 = {
+			isa = PBXGroup;
+			children = (
+				566F16681F90BADF007EA8F9 /* PARStore Viewer */,
+				566F167A1F90BB47007EA8F9 /* PARStore */,
+				566F16671F90BADF007EA8F9 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		566F16671F90BADF007EA8F9 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				566F16661F90BADF007EA8F9 /* PARStore Viewer.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		566F16681F90BADF007EA8F9 /* PARStore Viewer */ = {
+			isa = PBXGroup;
+			children = (
+				566F167B1F90BB5A007EA8F9 /* PARStore Viewer-Bridging-Header.h */,
+				566F16691F90BADF007EA8F9 /* AppDelegate.swift */,
+				566F166D1F90BADF007EA8F9 /* PARStoreDocument.swift */,
+				566F168B1F90C03A007EA8F9 /* DocumentWindowController.swift */,
+				566F16871F90BD0E007EA8F9 /* HistoryViewController.swift */,
+				566F16891F90BE9C007EA8F9 /* TextViewController.swift */,
+				566F168D1F90C08A007EA8F9 /* PARStore+ContentDump.swift */,
+				566F166F1F90BADF007EA8F9 /* Assets.xcassets */,
+				566F16711F90BADF007EA8F9 /* Main.storyboard */,
+				566F16741F90BADF007EA8F9 /* Info.plist */,
+			);
+			path = "PARStore Viewer";
+			sourceTree = "<group>";
+		};
+		566F167A1F90BB47007EA8F9 /* PARStore */ = {
+			isa = PBXGroup;
+			children = (
+				566F167C1F90BB5B007EA8F9 /* PARDispatchQueue.h */,
+				566F167D1F90BB5B007EA8F9 /* PARDispatchQueue.m */,
+				566F167E1F90BB5B007EA8F9 /* PARStore.h */,
+				566F167F1F90BB5B007EA8F9 /* PARStore.m */,
+				566F16801F90BB5B007EA8F9 /* NSError+Factory.h */,
+				566F16811F90BB5B007EA8F9 /* NSError+Factory.m */,
+			);
+			name = PARStore;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		566F16651F90BADF007EA8F9 /* PARStore Viewer */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 566F16771F90BADF007EA8F9 /* Build configuration list for PBXNativeTarget "PARStore Viewer" */;
+			buildPhases = (
+				566F16621F90BADF007EA8F9 /* Sources */,
+				566F16631F90BADF007EA8F9 /* Frameworks */,
+				566F16641F90BADF007EA8F9 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "PARStore Viewer";
+			productName = "PARStore Viewer";
+			productReference = 566F16661F90BADF007EA8F9 /* PARStore Viewer.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		566F165E1F90BADF007EA8F9 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 0830;
+				LastUpgradeCheck = 0830;
+				ORGANIZATIONNAME = "Charles Parnot";
+				TargetAttributes = {
+					566F16651F90BADF007EA8F9 = {
+						CreatedOnToolsVersion = 8.3.3;
+						DevelopmentTeam = C85V3SP3F7;
+						LastSwiftMigration = 0830;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 566F16611F90BADF007EA8F9 /* Build configuration list for PBXProject "PARStore Viewer" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 566F165D1F90BADF007EA8F9;
+			productRefGroup = 566F16671F90BADF007EA8F9 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				566F16651F90BADF007EA8F9 /* PARStore Viewer */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		566F16641F90BADF007EA8F9 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				566F16701F90BADF007EA8F9 /* Assets.xcassets in Resources */,
+				566F16731F90BADF007EA8F9 /* Main.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		566F16621F90BADF007EA8F9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				566F16841F90BB5B007EA8F9 /* NSError+Factory.m in Sources */,
+				566F16821F90BB5B007EA8F9 /* PARDispatchQueue.m in Sources */,
+				566F166A1F90BADF007EA8F9 /* AppDelegate.swift in Sources */,
+				566F166E1F90BADF007EA8F9 /* PARStoreDocument.swift in Sources */,
+				566F16881F90BD0E007EA8F9 /* HistoryViewController.swift in Sources */,
+				566F16831F90BB5B007EA8F9 /* PARStore.m in Sources */,
+				566F168E1F90C08A007EA8F9 /* PARStore+ContentDump.swift in Sources */,
+				566F168A1F90BE9C007EA8F9 /* TextViewController.swift in Sources */,
+				566F168C1F90C03A007EA8F9 /* DocumentWindowController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		566F16711F90BADF007EA8F9 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				566F16721F90BADF007EA8F9 /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		566F16751F90BADF007EA8F9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		566F16761F90BADF007EA8F9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+			};
+			name = Release;
+		};
+		566F16781F90BADF007EA8F9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = C85V3SP3F7;
+				INFOPLIST_FILE = "PARStore Viewer/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.parnot.PARStore-Viewer";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "PARStore Viewer-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 3.0;
+			};
+			name = Debug;
+		};
+		566F16791F90BADF007EA8F9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = C85V3SP3F7;
+				INFOPLIST_FILE = "PARStore Viewer/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.parnot.PARStore-Viewer";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "PARStore Viewer-Bridging-Header.h";
+				SWIFT_VERSION = 3.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		566F16611F90BADF007EA8F9 /* Build configuration list for PBXProject "PARStore Viewer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				566F16751F90BADF007EA8F9 /* Debug */,
+				566F16761F90BADF007EA8F9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		566F16771F90BADF007EA8F9 /* Build configuration list for PBXNativeTarget "PARStore Viewer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				566F16781F90BADF007EA8F9 /* Debug */,
+				566F16791F90BADF007EA8F9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 566F165E1F90BADF007EA8F9 /* Project object */;
+}
