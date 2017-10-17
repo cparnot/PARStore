@@ -1433,9 +1433,6 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     // because of the way we use the `databaseQueue` and `memoryQueue`, the returned value is guaranteed to take into account any previous execution of `_sync`
     BOOL loaded = [self loaded];
     
-    // this will be set to YES if at least one of latest values come from one of the foreign stores
-    BOOL hasForeignChanges = NO;
-    
     // timestampLimit = load only logs after that timestamp, so we only load the newest logs (will be nil if nothing was loaded yet)
     NSNumber *timestampLimit = nil;
     if (loaded)
@@ -1471,88 +1468,95 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     }
     
     // fetch Log rows created after the `timestampLimit` in reverse timestamp order (newest first) 
-    NSError *errorLogs = nil;
+    //NSError *errorLogs = nil;
     NSFetchRequest *logsRequest = [NSFetchRequest fetchRequestWithEntityName:LogEntityName];
     if (timestampLimit)
         [logsRequest setPredicate:[NSPredicate predicateWithFormat:@"%K > %@", TimestampAttributeName, timestampLimit]];
     [logsRequest setSortDescriptors:@[[NSSortDescriptor sortDescriptorWithKey:TimestampAttributeName ascending:NO]]];
-    [logsRequest setResultType:NSManagedObjectIDResultType];
-    NSArray *allLogObjectIDs = [moc executeFetchRequest:logsRequest error:&errorLogs];
-    if (!allLogObjectIDs)
-    {
-        ErrorLog(@"Error fetching logs for store at path '%@' because of error: %@", [self.storeURL path], errorLogs);
-        return;
-    }
+    //[logsRequest setResultType:NSManagedObjectIDResultType];
+    //NSArray *allLogObjectIDs = [moc executeFetchRequest:logsRequest error:&errorLogs];
+    //if (!allLogObjectIDs)
+    //{
+     //   ErrorLog(@"Error fetching logs for store at path '%@' because of error: %@", [self.storeURL path], errorLogs);
+      //  return;
+    //}
     
+    // this will be set to YES if at least one of latest values come from one of the foreign stores
+    __block BOOL hasForeignChanges = NO;
+
     // keep track of updated timestamps that will be used to calculate the new logTimestamps and databaseTimestamps at the end
     NSMapTable *updatedDatabaseTimestamps = [NSMapTable weakToStrongObjectsMapTable];
     NSMutableDictionary *updatedKeyTimestamps = [NSMutableDictionary dictionary];
     
     // just go through each row (back in time) until all entries are loaded
     NSMutableDictionary *updatedValues = [NSMutableDictionary dictionary];
-    for (NSManagedObjectID *logID in allLogObjectIDs)
+    
+    
+    [self parstore_enumerateObjectsForFetchRequest:logsRequest managedObjectContext:moc batchSize:1000 withBlock:^(NSArray *objects, BOOL hasMore, BOOL *stop)
     {
-        // Get object
-        NSManagedObject *log = [moc objectWithID:logID];
-        
-        // key
-        NSString *key = [log valueForKey:KeyAttributeName];
-        if (!key)
+        for (NSManagedObject *log in objects)
         {
-            ErrorLog(@"Unexpected nil value for 'key' column:\nrow: %@\ndatabase: %@", log.objectID, log.objectID.persistentStore.URL.path);
-            continue;
-        }
-        
-        // timestamp
-        NSNumber *logTimestamp = [log valueForKey:TimestampAttributeName];
-        
-        // keep track of the last timestamp for each persistent store
-        NSPersistentStore *store = [[log objectID] persistentStore];
-        if ([updatedDatabaseTimestamps objectForKey:store] == nil)
-        {
-            [updatedDatabaseTimestamps setObject:logTimestamp forKey:store];
-        }
-
-        // we may already have the latest value from that key
-        if (updatedValues[key] != nil)
-        {
-            // despite the sort descriptor set on the fetch request, the timestamp reverse order is not always respected; we thus have to check that if the timestamp is maybe later than the value already recorded for that key
-            NSNumber *mostRecentTimestamp = updatedKeyTimestamps[key];
-            if ([logTimestamp compare:mostRecentTimestamp] == NSOrderedAscending)
+            // key
+            NSString *key = [log valueForKey:KeyAttributeName];
+            if (!key)
             {
-                // Turn object back into fault to free up memory
-                [moc refreshObject:log mergeChanges:YES];
+                ErrorLog(@"Unexpected nil value for 'key' column:\nrow: %@\ndatabase: %@", log.objectID, log.objectID.persistentStore.URL.path);
                 continue;
             }
+            
+            // timestamp
+            NSNumber *logTimestamp = [log valueForKey:TimestampAttributeName];
+            
+            // keep track of the last timestamp for each persistent store
+            NSPersistentStore *store = [[log objectID] persistentStore];
+            if ([updatedDatabaseTimestamps objectForKey:store] == nil)
+            {
+                [updatedDatabaseTimestamps setObject:logTimestamp forKey:store];
+            }
+            
+            // we may already have the latest value from that key
+            if (updatedValues[key] != nil)
+            {
+                // despite the sort descriptor set on the fetch request, the timestamp reverse order is not always respected; we thus have to check that if the timestamp is maybe later than the value already recorded for that key
+                NSNumber *mostRecentTimestamp = updatedKeyTimestamps[key];
+                if ([logTimestamp compare:mostRecentTimestamp] == NSOrderedAscending)
+                {
+                    // Turn object back into fault to free up memory
+                    [moc refreshObject:log mergeChanges:YES];
+                    continue;
+                }
+            }
+            
+            // blob --> object
+            NSError *blobError = nil;
+            NSData *blob = [log valueForKey:BlobAttributeName];
+            if (!blob)
+            {
+                ErrorLog(@"Unexpected nil value for 'blob' column:\nrow: %@\ndatabase: %@", log.objectID, log.objectID.persistentStore.URL.path);
+                continue;
+            }
+            id plistValue = [self propertyListFromData:blob error:&blobError];
+            if (!plistValue)
+            {
+                ErrorLog(@"Error deserializing blob data:\nrow: %@\ndatabase: %@\nerror: %@", log.objectID, log.objectID.persistentStore.URL.path, blobError);
+                continue;
+            }
+            
+            // store object and keep track of used keys
+            [updatedValues setObject:plistValue forKey:key];
+            
+            // keep track of the oldest of the values actually used
+            [updatedKeyTimestamps setValue:logTimestamp forKey:key];
+            
+            if ([[log objectID] persistentStore] != self.readwriteDatabase)
+            {
+                hasForeignChanges = YES;
+            }
+            
+            // Turn object back into fault to free up memory
+            [moc refreshObject:log mergeChanges:YES];
         }
-
-        // blob --> object
-        NSError *blobError = nil;
-        NSData *blob = [log valueForKey:BlobAttributeName];
-        if (!blob)
-        {
-            ErrorLog(@"Unexpected nil value for 'blob' column:\nrow: %@\ndatabase: %@", log.objectID, log.objectID.persistentStore.URL.path);
-            continue;
-        }
-        id plistValue = [self propertyListFromData:blob error:&blobError];
-        if (!plistValue)
-        {
-            ErrorLog(@"Error deserializing blob data:\nrow: %@\ndatabase: %@\nerror: %@", log.objectID, log.objectID.persistentStore.URL.path, blobError);
-            continue;
-        }
-        
-        // store object and keep track of used keys
-        [updatedValues setObject:plistValue forKey:key];
-        
-        // keep track of the oldest of the values actually used
-        [updatedKeyTimestamps setValue:logTimestamp forKey:key];
-        
-        if ([[log objectID] persistentStore] != self.readwriteDatabase)
-            hasForeignChanges = YES;
-        
-        // Turn object back into fault to free up memory
-        [moc refreshObject:log mergeChanges:YES];
-    }
+    }];
     
     // update the timestamps for the keys
     NSMutableDictionary *newKeyTimestamps = self.keyTimestamps.mutableCopy ?: [NSMutableDictionary dictionary];
@@ -1697,6 +1701,71 @@ NSString *PARBlobsDirectoryName = @"Blobs";
 {
     [self.databaseQueue scheduleTimerWithName:@"sync_delay" timeInterval:1.0 behavior:PARTimerBehaviorDelay block:^{ [self _sync]; }];
     [self.databaseQueue scheduleTimerWithName:@"sync_coalesce" timeInterval:15.0 behavior:PARTimerBehaviorCoalesce block:^{ [self _sync]; }];
+}
+
+// convenience method to batch a fetch request without using CoreData's built-in batching, which creates spurious logs when joining multiple databases
+- (BOOL)parstore_enumerateObjectsForFetchRequest:(NSFetchRequest *)fetch managedObjectContext:(NSManagedObjectContext *)moc batchSize:(NSUInteger)batchSize withBlock:(void(^)(NSArray *objects, BOOL hasMore, BOOL *stop))block
+{
+    // get all the object IDs
+    NSError *error1 = nil;
+    NSFetchRequest *objectIDFetch = [fetch copy];
+    objectIDFetch.resultType = NSManagedObjectIDResultType;
+    NSArray *allObjectIDs = [moc executeFetchRequest:objectIDFetch error:&error1];
+    if (allObjectIDs == nil)
+    {
+        ErrorLog(@"Error fetching managed object IDs for store at path '%@' because of error: %@", [self.storeURL path], error1);
+        return NO;
+    }
+    
+    // determine the number of batches
+    NSUInteger count = allObjectIDs.count;
+    if (batchSize == 0)
+    {
+        batchSize = count;
+    }
+    NSUInteger numberOfBatches = count / MAX(1, batchSize) + (count%batchSize ? 1 : 0);
+    
+    // iterate in batches
+    for (NSUInteger batchIndex = 0; batchIndex < numberOfBatches; batchIndex ++) {
+        @autoreleasepool {
+            
+            // batch --> object IDs
+            NSUInteger start = batchIndex * batchSize;
+            NSUInteger length = start + batchSize < count ? batchSize : count - start;
+            NSArray *batchObjectIDs = [allObjectIDs subarrayWithRange:NSMakeRange(start, length)];
+            
+            // fetch request for this batch
+            NSFetchRequest *objectFetchRequest = [fetch copy];
+            NSPredicate *batchPredicate = [NSPredicate predicateWithFormat:@"SELF IN %@", batchObjectIDs];
+            if (fetch.predicate == nil)
+            {
+                objectFetchRequest.predicate = batchPredicate;
+            }
+            else
+            {
+                objectFetchRequest.predicate = [NSCompoundPredicate andPredicateWithSubpredicates:@[batchPredicate, fetch.predicate]];
+            }
+            
+            // fetch
+            NSError *error2 = nil;
+            NSArray *objects = [moc executeFetchRequest:objectFetchRequest error:&error2];
+            if (objects == nil)
+            {
+                ErrorLog(@"Error fetching logs for store at path '%@' because of error: %@", [self.storeURL path], error2);
+                return NO;
+            }
+            
+            // process the results
+            BOOL shouldStop = NO;
+            block(objects, batchIndex + 1 < numberOfBatches, &shouldStop);
+            if (shouldStop)
+            {
+                return NO;
+            }
+        }
+    }
+    
+    return YES;
 }
 
 
