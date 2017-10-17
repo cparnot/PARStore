@@ -1498,33 +1498,28 @@ NSString *PARBlobsDirectoryName = @"Blobs";
         }
     }
     
-    // fetch Log rows created after the `timestampLimit` in reverse timestamp order (newest first) 
-    //NSError *errorLogs = nil;
+    // fetch Log rows created after the `timestampLimit`
     NSFetchRequest *logsRequest = [NSFetchRequest fetchRequestWithEntityName:LogEntityName];
     if (timestampLimit)
+    {
         [logsRequest setPredicate:[NSPredicate predicateWithFormat:@"%K > %@", TimestampAttributeName, timestampLimit]];
-    [logsRequest setSortDescriptors:@[[NSSortDescriptor sortDescriptorWithKey:TimestampAttributeName ascending:NO]]];
-    //[logsRequest setResultType:NSManagedObjectIDResultType];
-    //NSArray *allLogObjectIDs = [moc executeFetchRequest:logsRequest error:&errorLogs];
-    //if (!allLogObjectIDs)
-    //{
-     //   ErrorLog(@"Error fetching logs for store at path '%@' because of error: %@", [self.storeURL path], errorLogs);
-      //  return;
-    //}
+    }
     
+    // sort in reverse timestamp order (newest first), though it's not clear the order is correctly respected when we fetch managed object IDs, not managed objects
+    [logsRequest setSortDescriptors:@[[NSSortDescriptor sortDescriptorWithKey:TimestampAttributeName ascending:NO]]];
+
     // this will be set to YES if at least one of latest values come from one of the foreign stores
     __block BOOL hasForeignChanges = NO;
 
-    // keep track of updated timestamps that will be used to calculate the new logTimestamps and databaseTimestamps at the end
+    // keep track of updated timestamps and values that will be used to calculate the new logTimestamps and databaseTimestamps at the end
     NSMapTable *updatedDatabaseTimestamps = [NSMapTable weakToStrongObjectsMapTable];
     NSMutableDictionary *updatedKeyTimestamps = [NSMutableDictionary dictionary];
-    
-    // just go through each row (back in time) until all entries are loaded
     NSMutableDictionary *updatedValues = [NSMutableDictionary dictionary];
     
-    [self parstore_enumerateObjectsForFetchRequest:logsRequest managedObjectContext:moc batchSize:1000 withBlock:^(NSArray *objects, BOOL hasMore, BOOL *stop)
+    // just go through each row (back in time) until all entries are loaded
+    [self parstore_enumerateObjectsForFetchRequest:logsRequest managedObjectContext:moc batchSize:1000 withBlock:^(NSArray *batch, BOOL hasMore, BOOL *stop)
     {
-        for (NSManagedObject *log in objects)
+        for (NSManagedObject *log in batch)
         {
             // key
             NSString *key = [log valueForKey:KeyAttributeName];
