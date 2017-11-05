@@ -162,6 +162,19 @@
     [self _testLoadDocumentWithSize:100000 timeAllowed:1.0];
 }
 
+- (void)testSetValueBeforeLoadingDocument
+{
+    // load store
+    NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
+    PARStoreExample *document1 = [PARStoreExample storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
+    document1.title = @"oops";
+    [document1 loadNow];
+    XCTAssertTrue([document1 loaded], @"Document not loaded");
+    [document1 tearDownNow];
+    XCTAssertFalse([document1 loaded], @"Document should not be loaded after tearing it down");
+    document1 = nil;
+}
+
 
 #pragma mark - Testing Content Access
 

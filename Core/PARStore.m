@@ -878,6 +878,12 @@ NSString *PARBlobsDirectoryName = @"Blobs";
 
     [self.memoryQueue dispatchSynchronously:^
      {
+         if (self._loaded == NO)
+         {
+             ErrorLog(@"Could not set value for key '%@' because the store has not been loaded yet", key);
+             return;
+         }
+         
          NSNumber *newTimestamp = [PARStore timestampNow];
          
          if (plist == [NSNull null])
@@ -941,6 +947,12 @@ NSString *PARBlobsDirectoryName = @"Blobs";
 
     [self.memoryQueue dispatchSynchronously:^
      {
+         if (self._loaded == NO)
+         {
+             ErrorLog(@"Could not set entries from dictionary because the store has not been loaded yet");
+             return;
+         }
+
          // each key/value --> add to memory story if the value is not a marker for a removed value
          [dictionary enumerateKeysAndObjectsUsingBlock:^(id key, id plist, BOOL *stop)
          {
