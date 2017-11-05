@@ -2811,6 +2811,12 @@ static void PARStoreLogsDidChange(
                                                       3.0,
                                                       kFSEventStreamCreateFlagUseCFTypes
                                                       );
+        if (_eventStreamDevices == NULL)
+        {
+            ErrorLog(@"ERROR: could not create FSEventStream for path %@", [self deviceRootPath]);
+            return;
+        }
+            
         // schedule and start the stream
         FSEventStreamSetDispatchQueue(_eventStreamDevices, [self.fileSystemEventQueue valueForKey:@"queue"]);
         
@@ -2864,6 +2870,12 @@ static void PARStoreLogsDidChange(
                                                     3.0,
                                                     kFSEventStreamCreateFlagUseCFTypes
                                                     );
+         if (_eventStreamLogs == NULL)
+         {
+             ErrorLog(@"ERROR: could not create FSEventStream for paths: %@", directoriesToObserve);
+             return;
+         }
+
          // schedule and start the stream
          FSEventStreamSetDispatchQueue(_eventStreamLogs, [self.fileSystemEventQueue valueForKey:@"queue"]);
          if (FSEventStreamStart(_eventStreamLogs) == false)
