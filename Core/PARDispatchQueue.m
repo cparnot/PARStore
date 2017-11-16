@@ -266,7 +266,8 @@ static PARDispatchQueue *PARSharedConcurrentQueue = nil;
             if (dateValue == nil || newFireTime <= now)
             {
                 newFireTime = now;
-                dispatch_source_set_timer(dispatchTimer, dispatch_time(DISPATCH_TIME_NOW, 0.0), 0, 0);
+                // it seems we should not use a time interval of zero, to avoid warning: "DEPRECATED USE in libdispatch client: Setting timer interval to 0 requests a 1ns timer, did you mean FOREVER (a one-shot timer)?"
+                dispatch_source_set_timer(dispatchTimer, dispatch_time(DISPATCH_TIME_NOW, 1), 0, 0);
             }
             
             // fired before --> apply throttle
