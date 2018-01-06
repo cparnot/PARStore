@@ -2600,7 +2600,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     NSString *key = logDictionary[KeyAttributeName];
     NSData *blob = logDictionary[BlobAttributeName];
     id propertyList = (blob.length > 0 ? [self propertyListFromData:blob error:NULL] : nil);
-    if (timestamp != nil && key != nil && blob != nil)
+    if (timestamp != nil && key != nil)
     {
         PARChange *change = [PARChange changeWithTimestamp:timestamp parentTimestamp:parentTimestamp key:key propertyList:propertyList];
         return change;
