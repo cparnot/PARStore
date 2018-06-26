@@ -1427,6 +1427,31 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     return [[[self blobDirectoryURL] URLByAppendingPathComponent:path] path];
 }
 
+- (void)enumerateBlobs:(void(^)(NSString *path))block
+{
+    if (self._inMemory)
+    {
+        [self.memoryQueue dispatchSynchronously:^
+         {
+             for (NSString *path in self._memoryFileData.keyEnumerator) {
+                 block(path);
+             }
+         }];
+    }
+    else
+    {
+        __block NSArray *paths;
+        [[[NSFileCoordinator alloc] initWithFilePresenter:self] coordinateReadingItemAtURL:[self blobDirectoryURL] options:NSFileCoordinatorReadingWithoutChanges error:NULL byAccessor:^(NSURL *newURL)
+        {
+            NSDirectoryEnumerator *enumerator = [[NSFileManager defaultManager] enumeratorAtURL:[self blobDirectoryURL] includingPropertiesForKeys:nil options:NSDirectoryEnumerationSkipsHiddenFiles errorHandler:nil];
+            paths = enumerator.allObjects;
+        }];
+        for (NSString *path in paths) {
+            block(path);
+        }
+    }
+}
+
 
 #pragma mark - Syncing
 
