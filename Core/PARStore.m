@@ -1427,6 +1427,17 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     return [[[self blobDirectoryURL] URLByAppendingPathComponent:path] path];
 }
 
+- (NSArray *)absolutePathsForBlobsPrefixedBy:(NSString *)prefix
+{
+    NSMutableArray *result = [[NSMutableArray alloc] init];
+    [self enumerateBlobs:^(NSString *path) {
+        if ([path hasPrefix:prefix]) {
+            [result addObject:[self absolutePathForBlobPath:path]];
+        }
+    }];
+    return result;
+}
+
 - (void)enumerateBlobs:(void(^)(NSString *path))block
 {
     if (self._inMemory)
