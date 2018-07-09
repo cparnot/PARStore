@@ -1451,14 +1451,18 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     }
     else
     {
-        __block NSArray *paths;
+        __block NSArray *urls;
         [[[NSFileCoordinator alloc] initWithFilePresenter:self] coordinateReadingItemAtURL:[self blobDirectoryURL] options:NSFileCoordinatorReadingWithoutChanges error:NULL byAccessor:^(NSURL *newURL)
         {
             NSDirectoryEnumerator *enumerator = [[NSFileManager defaultManager] enumeratorAtURL:[self blobDirectoryURL] includingPropertiesForKeys:nil options:NSDirectoryEnumerationSkipsHiddenFiles errorHandler:nil];
-            paths = enumerator.allObjects;
+            urls = enumerator.allObjects;
         }];
-        for (NSString *path in paths) {
-            block(path);
+        
+        NSUInteger prefixLength = self.blobDirectoryURL.path.length+1; // +1 is for the last slash
+        for (NSURL *url in urls) {
+            NSString *absolutePath = url.path;
+            NSString *relativePath = [absolutePath substringFromIndex:prefixLength];
+            block(relativePath);
         }
     }
 }
