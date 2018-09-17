@@ -2805,7 +2805,7 @@ static void PARStoreLogsDidChange(
     
     [self.fileSystemEventQueue dispatchAsynchronously:^
     {
-        if (_eventStreamDevices != NULL)
+        if (self->_eventStreamDevices != NULL)
             return;
         
         // create event stream
@@ -2823,20 +2823,20 @@ static void PARStoreLogsDidChange(
                                                       3.0,
                                                       kFSEventStreamCreateFlagUseCFTypes
                                                       );
-        if (_eventStreamDevices == NULL)
+        if (self->_eventStreamDevices == NULL)
         {
             ErrorLog(@"ERROR: could not create FSEventStream for path %@", [self deviceRootPath]);
             return;
         }
             
         // schedule and start the stream
-        FSEventStreamSetDispatchQueue(_eventStreamDevices, [self.fileSystemEventQueue valueForKey:@"queue"]);
+        FSEventStreamSetDispatchQueue(self->_eventStreamDevices, [self.fileSystemEventQueue valueForKey:@"queue"]);
         
         // error
-        if (FSEventStreamStart(_eventStreamDevices) == false)
+        if (FSEventStreamStart(self->_eventStreamDevices) == false)
         {
             ErrorLog(@"ERROR: could not start FSEventStream for path %@", [self deviceRootPath]);
-            FSEventStreamRelease(_eventStreamDevices);
+            FSEventStreamRelease(self->_eventStreamDevices);
             self.eventStreamDevices = NULL;
             return;
         }
@@ -2853,11 +2853,11 @@ static void PARStoreLogsDidChange(
     [self.fileSystemEventQueue dispatchAsynchronously:^
      {
          // remove old stream
-         if (_eventStreamLogs != NULL)
+         if (self->_eventStreamLogs != NULL)
          {
-             FSEventStreamStop(_eventStreamLogs);
-             FSEventStreamInvalidate(_eventStreamLogs);
-             FSEventStreamRelease(_eventStreamLogs);
+             FSEventStreamStop(self->_eventStreamLogs);
+             FSEventStreamInvalidate(self->_eventStreamLogs);
+             FSEventStreamRelease(self->_eventStreamLogs);
              self.eventStreamLogs = NULL;
          }
          
@@ -2882,18 +2882,18 @@ static void PARStoreLogsDidChange(
                                                     3.0,
                                                     kFSEventStreamCreateFlagUseCFTypes
                                                     );
-         if (_eventStreamLogs == NULL)
+         if (self->_eventStreamLogs == NULL)
          {
              ErrorLog(@"ERROR: could not create FSEventStream for paths: %@", directoriesToObserve);
              return;
          }
 
          // schedule and start the stream
-         FSEventStreamSetDispatchQueue(_eventStreamLogs, [self.fileSystemEventQueue valueForKey:@"queue"]);
-         if (FSEventStreamStart(_eventStreamLogs) == false)
+         FSEventStreamSetDispatchQueue(self->_eventStreamLogs, [self.fileSystemEventQueue valueForKey:@"queue"]);
+         if (FSEventStreamStart(self->_eventStreamLogs) == false)
          {
              ErrorLog(@"ERROR: could not start FSEventStream for paths: %@", directoriesToObserve);
-             FSEventStreamRelease(_eventStreamLogs);
+             FSEventStreamRelease(self->_eventStreamLogs);
              self.eventStreamLogs = NULL;
          }
      }];
@@ -2904,18 +2904,18 @@ static void PARStoreLogsDidChange(
 {
     [self.fileSystemEventQueue dispatchSynchronously:^
      {
-         if (_eventStreamDevices != NULL)
+         if (self->_eventStreamDevices != NULL)
          {
-             FSEventStreamStop(_eventStreamDevices);
-             FSEventStreamInvalidate(_eventStreamDevices);
-             FSEventStreamRelease(_eventStreamDevices);
+             FSEventStreamStop(self->_eventStreamDevices);
+             FSEventStreamInvalidate(self->_eventStreamDevices);
+             FSEventStreamRelease(self->_eventStreamDevices);
              self.eventStreamDevices = NULL;
          }
-         if (_eventStreamLogs != NULL)
+         if (self->_eventStreamLogs != NULL)
          {
-             FSEventStreamStop(_eventStreamLogs);
-             FSEventStreamInvalidate(_eventStreamLogs);
-             FSEventStreamRelease(_eventStreamLogs);
+             FSEventStreamStop(self->_eventStreamLogs);
+             FSEventStreamInvalidate(self->_eventStreamLogs);
+             FSEventStreamRelease(self->_eventStreamLogs);
              self.eventStreamLogs = NULL;
          }
      }];
