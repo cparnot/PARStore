@@ -1305,11 +1305,24 @@ NSString *PARBlobsDirectoryName = @"Blobs";
              return;
          }
          
-         // write to disk (overwrite any file that was at that same path before)
+         // Remove any existing file. We want to overwrite.
+         if ([[NSFileManager defaultManager] fileExistsAtPath:newTargetURL.path]) {
+             NSError *removingError;
+             BOOL successRemoving = [[NSFileManager defaultManager] removeItemAtURL:newTargetURL error:&removingError]; // Remove existing file if there is one
+             if (!successRemoving)
+             {
+                 localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"Could not remove file at path '%@'", newTargetURL.path] underlyingError:removingError];
+                 return;
+             }
+         }
+         
+         // write to disk
          NSError *errorWritingData = nil;
          BOOL successWritingData = [[NSFileManager defaultManager] copyItemAtURL:[NSURL fileURLWithPath:sourcePath] toURL:newTargetURL error:&errorWritingData];
-         if (!successWritingData)
+         if (!successWritingData) {
              localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"Could not copy file from source path '%@', into blob directory at path '%@'", sourcePath, newTargetURL.path] underlyingError:errorWritingData];
+             return;
+         }
      }];
     
     // error handling
@@ -1317,9 +1330,12 @@ NSString *PARBlobsDirectoryName = @"Blobs";
         localError = coordinatorError;
     if (localError)
     {
+        // Report and set error
         ErrorLog(@"Error writing blob: %@", localError);
-        if (error != NULL)
+        if (error != NULL) {
             *error = localError;
+        }
+        return NO;
     }
     return YES;
 }
