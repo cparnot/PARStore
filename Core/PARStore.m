@@ -1181,7 +1181,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
 
 - (NSURL *)blobDirectoryURL
 {
-    return [self.storeURL URLByAppendingPathComponent:PARBlobsDirectoryName];
+    return [[self.storeURL URLByAppendingPathComponent:PARBlobsDirectoryName] URLByResolvingSymlinksInPath];
 }
 
 - (BOOL)writeBlobData:(NSData *)data toPath:(NSString *)path error:(NSError **)error
@@ -1476,7 +1476,10 @@ NSString *PARBlobsDirectoryName = @"Blobs";
         
         NSUInteger prefixLength = self.blobDirectoryURL.path.length+1; // +1 is for the last slash
         for (NSURL *url in urls) {
-            NSString *absolutePath = url.path;
+            // Resolving symbolic link here, because on iOS at least, the directory enumerator
+            // uses a sym linked "private" folder, causing the path to be different to what comes
+            // out for the blobDirectoryURL.
+            NSString *absolutePath = [url URLByResolvingSymlinksInPath].path;
             NSString *relativePath = [absolutePath substringFromIndex:prefixLength];
             block(relativePath);
         }
