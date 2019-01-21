@@ -1470,8 +1470,13 @@ NSString *PARBlobsDirectoryName = @"Blobs";
         __block NSArray *urls;
         [[[NSFileCoordinator alloc] initWithFilePresenter:self] coordinateReadingItemAtURL:[self blobDirectoryURL] options:NSFileCoordinatorReadingWithoutChanges error:NULL byAccessor:^(NSURL *newURL)
         {
-            NSDirectoryEnumerator *enumerator = [[NSFileManager defaultManager] enumeratorAtURL:[self blobDirectoryURL] includingPropertiesForKeys:nil options:NSDirectoryEnumerationSkipsHiddenFiles errorHandler:nil];
-            urls = enumerator.allObjects;
+            NSDirectoryEnumerator *enumerator = [[NSFileManager defaultManager] enumeratorAtURL:[self blobDirectoryURL] includingPropertiesForKeys:nil options:(NSDirectoryEnumerationSkipsPackageDescendants|NSDirectoryEnumerationSkipsHiddenFiles|NSDirectoryEnumerationSkipsSubdirectoryDescendants) errorHandler:nil];
+            NSFileManager *fileManager = [[NSFileManager alloc] init];
+            urls = [enumerator.allObjects filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(id object, NSDictionary *bindings) {
+                NSURL *url = object;
+                BOOL isDir = false;
+                return [fileManager fileExistsAtPath:url.path isDirectory:&isDir] && !isDir;
+            }]];
         }];
         
         NSUInteger prefixLength = self.blobDirectoryURL.path.length+1; // +1 is for the last slash
