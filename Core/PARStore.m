@@ -31,6 +31,24 @@ NSString *const TimestampAttributeName       = @"timestamp";
 NSString *const ParentTimestampAttributeName = @"parentTimestamp";
 
 
+// A subclass of NSFileCoordinator that doesn't use coordination.
+// This is used to disable coordination, for a performance boost when it is not needed.
+@interface _PARFileUncoordinator : NSFileCoordinator
+@end
+
+@implementation _PARFileUncoordinator
+
+- (void)coordinateReadingItemAtURL:(NSURL *)url options:(NSFileCoordinatorReadingOptions)options error:(NSError * __autoreleasing *)outError byAccessor:(void NS_NOESCAPE (^)(NSURL *))reader {
+    reader(url);
+}
+
+- (void)coordinateWritingItemAtURL:(NSURL *)url options:(NSFileCoordinatorWritingOptions)options error:(NSError * __autoreleasing *)outError byAccessor:(void NS_NOESCAPE (^)(NSURL *))writer {
+    writer(url);
+}
+
+@end
+
+
 @interface PARStore ()
 @property (readwrite, copy) NSURL *storeURL;
 @property (readwrite, copy) NSString *deviceIdentifier;
@@ -63,6 +81,9 @@ NSString *const ParentTimestampAttributeName = @"parentTimestamp";
 
 // queue needed for NSFilePresenter protocol
 @property (retain) NSOperationQueue *presenterQueue;
+
+// File coordination
+@property (readwrite, nonatomic) BOOL _fileCoordinationEnabled;
 
 // responding to file system events (Mac only)
 #if TARGET_OS_IPHONE | TARGET_IPHONE_SIMULATOR
@@ -115,6 +136,7 @@ NSString *const ParentTimestampAttributeName = @"parentTimestamp";
         self._loaded = NO;
         self._deleted = NO;
         self._inMemoryCacheEnabled = YES;
+        self._fileCoordinationEnabled = YES;
         
         // in memory store?
         if (url == nil)
@@ -149,6 +171,18 @@ NSString *const ParentTimestampAttributeName = @"parentTimestamp";
     self._memory = nil;
 }
 
+#pragma mark - File Coordination and Presentation
+
+- (BOOL)fileCoordinationEnabled {
+    return self._fileCoordinationEnabled;
+}
+
+- (void)disableFileCoordination {
+    [NSFileCoordinator removeFilePresenter:self];
+    self._fileCoordinationEnabled = NO;
+    self.presenterQueue = nil;
+}
+
 #pragma mark - Loading / Closing Memory Layer
 
 // loading = populating the memory cache with the values from disk
@@ -172,7 +206,7 @@ NSString *const ParentTimestampAttributeName = @"parentTimestamp";
     
     [self _sync];
     
-    if ([self loaded])
+    if ([self loaded] && self._fileCoordinationEnabled)
     {
         // DebugLog(@"%@ added as file presenter", self.deviceIdentifier);
         [NSFileCoordinator addFilePresenter:self];
@@ -310,6 +344,14 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     return [self directoryPathForDeviceIdentifier:self.deviceIdentifier];
 }
 
+- (NSFileCoordinator *)newFileCoordinator {
+    if (self._fileCoordinationEnabled) {
+        return [[NSFileCoordinator alloc] initWithFilePresenter:self];
+    } else {
+        return [[_PARFileUncoordinator alloc] init];
+    }
+}
+
 - (BOOL)prepareFilePackageWithError:(NSError **)error
 {
     if (self._inMemory)
@@ -358,7 +400,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
 	// create file package if necessary
 	if (success && !fileExists)
 	{
-		NSFileCoordinator *coordinator = [[NSFileCoordinator alloc] initWithFilePresenter:self];
+		NSFileCoordinator *coordinator = [self newFileCoordinator];
 		[coordinator coordinateWritingItemAtURL:self.storeURL options:NSFileCoordinatorWritingForReplacing error:NULL byAccessor:^(NSURL *newURL) {
 			NSError *fmError = nil;
 			success = [[NSFileManager defaultManager] createDirectoryAtURL:self.storeURL withIntermediateDirectories:NO attributes:nil error:&fmError] && [[NSFileManager defaultManager] createDirectoryAtPath:devicesPath withIntermediateDirectories:NO attributes:nil error:&fmError];
@@ -370,7 +412,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
 	// create deviceID subfolder if necessary
 	if (success && !identifierDirExists)
 	{
-		NSFileCoordinator *coordinator = [[NSFileCoordinator alloc] initWithFilePresenter:self];
+		NSFileCoordinator *coordinator = [self newFileCoordinator];
 		[coordinator coordinateWritingItemAtURL:[NSURL fileURLWithPath:identifierPath] options:NSFileCoordinatorWritingForReplacing error:NULL byAccessor:^(NSURL *newURL) {
 			
 			NSError *fmError = nil;
@@ -656,7 +698,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     
     // save
     NSError *localError = nil;
-    NSFileCoordinator *coordinator = [[NSFileCoordinator alloc] initWithFilePresenter:self];
+    NSFileCoordinator *coordinator = [self newFileCoordinator];
     NSURL *databaseURL = [NSURL fileURLWithPath:[[self readwriteDirectoryPath] stringByAppendingPathComponent:PARDatabaseFileName]];
     NSError *coordinatorError = nil;
     __block NSError *saveError = nil;
@@ -1218,7 +1260,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     __block NSError *localError = nil;
     NSURL *fileURL = [[self blobDirectoryURL] URLByAppendingPathComponent:path];
     NSError *coordinatorError = nil;
-    [[[NSFileCoordinator alloc] initWithFilePresenter:self] coordinateWritingItemAtURL:fileURL options:NSFileCoordinatorWritingForReplacing error:&coordinatorError byAccessor:^(NSURL *newURL)
+    [[self newFileCoordinator] coordinateWritingItemAtURL:fileURL options:NSFileCoordinatorWritingForReplacing error:&coordinatorError byAccessor:^(NSURL *newURL)
     {
         // create parent dirs (it will fail if one of the dir already exists but is a file)
         NSError *errorCreatingDir = nil;
@@ -1294,7 +1336,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     __block NSError *localError = nil;
     NSURL *targetURL = [[self blobDirectoryURL] URLByAppendingPathComponent:targetSubpath];
     NSError *coordinatorError = nil;
-    [[[NSFileCoordinator alloc] initWithFilePresenter:self] coordinateWritingItemAtURL:targetURL options:NSFileCoordinatorWritingForReplacing error:&coordinatorError byAccessor:^(NSURL *newTargetURL)
+    [[self newFileCoordinator] coordinateWritingItemAtURL:targetURL options:NSFileCoordinatorWritingForReplacing error:&coordinatorError byAccessor:^(NSURL *newTargetURL)
      {
          // create parent dirs (it will fail if one of the dir already exists but is a file)
          NSError *errorCreatingDir = nil;
@@ -1366,7 +1408,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     __block NSError *localError = nil;
     NSURL *fileURL = [[self blobDirectoryURL] URLByAppendingPathComponent:path];
     NSError *coordinatorError = nil;
-    [[[NSFileCoordinator alloc] initWithFilePresenter:self] coordinateWritingItemAtURL:fileURL options:NSFileCoordinatorWritingForReplacing error:&coordinatorError byAccessor:^(NSURL *newURL)
+    [[self newFileCoordinator] coordinateWritingItemAtURL:fileURL options:NSFileCoordinatorWritingForReplacing error:&coordinatorError byAccessor:^(NSURL *newURL)
      {
          // write to disk (overwrite any file that was at that same path before)
          NSError *error = nil;
@@ -1416,7 +1458,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     NSURL *fileURL = [[self blobDirectoryURL] URLByAppendingPathComponent:path];
     NSError *coordinatorError = nil;
     __block NSData *data = nil;
-    [[[NSFileCoordinator alloc] initWithFilePresenter:self] coordinateReadingItemAtURL:fileURL options:NSFileCoordinatorReadingWithoutChanges error:&coordinatorError byAccessor:^(NSURL *newURL)
+    [[self newFileCoordinator] coordinateReadingItemAtURL:fileURL options:NSFileCoordinatorReadingWithoutChanges error:&coordinatorError byAccessor:^(NSURL *newURL)
     {
         NSError *errorReadingData = nil;
         data = [NSData dataWithContentsOfURL:newURL options:NSDataReadingMappedIfSafe error:&errorReadingData];
@@ -1468,7 +1510,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     else
     {
         __block NSArray *urls;
-        [[[NSFileCoordinator alloc] initWithFilePresenter:self] coordinateReadingItemAtURL:[self blobDirectoryURL] options:NSFileCoordinatorReadingWithoutChanges error:NULL byAccessor:^(NSURL *newURL)
+        [[self newFileCoordinator] coordinateReadingItemAtURL:[self blobDirectoryURL] options:NSFileCoordinatorReadingWithoutChanges error:NULL byAccessor:^(NSURL *newURL)
         {
             NSDirectoryEnumerator *enumerator = [[NSFileManager defaultManager] enumeratorAtURL:[self blobDirectoryURL] includingPropertiesForKeys:nil options:(NSDirectoryEnumerationSkipsPackageDescendants|NSDirectoryEnumerationSkipsHiddenFiles|NSDirectoryEnumerationSkipsSubdirectoryDescendants) errorHandler:nil];
             NSFileManager *fileManager = [[NSFileManager alloc] init];

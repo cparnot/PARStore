@@ -45,9 +45,13 @@ extern NSString *PARStoreDidSyncNotification;
 @property (readonly) BOOL deleted;
 @property (readonly) BOOL inMemory;
 @property (readonly) BOOL inMemoryCacheEnabled;
+@property (readonly) BOOL fileCoordinationEnabled;
 
 /// @name Memory Cache
 - (void)disableInMemoryCache;
+
+/// @name File Coordination and Presentation
+- (void)disableFileCoordination;
 
 /// @name Adding and Accessing Values
 - (nullable id)propertyListValueForKey:(NSString *)key;
