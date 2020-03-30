@@ -2612,14 +2612,15 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     return [versionsByKey copy];
 }
 
-- (NSArray *)fetchMostRecentChangesMatchingKeyPrefix:(NSString *)prefix forDeviceIdentifier:(nullable NSString *)fetchDeviceIdentifier {
+- (NSArray *)fetchMostRecentChangesMatchingKeyPrefix:(NSString *)prefix forDeviceIdentifier:(nullable NSString *)fetchDeviceIdentifier
+{
     NSPredicate *predicate = [NSPredicate predicateWithFormat:@"%K BEGINSWITH %@", KeyAttributeName, prefix];
-    return [self fetchChangesMatchingPredicate:predicate forDeviceIdentifier:fetchDeviceIdentifier];
+    return [self fetchMostRecentChangesMatchingPredicate:predicate forDeviceIdentifier:fetchDeviceIdentifier];
 }
 
 - (NSArray *)fetchMostRecentChangesMatchingPredicate:(NSPredicate *)predicate forDeviceIdentifier:(nullable NSString *)fetchDeviceIdentifier
 {
-    NSArray *allChanges = [self fetchChangesMatchingPredicate:predicate forDeviceIdentifier:nil];
+    NSArray *allChanges = [self fetchChangesMatchingPredicate:predicate forDeviceIdentifier:fetchDeviceIdentifier];
     NSMutableDictionary *mostRecentChangesByKey = [[NSMutableDictionary alloc] init];
     for (PARChange *change in allChanges.reverseObjectEnumerator) {
         NSString *key = change.key;
