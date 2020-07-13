@@ -687,15 +687,15 @@ NSString *PARBlobsDirectoryName = @"Blobs";
         return NO;
     }
 
-    // autoclose database
-    [self closeDatabaseSoon];
-
-    // skip save if already closes
+    // skip save if already closed
     if (self._managedObjectContext == nil)
     {
         return YES;
     }
     
+    // autoclose database
+    [self closeDatabaseSoon];
+
     // save
     NSError *localError = nil;
     NSFileCoordinator *coordinator = [self newFileCoordinator];
