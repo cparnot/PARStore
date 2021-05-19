@@ -373,7 +373,7 @@
 			isa = PBXProject;
 			attributes = {
 				CLASSPREFIX = PAR;
-				LastUpgradeCheck = 1240;
+				LastUpgradeCheck = 1250;
 				ORGANIZATIONNAME = "Charles Parnot";
 			};
 			buildConfigurationList = 56EAE16016E24C7500A7F31F /* Build configuration list for PBXProject "PARStore" */;
