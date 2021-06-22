@@ -1389,7 +1389,15 @@ NSString *PARBlobsDirectoryName = @"Blobs";
 
 - (BOOL)writeTombstoneAtPath:(NSString *)tombstonePath forFileAtPath:(NSString *)filePath error:(NSError **)error
 {
-    return YES;
+    if ([[NSFileManager defaultManager] fileExistsAtPath:tombstonePath]) {
+        // if a tombstone already exists, we need not make it again
+        return YES;
+    }
+    
+    // the tombstone contains the original modification date and file size, along with the current time
+    NSDictionary* attributes = [[NSFileManager defaultManager] attributesOfItemAtPath:filePath error:error];
+    NSDictionary* properties = @{ @"modified": attributes.fileModificationDate, @"size": @(attributes.fileSize), @"deleted": [NSDate date] };
+    return [properties writeToFile:tombstonePath atomically:YES];
 }
 
 - (BOOL)deleteBlobAtPath:(NSString *)path usingTombstone: (BOOL)usingTombstone error:(NSError **)error
