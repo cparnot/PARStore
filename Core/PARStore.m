@@ -1384,6 +1384,16 @@ NSString *PARBlobsDirectoryName = @"Blobs";
 
 - (BOOL)deleteBlobAtPath:(NSString *)path error:(NSError **)error
 {
+    return [self deleteBlobAtPath:path usingTombstone: NO error:error];
+}
+
+- (BOOL)writeTombstoneAtPath:(NSString *)tombstonePath forFileAtPath:(NSString *)filePath error:(NSError **)error
+{
+    return YES;
+}
+
+- (BOOL)deleteBlobAtPath:(NSString *)path usingTombstone: (BOOL)usingTombstone error:(NSError **)error
+{
     // nil path = error
     if (path == nil)
     {
@@ -1407,15 +1417,24 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     // otherwise blobs are stored in a special blob directory
     __block NSError *localError = nil;
     NSURL *fileURL = [[self blobDirectoryURL] URLByAppendingPathComponent:path];
+    NSURL *tombstoneURL = [fileURL URLByAppendingPathExtension:@"deleted"];
+
     NSError *coordinatorError = nil;
-    [[self newFileCoordinator] coordinateWritingItemAtURL:fileURL options:NSFileCoordinatorWritingForReplacing error:&coordinatorError byAccessor:^(NSURL *newURL)
+    
+    [[self newFileCoordinator] coordinateWritingItemAtURL:fileURL options:NSFileCoordinatorWritingForReplacing writingItemAtURL:tombstoneURL options:NSFileCoordinatorWritingForReplacing error:&coordinatorError byAccessor:^(NSURL * _Nonnull newURL, NSURL * _Nonnull newTombstoneURL)
      {
-         // write to disk (overwrite any file that was at that same path before)
-         NSError *error = nil;
-         BOOL success = [[NSFileManager defaultManager] removeItemAtURL:fileURL error:&error];
-         if (!success)
-             localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"Could not delete data blob at path '%@'", newURL.path] underlyingError:error];
-     }];
+        // write tombstone
+        NSError *error = nil;
+        BOOL success = [self writeTombstoneAtPath:newTombstoneURL.path forFileAtPath:newURL.path error:&error];
+        if (!success) {
+            localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"Could not create tombstone for data blob at path '%@'", newURL.path] underlyingError:error];
+        } else {
+            // write to disk (overwrite any file that was at that same path before)
+            success = [[NSFileManager defaultManager] removeItemAtURL:fileURL error:&error];
+            if (!success)
+                localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"Could not delete data blob at path '%@'", newURL.path] underlyingError:error];
+        }
+    }];
     
     // error handling
     if (coordinatorError && !localError)
