@@ -76,7 +76,7 @@ extern NSString *const TombstoneFileExtension; // normally private, but exposed 
     [store tearDownNow];
 }
 
-- (void)testTombstonePreventsData
+- (void)testTombstoneSuppressesData
 {
     NSError *error = nil;
     NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
@@ -93,7 +93,7 @@ extern NSString *const TombstoneFileExtension; // normally private, but exposed 
     [store tearDownNow];
 }
 
-- (void)testTombstonePreventsEnumeration
+- (void)testTombstoneSuppressesEnumeration
 {
     NSError *error = nil;
     NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
