@@ -6,6 +6,8 @@
 #import "PARStoreExample.h"
 #import "PARNotificationSemaphore.h"
 
+extern NSString *const TombstoneFileExtension; // normally private, but exposed for testing
+
 @interface PARStoreBlobTests : PARTestCase
 
 @end
@@ -41,13 +43,13 @@
     PARStore *store = [PARStore storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
     XCTAssertTrue([store writeBlobData:[@"test" dataUsingEncoding:NSUTF8StringEncoding] toPath:@"blob" error:&error]);
 
-    NSURL *blobURL = [[url URLByAppendingPathComponent: @"Blobs"] URLByAppendingPathComponent: @"blob"];
-    XCTAssertTrue([[NSFileManager defaultManager] fileExistsAtPath: blobURL.path]);
+    NSString *blobPath = [store absolutePathForBlobPath: @"blob"];
+    XCTAssertTrue([[NSFileManager defaultManager] fileExistsAtPath: blobPath]);
 
     XCTAssertTrue([store deleteBlobAtPath:@"blob" error:&error]);
 
     // blob file should have gone
-    XCTAssertFalse([[NSFileManager defaultManager] fileExistsAtPath: blobURL.path]);
+    XCTAssertFalse([[NSFileManager defaultManager] fileExistsAtPath: blobPath]);
 
     [store tearDownNow];
 }
@@ -59,19 +61,34 @@
     PARStore *store = [PARStore storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
     XCTAssertTrue([store writeBlobData:[@"test" dataUsingEncoding:NSUTF8StringEncoding] toPath:@"blob" error:&error]);
 
-    NSURL *blobURL = [[url URLByAppendingPathComponent: @"Blobs"] URLByAppendingPathComponent: @"blob"];
-    XCTAssertTrue([[NSFileManager defaultManager] fileExistsAtPath: blobURL.path]);
+    NSString *blobPath = [store absolutePathForBlobPath: @"blob"];
+    XCTAssertTrue([[NSFileManager defaultManager] fileExistsAtPath: blobPath]);
 
     XCTAssertTrue([store deleteBlobAtPath:@"blob" usingTombstone: YES error:&error]);
 
     // blob file should have gone
-    XCTAssertFalse([[NSFileManager defaultManager] fileExistsAtPath: blobURL.path]);
+    XCTAssertFalse([[NSFileManager defaultManager] fileExistsAtPath: blobPath]);
     
     // tombstone file should have appeared in its place
-    NSURL *tombstoneURL = [blobURL URLByAppendingPathExtension: @"deleted"];
-    XCTAssertTrue([[NSFileManager defaultManager] fileExistsAtPath: tombstoneURL.path]);
+    NSString *tombstonePath = [blobPath stringByAppendingPathExtension: TombstoneFileExtension];
+    XCTAssertTrue([[NSFileManager defaultManager] fileExistsAtPath: tombstonePath]);
 
     [store tearDownNow];
+}
+
+- (void)testTombstonePreventsData
+{
+    NSError *error = nil;
+    NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
+    PARStore *store = [PARStore storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
+    XCTAssertTrue([store writeBlobData:[@"test" dataUsingEncoding:NSUTF8StringEncoding] toPath:@"blob" error:&error]);
+
+    
+}
+
+- (void)testTombstonePreventsEnumeration
+{
+    
 }
 
 @end

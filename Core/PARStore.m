@@ -30,6 +30,8 @@ NSString *const KeyAttributeName             = @"key";
 NSString *const TimestampAttributeName       = @"timestamp";
 NSString *const ParentTimestampAttributeName = @"parentTimestamp";
 
+// tombstone constants
+NSString *const TombstoneFileExtension       = @"deleted";
 
 // A subclass of NSFileCoordinator that doesn't use coordination.
 // This is used to disable coordination, for a performance boost when it is not needed.
@@ -1387,6 +1389,11 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     return [self deleteBlobAtPath:path usingTombstone: NO error:error];
 }
 
+- (NSString *)tombstonePathForBlobAtPath:(NSString *)path
+{
+    return [path stringByAppendingPathExtension: TombstoneFileExtension];
+}
+
 - (BOOL)writeTombstoneAtPath:(NSString *)tombstonePath forFileAtPath:(NSString *)filePath error:(NSError **)error
 {
     if ([[NSFileManager defaultManager] fileExistsAtPath:tombstonePath]) {
@@ -1425,7 +1432,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     // otherwise blobs are stored in a special blob directory
     __block NSError *localError = nil;
     NSURL *fileURL = [[self blobDirectoryURL] URLByAppendingPathComponent:path];
-    NSURL *tombstoneURL = [fileURL URLByAppendingPathExtension:@"deleted"];
+    NSURL *tombstoneURL = [fileURL URLByAppendingPathExtension:TombstoneFileExtension];
 
     NSError *coordinatorError = nil;
     
