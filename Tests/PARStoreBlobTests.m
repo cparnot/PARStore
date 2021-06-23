@@ -40,7 +40,15 @@
     NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
     PARStore *store = [PARStore storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
     XCTAssertTrue([store writeBlobData:[@"test" dataUsingEncoding:NSUTF8StringEncoding] toPath:@"blob" error:&error]);
+
+    NSURL *blobURL = [[url URLByAppendingPathComponent: @"Blobs"] URLByAppendingPathComponent: @"blob"];
+    XCTAssertTrue([[NSFileManager defaultManager] fileExistsAtPath: blobURL.path]);
+
     XCTAssertTrue([store deleteBlobAtPath:@"blob" error:&error]);
+
+    // blob file should have gone
+    XCTAssertFalse([[NSFileManager defaultManager] fileExistsAtPath: blobURL.path]);
+
     [store tearDownNow];
 }
 
@@ -50,7 +58,19 @@
     NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
     PARStore *store = [PARStore storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
     XCTAssertTrue([store writeBlobData:[@"test" dataUsingEncoding:NSUTF8StringEncoding] toPath:@"blob" error:&error]);
+
+    NSURL *blobURL = [[url URLByAppendingPathComponent: @"Blobs"] URLByAppendingPathComponent: @"blob"];
+    XCTAssertTrue([[NSFileManager defaultManager] fileExistsAtPath: blobURL.path]);
+
     XCTAssertTrue([store deleteBlobAtPath:@"blob" usingTombstone: YES error:&error]);
+
+    // blob file should have gone
+    XCTAssertFalse([[NSFileManager defaultManager] fileExistsAtPath: blobURL.path]);
+    
+    // tombstone file should have appeared in its place
+    NSURL *tombstoneURL = [blobURL URLByAppendingPathExtension: @"deleted"];
+    XCTAssertTrue([[NSFileManager defaultManager] fileExistsAtPath: tombstoneURL.path]);
+
     [store tearDownNow];
 }
 
