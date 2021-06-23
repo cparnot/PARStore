@@ -83,12 +83,35 @@ extern NSString *const TombstoneFileExtension; // normally private, but exposed 
     PARStore *store = [PARStore storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
     XCTAssertTrue([store writeBlobData:[@"test" dataUsingEncoding:NSUTF8StringEncoding] toPath:@"blob" error:&error]);
 
+    // fake the presence of a tombstone, to simulate a situation where a partial
+    // synchronisation has caused it to exist along with the blob
+    NSString *tombstonePath = [[store absolutePathForBlobPath: @"blob"] stringByAppendingPathExtension: TombstoneFileExtension];
+    [[@"foobar" dataUsingEncoding:NSUTF8StringEncoding] writeToFile:tombstonePath atomically:YES];
     
+    XCTAssertNil([store blobDataAtPath:@"blob" error:&error]);
+    
+    [store tearDownNow];
 }
 
 - (void)testTombstonePreventsEnumeration
 {
+    NSError *error = nil;
+    NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
+    PARStore *store = [PARStore storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
+    XCTAssertTrue([store writeBlobData:[@"test" dataUsingEncoding:NSUTF8StringEncoding] toPath:@"blob" error:&error]);
+
+    // fake the presence of a tombstone, to simulate a situation where a partial
+    // synchronisation has caused it to exist along with the blob
+    NSString *tombstonePath = [[store absolutePathForBlobPath: @"blob"] stringByAppendingPathExtension: TombstoneFileExtension];
+    [[@"foobar" dataUsingEncoding:NSUTF8StringEncoding] writeToFile:tombstonePath atomically:YES];
     
+    __block int count = 0;
+    [store enumerateBlobs:^(NSString *blobPath) {
+        ++count;
+    }];
+    XCTAssertEqual(count, 0);
+    
+    [store tearDownNow];
 }
 
 @end
