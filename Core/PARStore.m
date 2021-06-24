@@ -1571,7 +1571,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
         for (NSURL *url in urls) {
             // the presence of a tombstone file will suppress enumeration of the
             // corresponding data file if it still exists
-            // (this shouldn't happen, but might do if file-syncing messes things up)
+            // (this shouldn't happen, but might do if external file-syncing messes things up)
             if (![tombstones containsObject:url]) {
                 // Resolving symbolic link here, because on iOS at least, the directory enumerator
                 // uses a sym linked "private" folder, causing the path to be different to what comes
