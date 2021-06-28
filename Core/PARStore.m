@@ -1449,7 +1449,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     
     [[self newFileCoordinator] coordinateWritingItemAtURL:fileURL options:NSFileCoordinatorWritingForReplacing writingItemAtURL:tombstoneURL options:NSFileCoordinatorWritingForReplacing error:&coordinatorError byAccessor:^(NSURL * _Nonnull newURL, NSURL * _Nonnull newTombstoneURL)
      {
-        // TODO: Decide how to interpret existing tombstone file.
+        // TODO: Decide how to interpret an existing tombstone file.
         // The previous behaviour produced an error if the file had already been deleted.
         // We could do this with the tombstone deletion too, or we could treat the presence of the
         // tombstone as a sign that the file was deleted already and just quietly return success.
@@ -1519,6 +1519,9 @@ NSString *PARBlobsDirectoryName = @"Blobs";
         ErrorLog(@"%@", description);
         if (error != NULL)
             *error = [NSError errorWithObject:self code:__LINE__ localizedDescription:description underlyingError:nil];
+        
+        // TODO: should we attempt to clean up sync errors here, by deleting the data file if it still exists?
+        
         return nil;
     }
     
@@ -1604,7 +1607,11 @@ NSString *PARBlobsDirectoryName = @"Blobs";
                 NSString *absolutePath = [url URLByResolvingSymlinksInPath].path;
                 NSString *relativePath = [absolutePath substringFromIndex:prefixLength];
                 block(relativePath);
-            }
+            } /* else {
+               // TODO: if thshould we attempt to clean up sync errors here, by deleting the data file if it still exists?
+            }*/
+            
+
         }
     }
 }
