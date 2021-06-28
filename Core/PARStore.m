@@ -1449,10 +1449,13 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     
     [[self newFileCoordinator] coordinateWritingItemAtURL:fileURL options:NSFileCoordinatorWritingForReplacing writingItemAtURL:tombstoneURL options:NSFileCoordinatorWritingForReplacing error:&coordinatorError byAccessor:^(NSURL * _Nonnull newURL, NSURL * _Nonnull newTombstoneURL)
      {
-        // TODO: Decide how to interpret an existing tombstone file.
-        // The previous behaviour produced an error if the file had already been deleted.
-        // We could do this with the tombstone deletion too, or we could treat the presence of the
-        // tombstone as a sign that the file was deleted already and just quietly return success.
+        // TODO: Decide how to interpret a tombstone file being present already.
+        // With the previous implementation, I think that calling delete on a file that didn't exist
+        // (or had already been deleted) returned an error.
+        // To be consistent with this behaviour, we should perhaps also return an error if we
+        // find an existing tombstone file.
+        // However, my normal inclination would be to treat the presence of the tombstone as a sign
+        // that the file has been successfully deleted and quietly return success.
         
         NSError *error = nil;
 
