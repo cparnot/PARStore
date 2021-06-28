@@ -38,6 +38,8 @@ extern NSString *const TombstoneFileExtension; // normally private, but exposed 
 
 - (void)testDeletion
 {
+    // deleting a blob with the old API should work as before
+    
     NSError *error = nil;
     NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
     PARStore *store = [PARStore storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
@@ -61,6 +63,7 @@ extern NSString *const TombstoneFileExtension; // normally private, but exposed 
 
 - (void)testDeletionWithTombstone
 {
+    // deleting a blob with the new API should result in a tombstone file
     NSError *error = nil;
     NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
     PARStore *store = [PARStore storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
@@ -85,6 +88,8 @@ extern NSString *const TombstoneFileExtension; // normally private, but exposed 
 
 - (void)testBlobExists
 {
+    // exists should product the right result before/after creation of a blob file
+    
     NSError *error = nil;
     NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
     PARStore *store = [PARStore storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
@@ -99,6 +104,9 @@ extern NSString *const TombstoneFileExtension; // normally private, but exposed 
 
 - (void)testTombstoneSuppressesFileExistence
 {
+    // if there's a tombstone file present, exists should return NO even if the actual blob
+    // file is still present
+    
     NSError *error = nil;
     NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
     PARStore *store = [PARStore storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
@@ -117,6 +125,9 @@ extern NSString *const TombstoneFileExtension; // normally private, but exposed 
 
 - (void)testTombstoneSuppressesData
 {
+    // if there is a tombstone file present, no data should be returned even if the actual blob
+    // file is still present
+    
     NSError *error = nil;
     NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
     PARStore *store = [PARStore storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
@@ -134,6 +145,9 @@ extern NSString *const TombstoneFileExtension; // normally private, but exposed 
 
 - (void)testTombstoneSuppressesEnumeration
 {
+    // tombstone files shoulnd't be included in the enumeration
+    // the presence of a tombstone file should also cause the corresponding data file to be skipped
+    // from the enumeration (if it still exists)
     NSError *error = nil;
     NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
     PARStore *store = [PARStore storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
