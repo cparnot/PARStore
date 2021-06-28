@@ -52,6 +52,10 @@ extern NSString *const TombstoneFileExtension; // normally private, but exposed 
     // blob file should have gone
     XCTAssertFalse([[NSFileManager defaultManager] fileExistsAtPath: blobPath]);
 
+    // tombstone file should not have appeared in its place
+    NSString *tombstonePath = [blobPath stringByAppendingPathExtension: TombstoneFileExtension];
+    XCTAssertFalse([[NSFileManager defaultManager] fileExistsAtPath: tombstonePath]);
+
     [store tearDownNow];
 }
 
