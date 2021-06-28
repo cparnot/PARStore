@@ -47,6 +47,7 @@ extern NSString *const TombstoneFileExtension; // normally private, but exposed 
     XCTAssertTrue([[NSFileManager defaultManager] fileExistsAtPath: blobPath]);
 
     XCTAssertTrue([store deleteBlobAtPath:@"blob" error:&error]);
+    XCTAssertFalse([store blobExistsAtPath:@"blob"]);
 
     // blob file should have gone
     XCTAssertFalse([[NSFileManager defaultManager] fileExistsAtPath: blobPath]);
@@ -65,6 +66,7 @@ extern NSString *const TombstoneFileExtension; // normally private, but exposed 
     XCTAssertTrue([[NSFileManager defaultManager] fileExistsAtPath: blobPath]);
 
     XCTAssertTrue([store deleteBlobAtPath:@"blob" usingTombstone: YES error:&error]);
+    XCTAssertFalse([store blobExistsAtPath:@"blob"]);
 
     // blob file should have gone
     XCTAssertFalse([[NSFileManager defaultManager] fileExistsAtPath: blobPath]);
@@ -73,6 +75,39 @@ extern NSString *const TombstoneFileExtension; // normally private, but exposed 
     NSString *tombstonePath = [blobPath stringByAppendingPathExtension: TombstoneFileExtension];
     XCTAssertTrue([[NSFileManager defaultManager] fileExistsAtPath: tombstonePath]);
 
+    [store tearDownNow];
+}
+
+
+- (void)testBlobExists
+{
+    NSError *error = nil;
+    NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
+    PARStore *store = [PARStore storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
+    
+    XCTAssertFalse([store blobExistsAtPath:@"blob"]);
+
+    XCTAssertTrue([store writeBlobData:[@"test" dataUsingEncoding:NSUTF8StringEncoding] toPath:@"blob" error:&error]);
+    XCTAssertTrue([store blobExistsAtPath:@"blob"]);
+
+    [store tearDownNow];
+}
+
+- (void)testTombstoneSuppressesFileExistence
+{
+    NSError *error = nil;
+    NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
+    PARStore *store = [PARStore storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
+    XCTAssertTrue([store writeBlobData:[@"test" dataUsingEncoding:NSUTF8StringEncoding] toPath:@"blob" error:&error]);
+    XCTAssertTrue([store blobExistsAtPath:@"blob"]);
+
+    // fake the presence of a tombstone, to simulate a situation where a partial
+    // synchronisation has caused it to exist along with the blob
+    NSString *tombstonePath = [[store absolutePathForBlobPath: @"blob"] stringByAppendingPathExtension: TombstoneFileExtension];
+    [[@"foobar" dataUsingEncoding:NSUTF8StringEncoding] writeToFile:tombstonePath atomically:YES];
+    
+    XCTAssertFalse([store blobExistsAtPath:@"blob"]);
+    
     [store tearDownNow];
 }
 

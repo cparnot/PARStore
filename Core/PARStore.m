@@ -1391,7 +1391,8 @@ NSString *PARBlobsDirectoryName = @"Blobs";
 
 - (BOOL)writeTombstoneAtPath:(NSString *)tombstonePath forFileAtPath:(NSString *)filePath error:(NSError **)error
 {
-    if ([[NSFileManager defaultManager] fileExistsAtPath:tombstonePath]) {
+    if ([[NSFileManager defaultManager] fileExistsAtPath:tombstonePath])
+    {
         // if a tombstone already exists, we need not make it again
         return YES;
     }
@@ -1400,6 +1401,21 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     NSDictionary* attributes = [[NSFileManager defaultManager] attributesOfItemAtPath:filePath error:error];
     NSDictionary* properties = @{ @"modified": attributes.fileModificationDate, @"size": @(attributes.fileSize), @"deleted": [NSDate date] };
     return [properties writeToFile:tombstonePath atomically:YES];
+}
+
+
+- (BOOL)blobExistsAtPath:(NSString *)path
+{
+    NSURL *blobURL = [[self blobDirectoryURL] URLByAppendingPathComponent:path];
+
+    // if a tombstone file exists, return NO, regardless of the presence of the actual file
+    NSURL* tombstoneURL = [blobURL URLByAppendingPathExtension:TombstoneFileExtension];
+    if ([[NSFileManager defaultManager] fileExistsAtPath:tombstoneURL.path])
+    {
+        return NO;
+    }
+    
+    return [[NSFileManager defaultManager] fileExistsAtPath:blobURL.path];
 }
 
 - (BOOL)deleteBlobAtPath:(NSString *)path usingTombstone: (BOOL)usingTombstone error:(NSError **)error

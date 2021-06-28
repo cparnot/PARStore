@@ -72,6 +72,7 @@ extern NSString *PARStoreDidSyncNotification;
 - (nullable NSString *)absolutePathForBlobPath:(NSString *)path;
 - (NSArray<NSString *> *)absolutePathsForBlobsPrefixedBy:(NSString *)prefix NS_SWIFT_NAME(absolutePaths(forBlobsPrefixedBy:));
 - (void)enumerateBlobs:(void(^)(NSString *path))block;
+- (BOOL)blobExistsAtPath:(NSString *)path;
 
 /// @name Syncing
 - (void)sync;
