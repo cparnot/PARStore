@@ -72,7 +72,7 @@ extern NSString *const TombstoneFileExtension; // normally private, but exposed 
     NSString *blobPath = [store absolutePathForBlobPath: @"blob"];
     XCTAssertTrue([[NSFileManager defaultManager] fileExistsAtPath: blobPath]);
 
-    XCTAssertTrue([store deleteBlobAtPath:@"blob" usingTombstone: YES error:&error]);
+    XCTAssertTrue([store deleteBlobAtPath:@"blob" registeringDeletion: YES error:&error]);
     XCTAssertFalse([store blobExistsAtPath:@"blob"]);
 
     // blob file should have gone

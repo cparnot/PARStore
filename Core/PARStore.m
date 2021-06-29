@@ -1413,12 +1413,19 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     return [[NSFileManager defaultManager] fileExistsAtPath:blobURL.path];
 }
 
-- (BOOL)deleteBlobAtPath:(NSString *)path error:(NSError **)error
+- (BOOL)blobIsRegisteredDeletedAtPath:(NSString *)path
 {
-    return [self deleteBlobAtPath:path usingTombstone: NO error:error];
+    NSURL *blobURL = [[self blobDirectoryURL] URLByAppendingPathComponent:path];
+    NSURL* tombstoneURL = [blobURL URLByAppendingPathExtension:TombstoneFileExtension];
+    return [[NSFileManager defaultManager] fileExistsAtPath:tombstoneURL.path];
 }
 
-- (BOOL)deleteBlobAtPath:(NSString *)path usingTombstone: (BOOL)usingTombstone error:(NSError **)error
+- (BOOL)deleteBlobAtPath:(NSString *)path error:(NSError **)error
+{
+    return [self deleteBlobAtPath:path registeringDeletion: NO error:error];
+}
+
+- (BOOL)deleteBlobAtPath:(NSString *)path registeringDeletion: (BOOL)usingTombstone error:(NSError **)error
 {
     // nil path = error
     if (path == nil)
@@ -1449,39 +1456,41 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     
     [[self newFileCoordinator] coordinateWritingItemAtURL:fileURL options:NSFileCoordinatorWritingForReplacing writingItemAtURL:tombstoneURL options:NSFileCoordinatorWritingForReplacing error:&coordinatorError byAccessor:^(NSURL * _Nonnull newURL, NSURL * _Nonnull newTombstoneURL)
      {
-        // TODO: Decide how to interpret a tombstone file being present already.
-        // With the previous implementation, I think that calling delete on a file that didn't exist
-        // (or had already been deleted) returned an error.
-        // To be consistent with this behaviour, we should perhaps also return an error if we
-        // find an existing tombstone file.
-        // However, my normal inclination would be to treat the presence of the tombstone as a sign
-        // that the file has been successfully deleted and quietly return success.
-        
         NSError *error = nil;
-
-        BOOL success = !usingTombstone;
-        if (!success) {
+        BOOL success = YES;
+        
+        if (usingTombstone) {
             // write tombstone
             success = [self writeTombstoneAtPath:newTombstoneURL.path forFileAtPath:newURL.path error:&error];
             if (!success)
+            {
                 localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"Could not create tombstone for data blob at path '%@'", newURL.path] underlyingError:error];
+            }
         }
 
-        if (success) {
+        if (success)
+        {
             success = [[NSFileManager defaultManager] removeItemAtURL:fileURL error:&error];
             if (!success)
+            {
                 localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"Could not delete data blob at path '%@'", newURL.path] underlyingError:error];
+            }
         }
     }];
     
     // error handling
     if (coordinatorError && !localError)
+    {
         localError = coordinatorError;
+    }
+    
     if (localError)
     {
         ErrorLog(@"Error deleting blob: %@", localError);
         if (error != NULL)
+        {
             *error = localError;
+        }
         return NO;
     }
     return YES;
@@ -1521,9 +1530,14 @@ NSString *PARBlobsDirectoryName = @"Blobs";
         NSString *description = [NSString stringWithFormat:@"Blob at path '%@' has a tombstone, indicating that it has been deleted.", self.storeURL.path];
         ErrorLog(@"%@", description);
         if (error != NULL)
+        {
             *error = [NSError errorWithObject:self code:__LINE__ localizedDescription:description underlyingError:nil];
+        }
         
-        // TODO: should we attempt to clean up sync errors here, by deleting the data file if it still exists?
+        // we attempt to clean up sync errors here, by deleting the data file if it still exists
+        // most times this call will fail because the file won't exist, and if it fails for another
+        // reason there's probably nothing we can do, so we ignore any errors
+        [[NSFileManager defaultManager] removeItemAtURL:fileURL error:NULL];
         
         return nil;
     }
@@ -1600,21 +1614,21 @@ NSString *PARBlobsDirectoryName = @"Blobs";
         
         NSUInteger prefixLength = self.blobDirectoryURL.path.length+1; // +1 is for the last slash
         for (NSURL *url in urls) {
-            // the presence of a tombstone file will suppress enumeration of the
-            // corresponding data file if it still exists
-            // (this shouldn't happen, but might do if external file-syncing messes things up)
-            if (![tombstones containsObject:url]) {
+            if ([tombstones containsObject:url]) {
+                // a tombstone file exists for this data file, indicating that it has been deleted
+                // we skip it for the enumeration, and we attempt to clean up by deleting the data file
+                // (we ignore deletion errors as this method doesn't return success/failure, and the
+                // underlying cause of the mismatch is probably something that needs fixing by a higher
+                // layer anyway)
+                [[NSFileManager defaultManager] removeItemAtURL:url error:NULL];
+            } else {
                 // Resolving symbolic link here, because on iOS at least, the directory enumerator
                 // uses a sym linked "private" folder, causing the path to be different to what comes
                 // out for the blobDirectoryURL.
                 NSString *absolutePath = [url URLByResolvingSymlinksInPath].path;
                 NSString *relativePath = [absolutePath substringFromIndex:prefixLength];
                 block(relativePath);
-            } /* else {
-               // TODO: if thshould we attempt to clean up sync errors here, by deleting the data file if it still exists?
-            }*/
-            
-
+            }
         }
     }
 }
