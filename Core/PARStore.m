@@ -1604,7 +1604,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
             for(NSURL* url in enumerator) {
                 BOOL isDir = false;
                 if ([fileManager fileExistsAtPath:url.path isDirectory:&isDir] && !isDir) continue;
-                if (url.pathExtension == TombstoneFileExtension) {
+                if ([url.pathExtension isEqualToString: TombstoneFileExtension]) {
                     [tombstones addObject:[url URLByDeletingPathExtension]];
                 } else {
                     [urls addObject:url];
@@ -1633,6 +1633,35 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     }
 }
 
+- (void)enumerateDeletedBlobs:(void(^)(NSString *path))block
+{
+    if (!self._inMemory)
+    {
+        __block NSMutableSet *tombstones = [NSMutableSet set];
+        [[self newFileCoordinator] coordinateReadingItemAtURL:[self blobDirectoryURL] options:NSFileCoordinatorReadingWithoutChanges error:NULL byAccessor:^(NSURL *newURL)
+        {
+            NSDirectoryEnumerator *enumerator = [[NSFileManager defaultManager] enumeratorAtURL:[self blobDirectoryURL] includingPropertiesForKeys:nil options:(NSDirectoryEnumerationSkipsPackageDescendants|NSDirectoryEnumerationSkipsHiddenFiles|NSDirectoryEnumerationSkipsSubdirectoryDescendants) errorHandler:nil];
+            NSFileManager *fileManager = [[NSFileManager alloc] init];
+            for(NSURL* url in enumerator) {
+                BOOL isDir = false;
+                if (![fileManager fileExistsAtPath:url.path isDirectory:&isDir] || isDir) continue;
+                if ([url.pathExtension isEqualToString: TombstoneFileExtension]) {
+                    [tombstones addObject:url];
+                }
+            }
+        }];
+        
+        NSUInteger prefixLength = self.blobDirectoryURL.path.length+1; // +1 is for the last slash
+        for (NSURL *url in tombstones) {
+            // Resolving symbolic link here, because on iOS at least, the directory enumerator
+            // uses a sym linked "private" folder, causing the path to be different to what comes
+            // out for the blobDirectoryURL.
+            NSString *absolutePath = [url URLByResolvingSymlinksInPath].path;
+            NSString *relativePath = [absolutePath substringFromIndex:prefixLength];
+            block(relativePath);
+        }
+    }
+}
 
 #pragma mark - Syncing
 

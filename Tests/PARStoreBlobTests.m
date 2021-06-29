@@ -57,6 +57,7 @@ extern NSString *const TombstoneFileExtension; // normally private, but exposed 
     // tombstone file should not have appeared in its place
     NSString *tombstonePath = [blobPath stringByAppendingPathExtension: TombstoneFileExtension];
     XCTAssertFalse([[NSFileManager defaultManager] fileExistsAtPath: tombstonePath]);
+    XCTAssertFalse([store blobIsRegisteredDeletedAtPath:@"blob"]);
 
     [store tearDownNow];
 }
@@ -81,6 +82,7 @@ extern NSString *const TombstoneFileExtension; // normally private, but exposed 
     // tombstone file should have appeared in its place
     NSString *tombstonePath = [blobPath stringByAppendingPathExtension: TombstoneFileExtension];
     XCTAssertTrue([[NSFileManager defaultManager] fileExistsAtPath: tombstonePath]);
+    XCTAssertTrue([store blobIsRegisteredDeletedAtPath:@"blob"]);
 
     [store tearDownNow];
 }
@@ -88,7 +90,7 @@ extern NSString *const TombstoneFileExtension; // normally private, but exposed 
 
 - (void)testBlobExists
 {
-    // exists should product the right result before/after creation of a blob file
+    // exists should produce the right result before/after creation of a blob file
     
     NSError *error = nil;
     NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
@@ -101,6 +103,7 @@ extern NSString *const TombstoneFileExtension; // normally private, but exposed 
 
     [store tearDownNow];
 }
+
 
 - (void)testTombstoneSuppressesFileExistence
 {
@@ -151,20 +154,46 @@ extern NSString *const TombstoneFileExtension; // normally private, but exposed 
     NSError *error = nil;
     NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
     PARStore *store = [PARStore storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
-    XCTAssertTrue([store writeBlobData:[@"test" dataUsingEncoding:NSUTF8StringEncoding] toPath:@"blob" error:&error]);
+    XCTAssertTrue([store writeBlobData:[@"test" dataUsingEncoding:NSUTF8StringEncoding] toPath:@"blob1" error:&error]);
+    XCTAssertTrue([store writeBlobData:[@"test" dataUsingEncoding:NSUTF8StringEncoding] toPath:@"blob2" error:&error]);
 
     // fake the presence of a tombstone, to simulate a situation where a partial
     // synchronisation has caused it to exist along with the blob
-    NSString *tombstonePath = [[store absolutePathForBlobPath: @"blob"] stringByAppendingPathExtension: TombstoneFileExtension];
+    NSString *tombstonePath = [[store absolutePathForBlobPath: @"blob1"] stringByAppendingPathExtension: TombstoneFileExtension];
     [[@"foobar" dataUsingEncoding:NSUTF8StringEncoding] writeToFile:tombstonePath atomically:YES];
     
-    __block int count = 0;
+    __block int count = 1;
     [store enumerateBlobs:^(NSString *blobPath) {
         ++count;
+        XCTAssertEqual(blobPath, @"blob2");
     }];
-    XCTAssertEqual(count, 0);
+    XCTAssertEqual(count, 1);
     
     [store tearDownNow];
 }
+
+- (void)testEnumeratingTombstones
+{
+    NSError *error = nil;
+    NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
+    PARStore *store = [PARStore storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
+    XCTAssertTrue([store writeBlobData:[@"test" dataUsingEncoding:NSUTF8StringEncoding] toPath:@"blob1" error:&error]);
+    XCTAssertTrue([store writeBlobData:[@"test" dataUsingEncoding:NSUTF8StringEncoding] toPath:@"blob2" error:&error]);
+    XCTAssertTrue([store writeBlobData:[@"test" dataUsingEncoding:NSUTF8StringEncoding] toPath:@"blob3" error:&error]);
+
+    XCTAssertTrue([store deleteBlobAtPath:@"blob1" registeringDeletion: YES error:&error]);
+    XCTAssertTrue([store deleteBlobAtPath:@"blob3" registeringDeletion: YES error:&error]);
+
+    __block int count = 0;
+    NSArray* expected = @[@"blob1.deleted", @"blob3.deleted"];
+    [store enumerateDeletedBlobs:^(NSString *blobPath) {
+        ++count;
+        XCTAssertTrue([expected containsObject: blobPath]);
+    }];
+    XCTAssertEqual(count, 2);
+    
+    [store tearDownNow];
+}
+
 
 @end
