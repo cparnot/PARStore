@@ -1633,7 +1633,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     }
 }
 
-- (void)enumerateDeletedBlobs:(void(^)(NSString *path))block
+- (void)enumerateDeletedBlobs:(void(^)(NSString *blobPath, NSString *markerPath))block
 {
     if (!self._inMemory)
     {
@@ -1657,8 +1657,13 @@ NSString *PARBlobsDirectoryName = @"Blobs";
             // uses a sym linked "private" folder, causing the path to be different to what comes
             // out for the blobDirectoryURL.
             NSString *absolutePath = [url URLByResolvingSymlinksInPath].path;
-            NSString *relativePath = [absolutePath substringFromIndex:prefixLength];
-            block(relativePath);
+            NSString *relativeTombstonePath = [absolutePath substringFromIndex:prefixLength];
+            NSString *relativePath = [relativeTombstonePath stringByDeletingPathExtension];
+            
+            // we pass back both the path to the datafile and the path to the tombstone file
+            // since the relationship between the two is an implementation detail
+            // (right now it's just an extra file extension, but that may not always be true)
+            block(relativePath, relativeTombstonePath);
         }
     }
 }

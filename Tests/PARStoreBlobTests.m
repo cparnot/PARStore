@@ -148,7 +148,7 @@ extern NSString *const TombstoneFileExtension; // normally private, but exposed 
 
 - (void)testTombstoneSuppressesEnumeration
 {
-    // tombstone files shoulnd't be included in the enumeration
+    // tombstone files shouldn't be included in the enumeration
     // the presence of a tombstone file should also cause the corresponding data file to be skipped
     // from the enumeration (if it still exists)
     NSError *error = nil;
@@ -174,6 +174,7 @@ extern NSString *const TombstoneFileExtension; // normally private, but exposed 
 
 - (void)testEnumeratingTombstones
 {
+    // we should be called back with both the original data file paths, and the paths to the tombstones
     NSError *error = nil;
     NSURL *url = [[self urlWithUniqueTmpDirectory] URLByAppendingPathComponent:@"doc.parstore"];
     PARStore *store = [PARStore storeWithURL:url deviceIdentifier:[self deviceIdentifierForTest]];
@@ -185,10 +186,12 @@ extern NSString *const TombstoneFileExtension; // normally private, but exposed 
     XCTAssertTrue([store deleteBlobAtPath:@"blob3" registeringDeletion: YES error:&error]);
 
     __block int count = 0;
-    NSArray* expected = @[@"blob1.deleted", @"blob3.deleted"];
-    [store enumerateDeletedBlobs:^(NSString *blobPath) {
+    NSArray* expected = @[@"blob1", @"blob3"];
+    NSArray* expectedTombstones = @[@"blob1.deleted", @"blob3.deleted"];
+    [store enumerateDeletedBlobs:^(NSString *blobPath, NSString *markerPath) {
         ++count;
         XCTAssertTrue([expected containsObject: blobPath]);
+        XCTAssertTrue([expectedTombstones containsObject: markerPath]);
     }];
     XCTAssertEqual(count, 2);
     
