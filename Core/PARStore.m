@@ -1422,10 +1422,10 @@ NSString *PARBlobsDirectoryName = @"Blobs";
 
 - (BOOL)deleteBlobAtPath:(NSString *)path error:(NSError **)error
 {
-    return [self deleteBlobAtPath:path registeringDeletion: NO error:error];
+    return [self deleteBlobAtPath:path registeringDeletion: NO ignoreIfMissing:NO error:error];
 }
 
-- (BOOL)deleteBlobAtPath:(NSString *)path registeringDeletion: (BOOL)registeringDeletion error:(NSError **)error
+- (BOOL)deleteBlobAtPath:(NSString *)path registeringDeletion: (BOOL)registeringDeletion ignoreIfMissing: (BOOL)ignoreIfMissing error:(NSError **)error
 {
     // nil path = error
     if (path == nil)
@@ -1458,8 +1458,14 @@ NSString *PARBlobsDirectoryName = @"Blobs";
      {
         NSError *error = nil;
         BOOL success = YES;
+        BOOL fileExists = [[NSFileManager defaultManager] fileExistsAtPath:newURL.path];
         
-        if (registeringDeletion) {
+        if (!(ignoreIfMissing || fileExists)) {
+            success = NO;
+            localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"Could not delete non-existent data blob at path '%@'", newURL.path] underlyingError:nil];
+        }
+        
+        if (success && registeringDeletion && fileExists) {
             // write tombstone
             success = [self writeTombstoneAtPath:newTombstoneURL.path forFileAtPath:newURL.path error:&error];
             if (!success)
@@ -1468,7 +1474,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
             }
         }
 
-        if (success)
+        if (success && fileExists)
         {
             success = [[NSFileManager defaultManager] removeItemAtURL:fileURL error:&error];
             if (!success)

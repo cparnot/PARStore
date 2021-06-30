@@ -74,7 +74,7 @@ extern NSString *PARStoreDidSyncNotification;
 - (BOOL)blobExistsAtPath:(NSString *)path;
 
 /// @name Registered Deletion Support
-- (BOOL)deleteBlobAtPath:(NSString *)path registeringDeletion: (BOOL)registeringDeletion error:(NSError **)error;
+- (BOOL)deleteBlobAtPath:(NSString *)path registeringDeletion: (BOOL)registeringDeletion ignoreIfMissing: (BOOL)ignoreIfMissing error:(NSError **)error;
 - (BOOL)blobIsRegisteredDeletedAtPath:(NSString *)path;
 - (void)enumerateDeletedBlobs:(void(^)(NSString *blobPath, NSString *markerPath))block;
 
