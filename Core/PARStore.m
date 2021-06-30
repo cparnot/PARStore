@@ -1425,7 +1425,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     return [self deleteBlobAtPath:path registeringDeletion: NO error:error];
 }
 
-- (BOOL)deleteBlobAtPath:(NSString *)path registeringDeletion: (BOOL)usingTombstone error:(NSError **)error
+- (BOOL)deleteBlobAtPath:(NSString *)path registeringDeletion: (BOOL)registeringDeletion error:(NSError **)error
 {
     // nil path = error
     if (path == nil)
@@ -1459,7 +1459,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
         NSError *error = nil;
         BOOL success = YES;
         
-        if (usingTombstone) {
+        if (registeringDeletion) {
             // write tombstone
             success = [self writeTombstoneAtPath:newTombstoneURL.path forFileAtPath:newURL.path error:&error];
             if (!success)
