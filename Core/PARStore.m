@@ -1603,7 +1603,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
             NSFileManager *fileManager = [[NSFileManager alloc] init];
             for(NSURL* url in enumerator) {
                 BOOL isDir = false;
-                if ([fileManager fileExistsAtPath:url.path isDirectory:&isDir] && !isDir) continue;
+                if ([fileManager fileExistsAtPath:url.path isDirectory:&isDir] && isDir) continue;
                 if ([url.pathExtension isEqualToString: TombstoneFileExtension]) {
                     [tombstones addObject:[url URLByDeletingPathExtension]];
                 } else {
