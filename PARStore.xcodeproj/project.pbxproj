@@ -46,6 +46,8 @@
 		56EAE1BB16E24E7300A7F31F /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 56EAE1B816E24E7300A7F31F /* main.m */; };
 		56EAE1BE16E24EAA00A7F31F /* PARStore.m in Sources */ = {isa = PBXBuildFile; fileRef = 56EAE1BD16E24EAA00A7F31F /* PARStore.m */; };
 		56FA3D771970359C00BF81D3 /* libsqlite3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 56FA3D761970359C00BF81D3 /* libsqlite3.dylib */; };
+		8BED6AEB26824978004639DF /* PARStoreBlobTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BED6AEA26824978004639DF /* PARStoreBlobTests.m */; };
+		8BED6AEC26824978004639DF /* PARStoreBlobTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 8BED6AEA26824978004639DF /* PARStoreBlobTests.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -114,6 +116,7 @@
 		56EAE1BC16E24EAA00A7F31F /* PARStore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PARStore.h; path = Core/PARStore.h; sourceTree = SOURCE_ROOT; };
 		56EAE1BD16E24EAA00A7F31F /* PARStore.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; name = PARStore.m; path = Core/PARStore.m; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		56FA3D761970359C00BF81D3 /* libsqlite3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libsqlite3.dylib; path = usr/lib/libsqlite3.dylib; sourceTree = SDKROOT; };
+		8BED6AEA26824978004639DF /* PARStoreBlobTests.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PARStoreBlobTests.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -265,6 +268,7 @@
 				56C7EDFA16E26D0700FFBBF2 /* PARTestCase.h */,
 				56C7EDFB16E26D0700FFBBF2 /* PARTestCase.m */,
 				56EAE19416E24C7500A7F31F /* PARStoreTests.m */,
+				8BED6AEA26824978004639DF /* PARStoreBlobTests.m */,
 				561148E6196E952800F488F2 /* PARSQLiteTests.m */,
 				56E196E41B448BE600A51AB0 /* PARDispatchQueueTests.m */,
 				56EAE18E16E24C7500A7F31F /* Supporting Files */,
@@ -456,6 +460,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8BED6AEC26824978004639DF /* PARStoreBlobTests.m in Sources */,
 				56C7EDF716E2687F00FFBBF2 /* PARStoreTests.m in Sources */,
 				56C7EDFD16E26D0700FFBBF2 /* PARTestCase.m in Sources */,
 			);
@@ -480,6 +485,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				56EAE19516E24C7500A7F31F /* PARStoreTests.m in Sources */,
+				8BED6AEB26824978004639DF /* PARStoreBlobTests.m in Sources */,
 				56E196E61B448CA300A51AB0 /* PARDispatchQueueTests.m in Sources */,
 				56C7EDFC16E26D0700FFBBF2 /* PARTestCase.m in Sources */,
 				561148E7196E952800F488F2 /* PARSQLiteTests.m in Sources */,
