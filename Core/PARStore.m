@@ -515,6 +515,8 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     static NSManagedObjectModel *mom = nil;
     dispatch_once(&pred,
       ^{
+          #pragma clang diagnostic push
+          #pragma clang diagnostic ignored "-Wdeprecated-declarations"
           NSAttributeDescription *blobAttribute = [[NSAttributeDescription alloc] init];
           blobAttribute.name = BlobAttributeName;
           blobAttribute.attributeType = NSBinaryDataAttributeType;
@@ -540,6 +542,7 @@ NSString *PARBlobsDirectoryName = @"Blobs";
           
           mom = [[NSManagedObjectModel alloc] init];
           mom.entities = @[entity];
+          #pragma clang diagnostic pop
       });
     return mom;
 }
