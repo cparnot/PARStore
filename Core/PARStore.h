@@ -71,6 +71,12 @@ extern NSString *PARStoreDidSyncNotification;
 - (nullable NSString *)absolutePathForBlobPath:(NSString *)path;
 - (NSArray<NSString *> *)absolutePathsForBlobsPrefixedBy:(NSString *)prefix NS_SWIFT_NAME(absolutePaths(forBlobsPrefixedBy:));
 - (void)enumerateBlobs:(void(^)(NSString *path))block;
+- (BOOL)blobExistsAtPath:(NSString *)path;
+
+/// @name Registered Deletion Support
+- (BOOL)deleteBlobAtPath:(NSString *)path registeringDeletion: (BOOL)registeringDeletion ignoreIfMissing: (BOOL)ignoreIfMissing error:(NSError **)error;
+- (BOOL)blobIsRegisteredDeletedAtPath:(NSString *)path;
+- (void)enumerateDeletedBlobs:(void(^)(NSString *blobPath, NSString *markerPath))block;
 
 /// @name Syncing
 - (void)sync;
