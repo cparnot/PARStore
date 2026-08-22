@@ -30,6 +30,8 @@ NSString *const KeyAttributeName             = @"key";
 NSString *const TimestampAttributeName       = @"timestamp";
 NSString *const ParentTimestampAttributeName = @"parentTimestamp";
 
+// tombstone constants
+NSString *const TombstoneFileExtension       = @"deleted";
 
 // A subclass of NSFileCoordinator that doesn't use coordination.
 // This is used to disable coordination, for a performance boost when it is not needed.
@@ -1385,7 +1387,48 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     return YES;
 }
 
+- (BOOL)writeTombstoneAtPath:(NSString *)tombstonePath forFileAtPath:(NSString *)filePath error:(NSError **)error
+{
+    if ([[NSFileManager defaultManager] fileExistsAtPath:tombstonePath])
+    {
+        // if a tombstone already exists, we need not make it again
+        return YES;
+    }
+    
+    // the tombstone contains the original modification date and file size, along with the current time
+    NSDictionary* attributes = [[NSFileManager defaultManager] attributesOfItemAtPath:filePath error:error];
+    NSDictionary* properties = @{ @"modified": attributes.fileModificationDate, @"size": @(attributes.fileSize), @"deleted": [NSDate date] };
+    return [properties writeToFile:tombstonePath atomically:YES];
+}
+
+
+- (BOOL)blobExistsAtPath:(NSString *)path
+{
+    NSURL *blobURL = [[self blobDirectoryURL] URLByAppendingPathComponent:path];
+
+    // if a tombstone file exists, return NO, regardless of the presence of the actual file
+    NSURL* tombstoneURL = [blobURL URLByAppendingPathExtension:TombstoneFileExtension];
+    if ([[NSFileManager defaultManager] fileExistsAtPath:tombstoneURL.path])
+    {
+        return NO;
+    }
+    
+    return [[NSFileManager defaultManager] fileExistsAtPath:blobURL.path];
+}
+
+- (BOOL)blobIsRegisteredDeletedAtPath:(NSString *)path
+{
+    NSURL *blobURL = [[self blobDirectoryURL] URLByAppendingPathComponent:path];
+    NSURL* tombstoneURL = [blobURL URLByAppendingPathExtension:TombstoneFileExtension];
+    return [[NSFileManager defaultManager] fileExistsAtPath:tombstoneURL.path];
+}
+
 - (BOOL)deleteBlobAtPath:(NSString *)path error:(NSError **)error
+{
+    return [self deleteBlobAtPath:path registeringDeletion: NO ignoreIfMissing:NO error:error];
+}
+
+- (BOOL)deleteBlobAtPath:(NSString *)path registeringDeletion: (BOOL)registeringDeletion ignoreIfMissing: (BOOL)ignoreIfMissing error:(NSError **)error
 {
     // nil path = error
     if (path == nil)
@@ -1410,24 +1453,53 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     // otherwise blobs are stored in a special blob directory
     __block NSError *localError = nil;
     NSURL *fileURL = [[self blobDirectoryURL] URLByAppendingPathComponent:path];
+    NSURL *tombstoneURL = [fileURL URLByAppendingPathExtension:TombstoneFileExtension];
+
     NSError *coordinatorError = nil;
-    [[self newFileCoordinator] coordinateWritingItemAtURL:fileURL options:NSFileCoordinatorWritingForReplacing error:&coordinatorError byAccessor:^(NSURL *newURL)
+    
+    [[self newFileCoordinator] coordinateWritingItemAtURL:fileURL options:NSFileCoordinatorWritingForReplacing writingItemAtURL:tombstoneURL options:NSFileCoordinatorWritingForReplacing error:&coordinatorError byAccessor:^(NSURL * _Nonnull newURL, NSURL * _Nonnull newTombstoneURL)
      {
-         // write to disk (overwrite any file that was at that same path before)
-         NSError *error = nil;
-         BOOL success = [[NSFileManager defaultManager] removeItemAtURL:fileURL error:&error];
-         if (!success)
-             localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"Could not delete data blob at path '%@'", newURL.path] underlyingError:error];
-     }];
+        NSError *error = nil;
+        BOOL success = YES;
+        BOOL fileExists = [[NSFileManager defaultManager] fileExistsAtPath:newURL.path];
+        
+        if (!(ignoreIfMissing || fileExists)) {
+            success = NO;
+            localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"Could not delete non-existent data blob at path '%@'", newURL.path] underlyingError:nil];
+        }
+        
+        if (success && registeringDeletion && fileExists) {
+            // write tombstone
+            success = [self writeTombstoneAtPath:newTombstoneURL.path forFileAtPath:newURL.path error:&error];
+            if (!success)
+            {
+                localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"Could not create tombstone for data blob at path '%@'", newURL.path] underlyingError:error];
+            }
+        }
+
+        if (success && fileExists)
+        {
+            success = [[NSFileManager defaultManager] removeItemAtURL:fileURL error:&error];
+            if (!success)
+            {
+                localError = [NSError errorWithObject:self code:__LINE__ localizedDescription:[NSString stringWithFormat:@"Could not delete data blob at path '%@'", newURL.path] underlyingError:error];
+            }
+        }
+    }];
     
     // error handling
     if (coordinatorError && !localError)
+    {
         localError = coordinatorError;
+    }
+    
     if (localError)
     {
         ErrorLog(@"Error deleting blob: %@", localError);
         if (error != NULL)
+        {
             *error = localError;
+        }
         return NO;
     }
     return YES;
@@ -1459,6 +1531,26 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     // otherwise blobs are stored in a special blob directory
     __block NSError *localError = nil;
     NSURL *fileURL = [[self blobDirectoryURL] URLByAppendingPathComponent:path];
+    
+    // check first for a tombstone, which indicates that the
+    // blob had been deleted and should be ignored
+    NSURL *tombstoneURL = [fileURL URLByAppendingPathExtension:TombstoneFileExtension];
+    if ([[NSFileManager defaultManager] fileExistsAtPath: tombstoneURL.path]) {
+        NSString *description = [NSString stringWithFormat:@"Blob at path '%@' has a tombstone, indicating that it has been deleted.", self.storeURL.path];
+        ErrorLog(@"%@", description);
+        if (error != NULL)
+        {
+            *error = [NSError errorWithObject:self code:__LINE__ localizedDescription:description underlyingError:nil];
+        }
+        
+        // we attempt to clean up sync errors here, by deleting the data file if it still exists
+        // most times this call will fail because the file won't exist, and if it fails for another
+        // reason there's probably nothing we can do, so we ignore any errors
+        [[NSFileManager defaultManager] removeItemAtURL:fileURL error:NULL];
+        
+        return nil;
+    }
+    
     NSError *coordinatorError = nil;
     __block NSData *data = nil;
     [[self newFileCoordinator] coordinateReadingItemAtURL:fileURL options:NSFileCoordinatorReadingWithoutChanges error:&coordinatorError byAccessor:^(NSURL *newURL)
@@ -1512,30 +1604,78 @@ NSString *PARBlobsDirectoryName = @"Blobs";
     }
     else
     {
-        __block NSArray *urls;
+        __block NSMutableArray *urls = [NSMutableArray array];
+        __block NSMutableSet *tombstones = [NSMutableSet set];
         [[self newFileCoordinator] coordinateReadingItemAtURL:[self blobDirectoryURL] options:NSFileCoordinatorReadingWithoutChanges error:NULL byAccessor:^(NSURL *newURL)
         {
             NSDirectoryEnumerator *enumerator = [[NSFileManager defaultManager] enumeratorAtURL:[self blobDirectoryURL] includingPropertiesForKeys:nil options:(NSDirectoryEnumerationSkipsPackageDescendants|NSDirectoryEnumerationSkipsHiddenFiles|NSDirectoryEnumerationSkipsSubdirectoryDescendants) errorHandler:nil];
             NSFileManager *fileManager = [[NSFileManager alloc] init];
-            urls = [enumerator.allObjects filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(id object, NSDictionary *bindings) {
-                NSURL *url = object;
+            for(NSURL* url in enumerator) {
                 BOOL isDir = false;
-                return [fileManager fileExistsAtPath:url.path isDirectory:&isDir] && !isDir;
-            }]];
+                if ([fileManager fileExistsAtPath:url.path isDirectory:&isDir] && isDir) continue;
+                if ([url.pathExtension isEqualToString: TombstoneFileExtension]) {
+                    [tombstones addObject:[url URLByDeletingPathExtension]];
+                } else {
+                    [urls addObject:url];
+                }
+            }
         }];
         
         NSUInteger prefixLength = self.blobDirectoryURL.path.length+1; // +1 is for the last slash
         for (NSURL *url in urls) {
-            // Resolving symbolic link here, because on iOS at least, the directory enumerator
-            // uses a sym linked "private" folder, causing the path to be different to what comes
-            // out for the blobDirectoryURL.
-            NSString *absolutePath = [url URLByResolvingSymlinksInPath].path;
-            NSString *relativePath = [absolutePath substringFromIndex:prefixLength];
-            block(relativePath);
+            if ([tombstones containsObject:url]) {
+                // a tombstone file exists for this data file, indicating that it has been deleted
+                // we skip it for the enumeration, and we attempt to clean up by deleting the data file
+                // (we ignore deletion errors as this method doesn't return success/failure, and the
+                // underlying cause of the mismatch is probably something that needs fixing by a higher
+                // layer anyway)
+                [[NSFileManager defaultManager] removeItemAtURL:url error:NULL];
+            } else {
+                // Resolving symbolic link here, because on iOS at least, the directory enumerator
+                // uses a sym linked "private" folder, causing the path to be different to what comes
+                // out for the blobDirectoryURL.
+                NSString *absolutePath = [url URLByResolvingSymlinksInPath].path;
+                NSString *relativePath = [absolutePath substringFromIndex:prefixLength];
+                block(relativePath);
+            }
         }
     }
 }
 
+- (void)enumerateDeletedBlobs:(void(^)(NSString *blobPath, NSString *markerPath))block
+{
+    if (!self._inMemory)
+    {
+        __block NSMutableSet *tombstones = [NSMutableSet set];
+        [[self newFileCoordinator] coordinateReadingItemAtURL:[self blobDirectoryURL] options:NSFileCoordinatorReadingWithoutChanges error:NULL byAccessor:^(NSURL *newURL)
+        {
+            NSDirectoryEnumerator *enumerator = [[NSFileManager defaultManager] enumeratorAtURL:[self blobDirectoryURL] includingPropertiesForKeys:nil options:(NSDirectoryEnumerationSkipsPackageDescendants|NSDirectoryEnumerationSkipsHiddenFiles|NSDirectoryEnumerationSkipsSubdirectoryDescendants) errorHandler:nil];
+            NSFileManager *fileManager = [[NSFileManager alloc] init];
+            for(NSURL* url in enumerator) {
+                BOOL isDir = false;
+                if (![fileManager fileExistsAtPath:url.path isDirectory:&isDir] || isDir) continue;
+                if ([url.pathExtension isEqualToString: TombstoneFileExtension]) {
+                    [tombstones addObject:url];
+                }
+            }
+        }];
+        
+        NSUInteger prefixLength = self.blobDirectoryURL.path.length+1; // +1 is for the last slash
+        for (NSURL *url in tombstones) {
+            // Resolving symbolic link here, because on iOS at least, the directory enumerator
+            // uses a sym linked "private" folder, causing the path to be different to what comes
+            // out for the blobDirectoryURL.
+            NSString *absolutePath = [url URLByResolvingSymlinksInPath].path;
+            NSString *relativeTombstonePath = [absolutePath substringFromIndex:prefixLength];
+            NSString *relativePath = [relativeTombstonePath stringByDeletingPathExtension];
+            
+            // we pass back both the path to the datafile and the path to the tombstone file
+            // since the relationship between the two is an implementation detail
+            // (right now it's just an extra file extension, but that may not always be true)
+            block(relativePath, relativeTombstonePath);
+        }
+    }
+}
 
 #pragma mark - Syncing
 
